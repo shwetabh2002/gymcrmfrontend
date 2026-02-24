@@ -7,7 +7,7 @@ import styles from "./Sidebar.module.css";
 const NAV = [
   { href: "/dashboard",         label: "Dashboard",         icon: "⊞" },
   { href: "/users",             label: "Users",             icon: "◎" },
-  { href: "/plans", label: "Subscription Plan", icon: "◈" },
+  { href: "/plans",             label: "Subscription Plan", icon: "◈" },
   { href: "/payments",          label: "Payments",          icon: "◇" },
   { href: "/invoices",          label: "Invoices",          icon: "▤" },
   { href: "/profile",           label: "Profile",           icon: "◉" },
