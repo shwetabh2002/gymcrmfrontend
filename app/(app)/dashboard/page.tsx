@@ -4,7 +4,7 @@ import { motion, Variants, Easing } from "framer-motion";
 import styles from "./Dashboard.module.css";
 
 /* ─── Motion variants ─────────────────────────────────────── */
-// reused cubic‑bezier easing, cast to bypass strict typing requirements
+
 const customEase: Easing = [0.16, 1, 0.3, 1] as any;
 
 const fadeUp: Variants = {
