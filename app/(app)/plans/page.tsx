@@ -1,7 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Plans.module.css";
+import { usePlans } from "@/services/plans/plans.hook";
+import { Plan } from "@/services/plans/plans.api";
+import PlanModal from "./PlanModal";
+import DeletePlanDialog from "./DeletePlanDialog";
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -11,40 +16,47 @@ const fadeUp = {
   }),
 };
 
-const plans = [
-  { name: "Basic", price: "$19/mo", members: 412, color: "#888",         features: ["Gym Access", "Locker Room", "1 Group Class/wk"] },
-  { name: "Pro",   price: "$49/mo", members: 358, color: "var(--red)",   features: ["All Basic", "Unlimited Classes", "1 PT Session/mo", "App Access"] },
-  { name: "Elite", price: "$89/mo", members: 100, color: "#f0a44b",      features: ["All Pro", "4 PT Sessions/mo", "Nutrition Plan", "Priority Support"] },
-];
-
-const subs = [
-  { id: "SUB-001", user: "Sarah Chen",   plan: "Pro",   status: "Active",   start: "Jan 12, 2025", next: "Feb 12, 2025", amount: "$49" },
-  { id: "SUB-002", user: "Mark Torres",  plan: "Basic", status: "Inactive", start: "Nov 3, 2024",  next: "—",            amount: "$19" },
-  { id: "SUB-003", user: "Lena Kovacs",  plan: "Elite", status: "Active",   start: "Feb 28, 2025", next: "Mar 28, 2025", amount: "$89" },
-  { id: "SUB-004", user: "David Osei",   plan: "Basic", status: "Trialing", start: "Mar 1, 2025",  next: "Mar 15, 2025", amount: "$0"  },
-  { id: "SUB-005", user: "Priya Sharma", plan: "Elite", status: "Active",   start: "Dec 15, 2024", next: "Apr 15, 2025", amount: "$89" },
-];
-
-const STATS = [
-  { label: "Total Subscriptions", val: "870",   sub: "+12 this month"  },
-  { label: "MRR",                 val: "$32.4k", sub: "+8.2% vs last mo"},
-  { label: "Churn Rate",          val: "2.1%",  sub: "↓ from 3.4%"     },
-  { label: "Trialing",            val: "24",    sub: "ends in 14 days"  },
-];
-
-function badgeClass(st: string) {
-  if (st === "Active")   return styles.badgeActive;
-  if (st === "Inactive") return styles.badgeInactive;
-  if (st === "Trialing") return styles.badgeTrialing;
+function badgeClass(status: string, styles: any) {
+  if (status === "ACTIVE")   return styles.badgeActive;
+  if (status === "INACTIVE") return styles.badgeInactive;
   return styles.badgePending;
 }
 
-export default function Plans() {
+function durationLabel(duration: number, type: string) {
+  return `${duration} ${type.charAt(0) + type.slice(1).toLowerCase()}`;
+}
+
+export default function PlansPage() {
+  const { data: plans, isLoading, isError } = usePlans();
+
+  const [modalOpen,  setModalOpen]  = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selected,   setSelected]   = useState<Plan | null>(null);
+
+  const openCreate = () => { setSelected(null); setModalOpen(true); };
+  const openEdit   = (p: Plan) => { setSelected(p); setModalOpen(true); };
+  const openDelete = (p: Plan) => { setSelected(p); setDeleteOpen(true); };
+
   return (
     <div className={styles.page}>
 
-      <motion.div className={styles.pageHeader}
-        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+      <PlanModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        existing={selected}
+      />
+
+      <DeletePlanDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        plan={selected}
+      />
+
+      {/* Header */}
+      <motion.div
+        className={styles.pageHeader}
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
       >
         <div>
@@ -54,105 +66,170 @@ export default function Plans() {
         </div>
         <div className={styles.headerActions}>
           <button className={styles.btnSecondary}>⬇ Export</button>
-          <button className={styles.btnPrimary}>+ New Plan</button>
+          <button className={styles.btnPrimary} onClick={openCreate}>+ New Plan</button>
         </div>
       </motion.div>
 
-      <motion.div className={styles.statStrip}
+      {/* Stats Strip */}
+      <motion.div
+        className={styles.statStrip}
         custom={0} variants={fadeUp} initial="hidden" animate="visible"
       >
-        {STATS.map((st) => (
-          <div key={st.label} className={styles.statCell}>
-            <span className={styles.statLabel}><span className={styles.statLabelDot} />{st.label}</span>
-            <span className={styles.statVal}>{st.val}</span>
-            <span className={styles.statSub}>{st.sub}</span>
-          </div>
-        ))}
+        <div className={styles.statCell}>
+          <span className={styles.statLabel}><span className={styles.statLabelDot} />Total Plans</span>
+          <span className={styles.statVal}>{plans?.length ?? "—"}</span>
+        </div>
+        <div className={styles.statCell}>
+          <span className={styles.statLabel}><span className={styles.statLabelDot} />Active</span>
+          <span className={styles.statVal}>{plans?.filter((p) => p.status === "ACTIVE").length ?? "—"}</span>
+        </div>
+        <div className={styles.statCell}>
+          <span className={styles.statLabel}><span className={styles.statLabelDot} />Inactive</span>
+          <span className={styles.statVal}>{plans?.filter((p) => p.status === "INACTIVE").length ?? "—"}</span>
+        </div>
+        <div className={styles.statCell}>
+          <span className={styles.statLabel}><span className={styles.statLabelDot} />Archived</span>
+          <span className={styles.statVal}>{plans?.filter((p) => p.status === "ARCHIVED").length ?? "—"}</span>
+        </div>
       </motion.div>
 
-      <motion.div className={styles.plansGrid}
+      {/* Plans Grid */}
+      <motion.div
+        className={styles.plansGrid}
         custom={1} variants={fadeUp} initial="hidden" animate="visible"
       >
-        {plans.map((plan) => (
-          <div key={plan.name} className={styles.planCard}>
-            <div className={styles.planAccent} style={{ background: `linear-gradient(90deg, ${plan.color}, transparent)` }} />
+        {isLoading && <p style={{ padding: "1rem" }}>Loading plans…</p>}
+        {isError   && <p style={{ padding: "1rem", color: "red" }}>Failed to load plans.</p>}
+
+        {!isLoading && !isError && plans?.map((plan) => (
+          <div key={plan._id} className={styles.planCard}>
+            <div
+              className={styles.planAccent}
+              style={{ background: `linear-gradient(90deg, var(--red), transparent)` }}
+            />
             <div className={styles.planBody}>
               <div className={styles.planTop}>
                 <span className={styles.planName}>{plan.name}</span>
-                <span className={styles.planPrice} style={{ color: plan.color }}>{plan.price}</span>
+                <span className={styles.planPrice} style={{ color: "var(--red)" }}>
+                  ₹{plan.price}
+                </span>
               </div>
-              <div className={styles.planMembers}>{plan.members} active members</div>
-              <div className={styles.planFeatures}>
-                {plan.features.map((f) => (
-                  <div key={f} className={styles.planFeature}>
-                    <span className={styles.planFeatureCheck} style={{ color: plan.color }}>✓</span>
-                    {f}
+              <div className={styles.planMembers}>
+                {durationLabel(plan.duration, plan.durationType)}
+              </div>
+              {plan.description && (
+                <div className={styles.planFeatures}>
+                  <div className={styles.planFeature}>
+                    <span className={styles.planFeatureCheck} style={{ color: "var(--red)" }}>✓</span>
+                    {plan.description}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
               <div className={styles.planActions}>
-                <button className={styles.btnSecondary} style={{ flex: 1, justifyContent: "center" }}>Edit Plan</button>
+                <span className={`${styles.badge} ${badgeClass(plan.status, styles)}`}>
+                  {plan.status}
+                </span>
+                <button
+                  className={styles.btnSecondary}
+                  onClick={() => openEdit(plan)}
+                >
+                  ✎ Edit
+                </button>
+                <button
+                  className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                  onClick={() => openDelete(plan)}
+                >
+                  ✕
+                </button>
               </div>
             </div>
           </div>
         ))}
       </motion.div>
 
-      <motion.div className={styles.card}
+      {/* Table */}
+      <motion.div
+        className={styles.card}
         custom={2} variants={fadeUp} initial="hidden" animate="visible"
       >
         <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Active Subscriptions</h2>
+          <h2 className={styles.cardTitle}>
+            <span className={styles.cardTitleBar} />All Plans
+          </h2>
           <div className={styles.toolbar}>
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>⌕</span>
-              <input className={styles.searchInput} placeholder="Search subscriptions…" />
+              <input className={styles.searchInput} placeholder="Search plans…" />
             </div>
             <select className={styles.filterSelect}>
-              <option>All Plans</option>
-              <option>Basic</option><option>Pro</option><option>Elite</option>
+              <option>All Status</option>
+              <option>ACTIVE</option>
+              <option>INACTIVE</option>
+              <option>ARCHIVED</option>
             </select>
           </div>
         </div>
 
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Sub ID</th><th>Member</th><th>Plan</th><th>Status</th>
-                <th>Start Date</th><th>Next Billing</th><th>Amount</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subs.map((sub) => (
-                <tr key={sub.id}>
-                  <td className={styles.cellMono}>{sub.id}</td>
-                  <td className={styles.cellName}>{sub.user}</td>
-                  <td>{sub.plan}</td>
-                  <td><span className={`${styles.badge} ${badgeClass(sub.status)}`}>{sub.status}</span></td>
-                  <td className={styles.cellMono}>{sub.start}</td>
-                  <td className={styles.cellMono}>{sub.next}</td>
-                  <td className={styles.cellAmount}>{sub.amount}</td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <button className={styles.iconBtn}>◎</button>
-                      <button className={styles.iconBtn}>✎</button>
-                      <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`}>✕</button>
-                    </div>
-                  </td>
+          {isLoading && <p style={{ padding: "1rem" }}>Loading…</p>}
+          {isError   && <p style={{ padding: "1rem", color: "red" }}>Failed to load plans.</p>}
+
+          {!isLoading && !isError && (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Duration</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {plans?.map((plan) => (
+                  <tr key={plan._id}>
+                    <td className={styles.cellName}>{plan.name}</td>
+                    <td className={styles.cellMono}>
+                      {durationLabel(plan.duration, plan.durationType)}
+                    </td>
+                    <td className={styles.cellAmount}>₹{plan.price}</td>
+                    <td>
+                      <span className={`${styles.badge} ${badgeClass(plan.status, styles)}`}>
+                        {plan.status}
+                      </span>
+                    </td>
+                    <td className={styles.cellMono}>
+                      {new Date(plan.createdAt).toLocaleDateString()}
+                    </td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        <button
+                          className={styles.iconBtn}
+                          onClick={() => openEdit(plan)}
+                          title="Edit"
+                        >✎</button>
+                        <button
+                          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                          onClick={() => openDelete(plan)}
+                          title="Delete"
+                        >✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className={styles.pagination}>
-          <span className={styles.paginationInfo}>Showing 1–5 of 870 subscriptions</span>
+          <span className={styles.paginationInfo}>
+            Showing {plans?.length ?? 0} plans
+          </span>
           <div className={styles.paginationBtns}>
             <button className={styles.pageBtn}>‹</button>
             <button className={`${styles.pageBtn} ${styles.pageBtnActive}`}>1</button>
-            <button className={styles.pageBtn}>2</button>
-            <button className={styles.pageBtn}>3</button>
             <button className={styles.pageBtn}>›</button>
           </div>
         </div>

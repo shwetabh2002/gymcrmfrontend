@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useAuth } from "@/lib/context/AuthContext";
 import styles from "./Profile.module.css";
 
 const fadeUp = {
@@ -11,13 +12,6 @@ const fadeUp = {
   }),
 };
 
-const INFO_ROWS = [
-  { label: "Email",        val: "admin@gymadmin.io" },
-  { label: "Phone",        val: "+1 (555) 000-0000" },
-  { label: "Location",     val: "New York, USA"     },
-  { label: "Member Since", val: "Oct 7, 2024"       },
-];
-
 const activityLog = [
   { action: "Logged in",                 time: "Today, 9:14 AM",    ip: "192.168.1.1" },
   { action: "Updated pricing — Pro plan",time: "Yesterday, 4:02 PM",ip: "192.168.1.1" },
@@ -26,7 +20,22 @@ const activityLog = [
   { action: "Password changed",          time: "Feb 10, 10:00 AM",  ip: "10.0.0.42"   },
 ];
 
+function initials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+}
+
 export default function ProfilePage() {
+  const { user } = useAuth();
+
+  const displayName  = user?.name  ?? "Admin User";
+  const displayEmail = user?.email ?? "—";
+  const displayRole  = user?.role  ?? "ADMIN";
+
+  const INFO_ROWS = [
+    { label: "Email", val: displayEmail },
+    { label: "Role",  val: displayRole  },
+  ];
+
   return (
     <div className={styles.page}>
 
@@ -48,10 +57,10 @@ export default function ProfilePage() {
           <div className={styles.identityCard}>
             <div className={styles.identityAccent} />
             <div className={styles.identityBody}>
-              <div className={styles.avatarLarge}>A</div>
+              <div className={styles.avatarLarge}>{initials(displayName)}</div>
               <div>
-                <div className={styles.identityName}>Admin User</div>
-                <div className={styles.identityRole}>Super Admin</div>
+                <div className={styles.identityName}>{displayName}</div>
+                <div className={styles.identityRole}>{displayRole}</div>
               </div>
               <div className={styles.identityDivider} />
               <div className={styles.infoRows}>
@@ -77,32 +86,16 @@ export default function ProfilePage() {
             </div>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>First Name</label>
-                <input className={styles.formInput} defaultValue="Admin" />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Last Name</label>
-                <input className={styles.formInput} defaultValue="User" />
+                <label className={styles.formLabel}>Full Name</label>
+                <input className={styles.formInput} defaultValue={displayName} />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Email Address</label>
-                <input className={styles.formInput} type="email" defaultValue="admin@gymadmin.io" />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Phone Number</label>
-                <input className={styles.formInput} defaultValue="+1 (555) 000-0000" />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Location</label>
-                <input className={styles.formInput} defaultValue="New York, USA" />
+                <input className={styles.formInput} type="email" defaultValue={displayEmail} />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Role</label>
-                <input className={styles.formInput} defaultValue="Super Admin" disabled />
-              </div>
-              <div className={styles.formGroupFull}>
-                <label className={styles.formLabel}>Bio</label>
-                <textarea className={styles.formTextarea} defaultValue="Gym administrator managing memberships, payments and operations." />
+                <input className={styles.formInput} defaultValue={displayRole} disabled />
               </div>
             </div>
             <div className={styles.formActions}>

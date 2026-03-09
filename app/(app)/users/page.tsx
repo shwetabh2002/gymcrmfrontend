@@ -1,7 +1,12 @@
- "use client";
+"use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Users.module.css";
+import { useMembers } from "@/services/members/members.hook";
+import { Member } from "@/services/members/members.api";
+import MemberModal from "./MemberModal";
+import DeleteMemberDialog from "./DeleteMemberDialog";
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -11,39 +16,46 @@ const fadeUp = {
   }),
 };
 
-const users = [
-  { id: "USR-001", name: "Sarah Chen",     email: "sarah.chen@example.com",  role: "Member",  plan: "Pro",   status: "Active",   joined: "Jan 12, 2025" },
-  { id: "USR-002", name: "Mark Torres",    email: "mark.t@domain.io",        role: "Member",  plan: "Basic", status: "Inactive", joined: "Nov 3, 2024"  },
-  { id: "USR-003", name: "Lena Kovacs",    email: "lena.k@gymmail.com",      role: "Trainer", plan: "Pro",   status: "Active",   joined: "Feb 28, 2025" },
-  { id: "USR-004", name: "David Osei",     email: "d.osei@fitness.net",      role: "Member",  plan: "Basic", status: "Pending",  joined: "Mar 1, 2025"  },
-  { id: "USR-005", name: "Priya Sharma",   email: "priya.s@example.com",     role: "Member",  plan: "Elite", status: "Active",   joined: "Dec 15, 2024" },
-  { id: "USR-006", name: "James Whitfield",email: "jw@example.com",          role: "Admin",   plan: "Elite", status: "Active",   joined: "Oct 7, 2024"  },
-  { id: "USR-007", name: "Aiko Tanaka",    email: "aiko.t@domain.jp",        role: "Member",  plan: "Pro",   status: "Inactive", joined: "Jan 20, 2025" },
-];
-
-const STATS = [
-  { label: "Total Users",  val: "1,250", sub: "+48 this week"  },
-  { label: "Active",       val: "1,104", sub: "88.3% of total" },
-  { label: "Inactive",     val: "134",   sub: "10.7% of total" },
-  { label: "Pending",      val: "12",    sub: "awaiting setup"  },
-];
-
 function initials(name: string) {
-  return name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+  return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function badgeClass(status: string) {
-  if (status === "Active")   return styles.badgeActive;
-  if (status === "Inactive") return styles.badgeInactive;
+function badgeClass(status: string, styles: any) {
+  if (status === "ACTIVE")   return styles.badgeActive;
+  if (status === "INACTIVE") return styles.badgeInactive;
   return styles.badgePending;
 }
 
 export default function UsersPage() {
+  const { data: members, isLoading, isError } = useMembers();
+
+  const [modalOpen,   setModalOpen]   = useState(false);
+  const [deleteOpen,  setDeleteOpen]  = useState(false);
+  const [selected,    setSelected]    = useState<Member | null>(null);
+
+  const openCreate = () => { setSelected(null); setModalOpen(true); };
+  const openEdit   = (m: Member) => { setSelected(m); setModalOpen(true); };
+  const openDelete = (m: Member) => { setSelected(m); setDeleteOpen(true); };
+
   return (
     <div className={styles.page}>
 
-      <motion.div className={styles.pageHeader}
-        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+      <MemberModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        existing={selected}
+      />
+
+      <DeleteMemberDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        member={selected}
+      />
+
+      <motion.div
+        className={styles.pageHeader}
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
       >
         <div>
@@ -53,88 +65,116 @@ export default function UsersPage() {
         </div>
         <div className={styles.headerActions}>
           <button className={styles.btnSecondary}>⬇ Export</button>
-          <button className={styles.btnPrimary}>+ Add User</button>
+          <button className={styles.btnPrimary} onClick={openCreate}>+ Add Member</button>
         </div>
       </motion.div>
 
-      <motion.div className={styles.statStrip}
+      <motion.div
+        className={styles.statStrip}
         custom={0} variants={fadeUp} initial="hidden" animate="visible"
       >
-        {STATS.map((st) => (
-          <div key={st.label} className={styles.statCell}>
-            <span className={styles.statLabel}><span className={styles.statLabelDot} />{st.label}</span>
-            <span className={styles.statVal}>{st.val}</span>
-            <span className={styles.statSub}>{st.sub}</span>
-          </div>
-        ))}
+        <div className={styles.statCell}>
+          <span className={styles.statLabel}><span className={styles.statLabelDot} />Total Members</span>
+          <span className={styles.statVal}>{members?.length ?? "—"}</span>
+        </div>
+        <div className={styles.statCell}>
+          <span className={styles.statLabel}><span className={styles.statLabelDot} />Active</span>
+          <span className={styles.statVal}>{members?.filter((m) => m.memberStatus === "ACTIVE").length ?? "—"}</span>
+        </div>
+        <div className={styles.statCell}>
+          <span className={styles.statLabel}><span className={styles.statLabelDot} />Inactive</span>
+          <span className={styles.statVal}>{members?.filter((m) => m.memberStatus === "INACTIVE").length ?? "—"}</span>
+        </div>
+        <div className={styles.statCell}>
+          <span className={styles.statLabel}><span className={styles.statLabelDot} />Suspended</span>
+          <span className={styles.statVal}>{members?.filter((m) => m.memberStatus === "SUSPENDED").length ?? "—"}</span>
+        </div>
       </motion.div>
 
-      <motion.div className={styles.card}
+      <motion.div
+        className={styles.card}
         custom={1} variants={fadeUp} initial="hidden" animate="visible"
       >
         <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />All Users</h2>
+          <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />All Members</h2>
           <div className={styles.toolbar}>
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>⌕</span>
-              <input className={styles.searchInput} placeholder="Search users…" />
+              <input className={styles.searchInput} placeholder="Search members…" />
             </div>
             <select className={styles.filterSelect}>
-              <option>All Roles</option>
-              <option>Member</option><option>Trainer</option><option>Admin</option>
-            </select>
-            <select className={styles.filterSelect}>
               <option>All Status</option>
-              <option>Active</option><option>Inactive</option><option>Pending</option>
+              <option>ACTIVE</option>
+              <option>INACTIVE</option>
+              <option>SUSPENDED</option>
             </select>
           </div>
         </div>
 
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>User</th><th>ID</th><th>Role</th>
-                <th>Plan</th><th>Status</th><th>Joined</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <div className={styles.avatarCell}>
-                      <div className={styles.avatar}>{initials(u.name)}</div>
-                      <div>
-                        <div className={styles.avatarName}>{u.name}</div>
-                        <div className={styles.avatarEmail}>{u.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className={styles.cellMono}>{u.id}</td>
-                  <td>{u.role}</td>
-                  <td>{u.plan}</td>
-                  <td><span className={`${styles.badge} ${badgeClass(u.status)}`}>{u.status}</span></td>
-                  <td className={styles.cellMono}>{u.joined}</td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <button className={styles.iconBtn}>◎</button>
-                      <button className={styles.iconBtn}>✎</button>
-                      <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`}>✕</button>
-                    </div>
-                  </td>
+          {isLoading && <p style={{ padding: "1rem" }}>Loading members…</p>}
+          {isError   && <p style={{ padding: "1rem", color: "red" }}>Failed to load members.</p>}
+
+          {!isLoading && !isError && (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Phone</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {members?.map((m) => (
+                  <tr key={m._id}>
+                    <td>
+                      <div className={styles.avatarCell}>
+                        <div className={styles.avatar}>{initials(m.name)}</div>
+                        <div>
+                          <div className={styles.avatarName}>{m.name}</div>
+                          <div className={styles.avatarEmail}>{m.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={styles.cellMono}>{m.phone}</td>
+                    <td>
+                      <span className={`${styles.badge} ${badgeClass(m.memberStatus, styles)}`}>
+                        {m.memberStatus}
+                      </span>
+                    </td>
+                    <td className={styles.cellMono}>
+                      {new Date(m.createdAt).toLocaleDateString()}
+                    </td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        <button
+                          className={styles.iconBtn}
+                          onClick={() => openEdit(m)}
+                          title="Edit"
+                        >✎</button>
+                        <button
+                          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                          onClick={() => openDelete(m)}
+                          title="Delete"
+                        >✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className={styles.pagination}>
-          <span className={styles.paginationInfo}>Showing 1–7 of 1,250 users</span>
+          <span className={styles.paginationInfo}>
+            Showing {members?.length ?? 0} members
+          </span>
           <div className={styles.paginationBtns}>
             <button className={styles.pageBtn}>‹</button>
             <button className={`${styles.pageBtn} ${styles.pageBtnActive}`}>1</button>
-            <button className={styles.pageBtn}>2</button>
-            <button className={styles.pageBtn}>3</button>
             <button className={styles.pageBtn}>›</button>
           </div>
         </div>

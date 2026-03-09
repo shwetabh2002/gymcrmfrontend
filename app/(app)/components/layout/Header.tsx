@@ -20,8 +20,8 @@ export default function Header() {
 
   const pageTitle = PAGE_TITLES[pathname] ?? "Admin Panel";
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.replace("/login");
   };
 

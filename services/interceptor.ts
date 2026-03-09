@@ -24,21 +24,21 @@ const processQueue = (error: any, token: string | null = null) => {
 export const setupInterceptors = (apiClient: AxiosInstance) => {
   // 🔹 Attach Access Token
   apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const accessToken = authStorage.getAccessToken();
+    (config: InternalAxiosRequestConfig) => {
+      const accessToken = authStorage.getAccessToken();
 
-    if (
-      accessToken &&
-      !config.url?.includes(API_CONFIG.AUTH.REFRESH_TOKEN)
-    ) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
+      if (
+        accessToken &&
+        !config.url?.includes(API_CONFIG.AUTH.REFRESH_TOKEN)
+      ) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
 
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
 
   // 🔹 Handle 401 → Refresh Token
   apiClient.interceptors.response.use(
@@ -46,14 +46,14 @@ export const setupInterceptors = (apiClient: AxiosInstance) => {
     async (error: AxiosError) => {
       const originalRequest: any = error.config;
 
-if (!originalRequest) {
-  return Promise.reject(error);
-}
+      if (!originalRequest) {
+        return Promise.reject(error);
+      }
+
       if (
         error.response?.status === 401 &&
         !originalRequest._retry &&
-  !originalRequest.url?.includes(API_CONFIG.AUTH.REFRESH_TOKEN)
-
+        !originalRequest.url?.includes(API_CONFIG.AUTH.REFRESH_TOKEN)
       ) {
         if (isRefreshing) {
           return new Promise(function (resolve, reject) {
@@ -76,35 +76,33 @@ if (!originalRequest) {
             throw new Error("No refresh token available");
           }
 
+          // ✅ Fix: send refresh token as Bearer header, not in body
           const response = await apiClient.post(
             API_CONFIG.AUTH.REFRESH_TOKEN,
-            { refreshToken }
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${refreshToken}`,
+              },
+            }
           );
 
-          const newAccessToken = response.data?.tokens?.accessToken;
+          const newAccessToken = response.data?.accessToken;
+          const newRefreshToken = response.data?.refreshToken || refreshToken;
 
           if (!newAccessToken) {
             throw new Error("Failed to refresh access token");
           }
 
-          // 🔥 Update stored access token (keep old refresh)
-const newRefreshToken =
-  response.data?.tokens?.refreshToken || refreshToken;
-
-authStorage.setTokens(
-  newAccessToken,
-  newRefreshToken
-);
-
+          authStorage.setTokens(newAccessToken, newRefreshToken);
           processQueue(null, newAccessToken);
 
           originalRequest.headers = originalRequest.headers || {};
-originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
           return apiClient(originalRequest);
         } catch (refreshError) {
           processQueue(refreshError, null);
-
           authStorage.clearTokens();
 
           if (typeof window !== "undefined") {
