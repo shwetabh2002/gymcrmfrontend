@@ -78,3 +78,117 @@
   .page { padding: 20px 16px; }
   .statStrip { grid-template-columns: repeat(2, 1fr); }
 }
+/* ─── Modal ───────────────────────────────────────────────────── */
+.backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+}
+.modal {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; margin: auto;
+  height: fit-content; max-height: calc(100vh - 4rem); overflow-y: auto;
+  z-index: 101; background: #111; border: 1px solid #2a2a2a; border-radius: 12px;
+  padding: 1.75rem; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.modalHeader { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.modalTitle  { font-size: 1.05rem; font-weight: 600; color: #fff; margin: 0; }
+.modalClose  {
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px;
+  color: #666; cursor: pointer; font-size: 0.85rem;
+  transition: color 0.12s, background 0.12s;
+}
+.modalClose:hover { color: #ccc; background: #252525; }
+.modalFooter { display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 0.25rem; flex-shrink: 0; }
+
+/* Modal Buttons */
+.btnPrimary   { background: #e63946; color: #fff; border: none; border-radius: 6px; padding: 0.6rem 1.25rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: opacity 0.15s; }
+.btnPrimary:hover:not(:disabled)  { opacity: 0.88; }
+.btnPrimary:disabled  { opacity: 0.45; cursor: not-allowed; }
+.btnSecondary { background: #1e1e1e; color: #ccc; border: 1px solid #2a2a2a; border-radius: 6px; padding: 0.6rem 1.25rem; font-size: 0.88rem; cursor: pointer; font-family: var(--sans); transition: background 0.12s; }
+.btnSecondary:hover { background: #252525; }
+
+/* Form */
+.formGrid  { display: flex; flex-direction: column; gap: 1rem; }
+.field     { display: flex; flex-direction: column; gap: 0.4rem; }
+.fieldLabel { font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--mono); }
+.input {
+  background: #161616; border: 1px solid #2a2a2a; border-radius: 6px;
+  color: #e8e8e8; font-size: 0.9rem; padding: 0.6rem 0.85rem;
+  outline: none; width: 100%; box-sizing: border-box;
+  font-family: var(--sans); transition: border-color 0.15s;
+}
+.input:focus { border-color: #404040; }
+.input::placeholder { color: #3a3a3a; }
+.input:disabled { opacity: 0.4; cursor: not-allowed; }
+.select {
+  background: #161616; border: 1px solid #2a2a2a; border-radius: 6px;
+  color: #e8e8e8; font-size: 0.9rem; padding: 0.6rem 0.85rem;
+  outline: none; width: 100%; font-family: var(--sans);
+  transition: border-color 0.15s; cursor: pointer;
+}
+.select:focus { border-color: #404040; }
+.select:disabled { opacity: 0.4; cursor: not-allowed; }
+.twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* Error / Summary */
+.errorBanner { font-size: 0.83rem; color: #e86d78; background: rgba(230,57,70,0.07); border: 1px solid rgba(230,57,70,0.18); border-radius: 6px; padding: 0.6rem 0.9rem; margin: 0; }
+.paymentSummary { background: #161616; border: 1px solid #222; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.83rem; color: #777; }
+.paymentSummaryDetail { line-height: 1.8; }
+.textSuccess { color: #5ab870; }
+.textWarning { color: #f0a44b; }
+
+/* ─── Combobox ────────────────────────────────────────────────── */
+.comboboxWrap { position: relative; }
+.comboboxTrigger {
+  background: #161616; border: 1px solid #2a2a2a; border-radius: 6px;
+  color: #e8e8e8; font-size: 0.9rem; padding: 0.55rem 0.85rem;
+  width: 100%; box-sizing: border-box; font-family: var(--sans);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; cursor: pointer; transition: border-color 0.15s; user-select: none;
+}
+.comboboxTrigger:hover { border-color: #333; }
+.comboboxTriggerOpen   { border-color: #404040; border-radius: 6px 6px 0 0; }
+.comboboxPlaceholder   { color: #3a3a3a; font-size: 0.9rem; flex: 1; }
+.comboboxSelectedVal   { display: flex; flex-direction: column; flex: 1; min-width: 0; overflow: hidden; }
+.comboboxSelectedName  { font-size: 0.875rem; color: #e0e0e0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comboboxSelectedEmail { font-size: 0.73rem; color: #555; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comboboxSuffix        { display: flex; align-items: center; flex-shrink: 0; }
+.comboboxChevron       { color: #555; font-size: 10px; transition: transform 0.15s; line-height: 1; }
+.comboboxChevronOpen   { transform: rotate(180deg); }
+.comboboxClearBtn {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%;
+  color: #555; font-size: 11px; cursor: pointer; line-height: 1;
+  transition: color 0.12s, background 0.12s;
+}
+.comboboxClearBtn:hover { color: #ccc; background: rgba(255,255,255,0.06); }
+.comboboxDropdown {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: #161616; border: 1px solid #2a2a2a; border-top: none;
+  border-radius: 0 0 8px 8px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  z-index: 200; overflow: hidden; display: flex; flex-direction: column;
+  max-height: 240px;
+}
+.comboboxSearchWrap  { padding: 8px 10px; border-bottom: 1px solid #1e1e1e; flex-shrink: 0; position: relative; }
+.comboboxSearchIcon  { position: absolute; left: 19px; top: 50%; transform: translateY(-50%); color: #444; font-size: 12px; pointer-events: none; }
+.comboboxSearchInput {
+  background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 5px;
+  color: #e0e0e0; font-size: 0.84rem; padding: 0.4rem 0.7rem 0.4rem 1.8rem;
+  outline: none; width: 100%; box-sizing: border-box;
+  font-family: var(--sans); transition: border-color 0.12s;
+}
+.comboboxSearchInput::placeholder { color: #3a3a3a; }
+.comboboxSearchInput:focus { border-color: #3a3a3a; }
+.comboboxList        { overflow-y: auto; flex: 1; }
+.comboboxItem        { padding: 9px 12px; cursor: pointer; transition: background 0.08s; border-bottom: 1px solid #191919; }
+.comboboxItem:last-child { border-bottom: none; }
+.comboboxItem:hover  { background: #1c1c1c; }
+.comboboxItemActive  { background: rgba(230,57,70,0.07); }
+.comboboxItemActive:hover { background: rgba(230,57,70,0.11); }
+.comboboxItemName    { font-size: 0.875rem; color: #ddd; font-weight: 500; }
+.comboboxItemEmail   { font-size: 0.73rem; color: #555; font-family: var(--mono); margin-top: 1px; }
+.comboboxHighlight   { color: #e86d78; }
+.comboboxEmpty       { padding: 1.5rem; text-align: center; color: #444; font-size: 0.83rem; }
