@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Invoices.module.css";
-import InvoiceModal, { Invoice } from "./InvoiceModal";
+import { useInvoices, useDeleteInvoice } from "@/services/invoices/invoices.hooks";
+import { Invoice } from "@/services/invoices/invoices.api";
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -13,96 +14,62 @@ const fadeUp = {
   }),
 };
 
-const INITIAL_INVOICES: Invoice[] = [
-  { id: "#4822", user: "Lena Kovacs",     email: "lena.k@gymmail.com",     amount: "$149.00", status: "Paid",     issued: "Mar 1, 2025",  due: "Mar 8, 2025",  plan: "Elite" },
-  { id: "#4821", user: "Sarah Chen",      email: "sarah.chen@example.com", amount: "$49.00",  status: "Paid",     issued: "Feb 12, 2025", due: "Feb 19, 2025", plan: "Pro"   },
-  { id: "#4820", user: "Priya Sharma",    email: "priya.s@example.com",    amount: "$89.00",  status: "Paid",     issued: "Feb 10, 2025", due: "Feb 17, 2025", plan: "Elite" },
-  { id: "#4819", user: "David Osei",      email: "d.osei@fitness.net",     amount: "$19.00",  status: "Pending",  issued: "Mar 1, 2025",  due: "Mar 8, 2025",  plan: "Basic" },
-  { id: "#4818", user: "Mark Torres",     email: "mark.t@domain.io",       amount: "$19.00",  status: "Failed",   issued: "Jan 30, 2025", due: "Feb 6, 2025",  plan: "Basic" },
-  { id: "#4817", user: "James Whitfield", email: "jw@example.com",         amount: "$89.00",  status: "Paid",     issued: "Jan 28, 2025", due: "Feb 4, 2025",  plan: "Elite" },
-  { id: "#4809", user: "Aiko Tanaka",     email: "aiko.t@domain.jp",       amount: "$49.00",  status: "Refunded", issued: "Jan 15, 2025", due: "Jan 22, 2025", plan: "Pro"   },
-];
-
-function badgeClass(st: string) {
-  if (st === "Paid")     return styles.badgePaid;
-  if (st === "Failed")   return styles.badgeFailed;
-  if (st === "Refunded") return styles.badgeRefunded;
-  return styles.badgePending;
+function getMember(inv: Invoice) {
+  if (typeof inv.memberId === "object" && inv.memberId !== null) return inv.memberId;
+  return null;
 }
 
-function nextId(invoices: Invoice[]) {
-  const nums = invoices.map((i) => parseInt(i.id.replace("#", ""))).filter(Boolean);
-  return `#${Math.max(...nums) + 1}`;
+function badgeClass(status: string) {
+  if (status === "FULLY_PAID")    return styles.badgePaid;
+  if (status === "PARTIALLY_PAID") return styles.badgePending;
+  return styles.badgeFailed;
 }
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices]     = useState<Invoice[]>(INITIAL_INVOICES);
-  const [modalOpen, setModalOpen]   = useState(false);
-  const [selected,  setSelected]    = useState<Invoice | null>(null);
+  const { data: invoices, isLoading, isError } = useInvoices();
+  const { mutate: deleteInvoice } = useDeleteInvoice();
 
-  const openCreate = () => { setSelected(null); setModalOpen(true); };
-  const openEdit   = (inv: Invoice) => { setSelected(inv); setModalOpen(true); };
+  const total    = invoices?.length ?? 0;
+  const fullyPaid = invoices?.filter(i => {
+    const sub = typeof i.subscriptionId === "object" ? i.subscriptionId : null;
+    return sub?.paymentStatus === "FULLY_PAID";
+  }).length ?? 0;
+  const partial  = invoices?.filter(i => {
+    const sub = typeof i.subscriptionId === "object" ? i.subscriptionId : null;
+    return sub?.paymentStatus === "PARTIALLY_PAID";
+  }).length ?? 0;
+  const unpaid   = invoices?.filter(i => {
+    const sub = typeof i.subscriptionId === "object" ? i.subscriptionId : null;
+    return sub?.paymentStatus === "UNPAID";
+  }).length ?? 0;
 
-  const handleDelete = (id: string) => {
-    setInvoices((prev) => prev.filter((i) => i.id !== id));
-  };
-
-  const handleSave = (invoice: Invoice) => {
-    if (selected) {
-      // Edit
-      setInvoices((prev) =>
-        prev.map((i) => (i.id === invoice.id ? invoice : i))
-      );
-    } else {
-      // Create — assign next ID
-      setInvoices((prev) => [{ ...invoice, id: nextId(prev) }, ...prev]);
-    }
-  };
-
-  // Computed stats
-  const total       = invoices.length;
-  const paid        = invoices.filter((i) => i.status === "Paid").length;
-  const outstanding = invoices.filter((i) => i.status === "Pending").length;
-  const overdue     = invoices.filter((i) => i.status === "Failed").length;
+  const totalAmount = invoices?.reduce((sum, i) => sum + i.totalAmount, 0) ?? 0;
 
   const STATS = [
-    { label: "Total Invoices",  val: String(total),       sub: "all time"              },
-    { label: "Paid",            val: String(paid),         sub: `${Math.round((paid/total)*100)}% collection rate` },
-    { label: "Outstanding",     val: String(outstanding),  sub: "pending invoices"      },
-    { label: "Overdue",         val: String(overdue),      sub: "action required"       },
+    { label: "Total Invoices",  val: String(total),      sub: "all time" },
+    { label: "Total Amount",    val: `₹${totalAmount.toLocaleString()}`, sub: "collected" },
+    { label: "Fully Paid",      val: String(fullyPaid),  sub: "invoices" },
+    { label: "Partial / Unpaid",val: String(partial + unpaid), sub: "action required" },
   ];
 
   return (
     <div className={styles.page}>
 
-      <InvoiceModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        existing={selected}
-        onSave={handleSave}
-      />
-
-      <motion.div
-        className={styles.pageHeader}
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
+      <motion.div className={styles.pageHeader}
+        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
       >
         <div>
           <p className={styles.eyebrow}>Admin Panel</p>
           <h1 className={styles.pageTitle}>Invoices</h1>
-          <p className={styles.pageDesc}>Generate, send and track member invoices.</p>
+          <p className={styles.pageDesc}>Auto-generated invoices for all member payments.</p>
         </div>
         <div className={styles.headerActions}>
           <button className={styles.btnSecondary}>⬇ Export PDF</button>
-          <button className={styles.btnPrimary} onClick={openCreate}>+ New Invoice</button>
         </div>
       </motion.div>
 
-      <motion.div
-        className={styles.statStrip}
-        custom={0} variants={fadeUp} initial="hidden" animate="visible"
-      >
+      <motion.div className={styles.statStrip} custom={0} variants={fadeUp} initial="hidden" animate="visible">
         {STATS.map((st) => (
           <div key={st.label} className={styles.statCell}>
             <span className={styles.statLabel}><span className={styles.statLabelDot} />{st.label}</span>
@@ -112,83 +79,78 @@ export default function InvoicesPage() {
         ))}
       </motion.div>
 
-      <motion.div
-        className={styles.card}
-        custom={1} variants={fadeUp} initial="hidden" animate="visible"
-      >
+      <motion.div className={styles.card} custom={1} variants={fadeUp} initial="hidden" animate="visible">
         <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}>
-            <span className={styles.cardTitleBar} />All Invoices
-          </h2>
+          <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />All Invoices</h2>
           <div className={styles.toolbar}>
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>⌕</span>
               <input className={styles.searchInput} placeholder="Search invoice or member…" />
             </div>
-            <select className={styles.filterSelect}>
-              <option>All Status</option>
-              <option>Paid</option>
-              <option>Pending</option>
-              <option>Failed</option>
-              <option>Refunded</option>
-            </select>
-            <select className={styles.filterSelect}>
-              <option>This Month</option>
-              <option>Last Month</option>
-              <option>All Time</option>
-            </select>
           </div>
         </div>
 
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Invoice</th><th>Member</th><th>Plan</th><th>Amount</th>
-                <th>Status</th><th>Issued</th><th>Due</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.id}>
-                  <td className={styles.cellId}>{inv.id}</td>
-                  <td>
-                    <div className={styles.cellName}>{inv.user}</div>
-                    <div className={styles.cellEmail}>{inv.email}</div>
-                  </td>
-                  <td>{inv.plan}</td>
-                  <td className={styles.cellAmount}>{inv.amount}</td>
-                  <td>
-                    <span className={`${styles.badge} ${badgeClass(inv.status)}`}>
-                      {inv.status}
-                    </span>
-                  </td>
-                  <td className={styles.cellMono}>{inv.issued}</td>
-                  <td className={styles.cellMono}>{inv.due}</td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <button
-                        className={styles.iconBtn}
-                        title="Edit"
-                        onClick={() => openEdit(inv)}
-                      >✎</button>
-                      <button
-                        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                        title="Delete"
-                        onClick={() => handleDelete(inv.id)}
-                      >✕</button>
-                    </div>
-                  </td>
+          {isLoading && <p style={{ padding: "1rem", color: "#555" }}>Loading invoices…</p>}
+          {isError   && <p style={{ padding: "1rem", color: "#e63946" }}>Failed to load invoices.</p>}
+
+          {!isLoading && !isError && (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Invoice #</th><th>Member</th><th>Items</th>
+                  <th>Subtotal</th><th>Tax</th><th>Total</th>
+                  <th>Status</th><th>Date</th><th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {invoices?.length === 0 && (
+                  <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "#444" }}>No invoices found.</td></tr>
+                )}
+                {invoices?.map((inv) => {
+                  const member = getMember(inv);
+                  const sub = typeof inv.subscriptionId === "object" ? inv.subscriptionId : null;
+                  const payStatus = sub?.paymentStatus ?? "UNPAID";
+                  return (
+                    <tr key={inv._id}>
+                      <td className={styles.cellId}>{inv.invoiceNumber}</td>
+                      <td>
+                        <div className={styles.cellName}>{member?.name ?? "—"}</div>
+                        <div className={styles.cellEmail}>{member?.email ?? "—"}</div>
+                      </td>
+                      <td style={{ color: "#666", fontSize: "0.82rem" }}>
+                        {inv.items.map(it => it.description).join(", ")}
+                      </td>
+                      <td className={styles.cellAmount}>₹{inv.subtotal.toLocaleString()}</td>
+                      <td style={{ color: "#666" }}>{inv.taxPercentage > 0 ? `${inv.taxPercentage}%` : "—"}</td>
+                      <td className={styles.cellAmount}>₹{inv.totalAmount.toLocaleString()}</td>
+                      <td>
+                        <span className={`${styles.badge} ${badgeClass(payStatus)}`}>
+                          {payStatus.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className={styles.cellMono}>
+                        {new Date(inv.invoiceDate).toLocaleDateString()}
+                      </td>
+                      <td>
+                        <div className={styles.rowActions}>
+                          <button
+                            className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                            title="Delete"
+                            onClick={() => deleteInvoice(inv._id)}
+                          >✕</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className={styles.pagination}>
-          <span className={styles.paginationInfo}>
-            Showing {invoices.length} invoices
-          </span>
+          <span className={styles.paginationInfo}>Showing {invoices?.length ?? 0} invoices</span>
           <div className={styles.paginationBtns}>
             <button className={styles.pageBtn}>‹</button>
             <button className={`${styles.pageBtn} ${styles.pageBtnActive}`}>1</button>

@@ -7,7 +7,9 @@ import {
   useCreateMember,
   useUpdateMember,
 } from "@/services/members/members.hook";
-import { Member, CreateMemberPayload, UpdateMemberPayload } from "@/services/members/members.api";
+import { Member, CreateMemberPayload } from "@/services/members/members.api";
+import { usePlans } from "@/services/plans/plans.hook";
+import { useCreateMemberSubscription } from "../../../services/subscriptions/subscriptions.hook";
 import styles from "./MemberModal.module.css";
 
 interface Props {
@@ -16,7 +18,7 @@ interface Props {
   existing?: Member | null;
 }
 
-const EMPTY: CreateMemberPayload = {
+const EMPTY_MEMBER: CreateMemberPayload = {
   name: "",
   email: "",
   phone: "",
@@ -28,13 +30,21 @@ const EMPTY: CreateMemberPayload = {
 export default function MemberModal({ open, onClose, existing }: Props) {
   const isEdit = !!existing;
 
-  const [form, setForm] = useState<CreateMemberPayload>(EMPTY);
+  const [form, setForm] = useState<CreateMemberPayload>(EMPTY_MEMBER);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+  const [initialPayment, setInitialPayment] = useState<string>("");
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
 
   const { mutate: createMember, isPending: creating } = useCreateMember();
   const { mutate: updateMember, isPending: updating } = useUpdateMember();
-  const isPending = creating || updating;
+  const { mutate: createSubscription, isPending: subscribing } = useCreateMemberSubscription();
+  const { data: plans, isLoading: plansLoading } = usePlans();
+
+  const isPending = creating || updating || subscribing;
 
   // ✅ Portal mount guard
   useEffect(() => { setMounted(true); }, []);
@@ -50,7 +60,10 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         memberStatus:     existing.memberStatus,
       });
     } else {
-      setForm(EMPTY);
+      setForm(EMPTY_MEMBER);
+      setSelectedPlanId("");
+      setStartDate(new Date().toISOString().split("T")[0]);
+      setInitialPayment("");
     }
     setError("");
   }, [existing, open]);
@@ -68,6 +81,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     }
 
     if (isEdit && existing) {
+      // Edit: just update member info (subscription managed separately)
       updateMember(
         { id: existing._id, payload: { ...form } },
         {
@@ -78,14 +92,42 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         }
       );
     } else {
+      // Create member, then optionally assign subscription
       createMember(form, {
-        onSuccess: () => onClose(),
+        onSuccess: (newMember) => {
+          if (selectedPlanId) {
+            createSubscription(
+              {
+                memberId: newMember._id,
+                planId: selectedPlanId,
+                startDate,
+                initialPayment: initialPayment ? Number(initialPayment) : 0,
+              },
+              {
+                onSuccess: () => onClose(),
+                onError: (err: any) => {
+                  // Member was created — warn but still close
+                  setError(
+                    `Member created but subscription failed: ${
+                      err?.response?.data?.message ?? "Unknown error"
+                    }`
+                  );
+                },
+              }
+            );
+          } else {
+            onClose();
+          }
+        },
         onError: (err: any) => {
           setError(err?.response?.data?.message ?? "Create failed.");
         },
       });
     }
   };
+
+  const activePlans = plans?.filter((p) => p.status === "ACTIVE") ?? [];
+  const selectedPlan = activePlans.find((p) => p._id === selectedPlanId);
 
   const content = (
     <AnimatePresence>
@@ -115,6 +157,8 @@ export default function MemberModal({ open, onClose, existing }: Props) {
             {error && <p className={styles.errorMsg}>{error}</p>}
 
             <div className={styles.fields}>
+
+              {/* ── Member Info ── */}
               <div className={styles.row}>
                 <div className={styles.field}>
                   <label className={styles.label}>Full Name *</label>
@@ -162,30 +206,115 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                 </div>
               </div>
 
-              <div className={styles.field}>
-                <label className={styles.label}>Address</label>
-                <input
-                  className={styles.input}
-                  name="address"
-                  placeholder="123 Main St, New York"
-                  value={form.address}
-                  onChange={handleChange}
-                />
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Address</label>
+                  <input
+                    className={styles.input}
+                    name="address"
+                    placeholder="123 Main St, New York"
+                    value={form.address}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Status</label>
+                  <select
+                    className={styles.input}
+                    name="memberStatus"
+                    value={form.memberStatus}
+                    onChange={handleChange}
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                    <option value="SUSPENDED">SUSPENDED</option>
+                  </select>
+                </div>
               </div>
 
-              <div className={styles.field}>
-                <label className={styles.label}>Status</label>
-                <select
-                  className={styles.input}
-                  name="memberStatus"
-                  value={form.memberStatus}
-                  onChange={handleChange}
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                  <option value="SUSPENDED">SUSPENDED</option>
-                </select>
-              </div>
+              {/* ── Subscription (only on create) ── */}
+              {!isEdit && (
+                <>
+                  <div className={styles.sectionDivider}>
+                    <span className={styles.sectionLabel}>Subscription Plan (optional)</span>
+                  </div>
+
+                  <div className={styles.row}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Plan</label>
+                      <select
+                        className={styles.input}
+                        value={selectedPlanId}
+                        onChange={(e) => setSelectedPlanId(e.target.value)}
+                        disabled={plansLoading}
+                      >
+                        <option value="">
+                          {plansLoading ? "Loading plans…" : "No Plan (skip)"}
+                        </option>
+                        {activePlans.map((plan) => (
+                          <option key={plan._id} value={plan._id}>
+                            {plan.name} — {plan.duration} {plan.durationType.toLowerCase()} · ₹{plan.price}
+                          </option>
+                        ))}
+                      </select>
+                      {!plansLoading && activePlans.length === 0 && (
+                        <span className={styles.planHint}>
+                          No active plans. Create one in the Plans section.
+                        </span>
+                      )}
+                    </div>
+
+                    <div className={styles.field}>
+                      <label className={styles.label}>Start Date</label>
+                      <input
+                        className={styles.input}
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        disabled={!selectedPlanId}
+                      />
+                    </div>
+                  </div>
+
+                  {selectedPlanId && (
+                    <div className={styles.row}>
+                      <div className={styles.field}>
+                        <label className={styles.label}>
+                          Initial Payment
+                          {selectedPlan ? ` (Plan price: ₹${selectedPlan.price})` : ""}
+                        </label>
+                        <input
+                          className={styles.input}
+                          type="number"
+                          min="0"
+                          max={selectedPlan?.price}
+                          placeholder="0"
+                          value={initialPayment}
+                          onChange={(e) => setInitialPayment(e.target.value)}
+                        />
+                      </div>
+                      {selectedPlan && initialPayment !== "" && (
+                        <div className={styles.field}>
+                          <label className={styles.label}>Pending Amount</label>
+                          <input
+                            className={`${styles.input} ${styles.inputReadonly}`}
+                            readOnly
+                            value={`₹${Math.max(0, selectedPlan.price - Number(initialPayment))}`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Edit mode: show current subscription info */}
+              {isEdit && existing?.currentSubscriptionId && (
+                <div className={styles.subscriptionInfo}>
+                  <span className={styles.subscriptionInfoIcon}>ℹ</span>
+                  This member has an active subscription. Manage it from the Subscriptions section.
+                </div>
+              )}
             </div>
 
             <div className={styles.modalFooter}>
@@ -206,7 +335,6 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     </AnimatePresence>
   );
 
-  // ✅ Render into document.body to escape stacking context
   if (!mounted) return null;
   return createPortal(content, document.body);
 }

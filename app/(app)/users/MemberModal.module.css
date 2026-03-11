@@ -165,3 +165,66 @@
 
 .btnDanger:hover:not(:disabled) { background: rgba(230, 57, 70, 0.1); }
 .btnDanger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Plan hint */
+.planHint {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.2rem;
+}
+/* Section divider */
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.sectionDivider::before,
+.sectionDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #2a2a2a;
+}
+
+.sectionLabel {
+  font-size: 0.72rem;
+  color: #555;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* Plan hint */
+.planHint {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.2rem;
+}
+
+/* Read-only input */
+.inputReadonly {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Subscription info banner (edit mode) */
+.subscriptionInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: #888;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 0.65rem 0.9rem;
+}
+
+.subscriptionInfoIcon {
+  font-size: 0.9rem;
+  color: #555;
+  flex-shrink: 0;
+}

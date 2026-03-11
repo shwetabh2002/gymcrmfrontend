@@ -5,9 +5,11 @@ export interface Member {
   _id: string;
   name: string;
   email: string;
+  role: "USER" | "ADMIN" | "MANAGER" | "SUPER_ADMIN";
+  userType: "MEMBER";
   phone: string;
   address?: string;
-  emergencyContact?: string;
+  emergencyContact?: string | null;
   memberStatus: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   currentSubscriptionId: string | null;
   createdAt: string;

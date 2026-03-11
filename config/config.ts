@@ -17,4 +17,33 @@ export const API_CONFIG = {
     BASE:   "/subscription-plans",
     BY_ID:  (id: string) => `/subscription-plans/${id}`,
   },
+
+  MEMBER_SUBSCRIPTIONS: {
+    BASE:        "/member-subscriptions",
+    BY_ID:       (id: string) => `/member-subscriptions/${id}`,
+    BY_MEMBER:   (memberId: string) => `/member-subscriptions/member/${memberId}`,
+    ADD_PAYMENT: (id: string) => `/member-subscriptions/${id}/payment`,
+  },
+
+  PAYMENTS: {
+    BASE:            "/payments",
+    BY_ID:           (id: string) => `/payments/${id}`,
+    BY_MEMBER:       (memberId: string) => `/payments/member/${memberId}`,
+    BY_SUBSCRIPTION: (subscriptionId: string) => `/payments/subscription/${subscriptionId}`,
+  },
+
+  INVOICES: {
+    BASE:            "/invoices",
+    BY_ID:           (id: string) => `/invoices/${id}`,
+    BY_MEMBER:       (memberId: string) => `/invoices/member/${memberId}`,
+    BY_SUBSCRIPTION: (subscriptionId: string) => `/invoices/subscription/${subscriptionId}`,
+  },
+
+  ANALYTICS: {
+    DASHBOARD:      "/analytics/dashboard",
+    MEMBERS:        "/analytics/members",
+    REVENUE:        "/analytics/revenue",
+    SUBSCRIPTIONS:  "/analytics/subscriptions",
+    PAYMENT_TRENDS: "/analytics/payment-trends",
+  },
 } as const;

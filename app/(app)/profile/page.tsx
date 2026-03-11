@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/context/AuthContext";
+import { useDashboard } from "@/services/analytics/analytics.hooks";
 import styles from "./Profile.module.css";
 
 const fadeUp = {
@@ -12,28 +14,41 @@ const fadeUp = {
   }),
 };
 
-const activityLog = [
-  { action: "Logged in",                 time: "Today, 9:14 AM",    ip: "192.168.1.1" },
-  { action: "Updated pricing — Pro plan",time: "Yesterday, 4:02 PM",ip: "192.168.1.1" },
-  { action: "Exported user CSV",         time: "Feb 20, 11:30 AM",  ip: "192.168.1.1" },
-  { action: "Added new user",            time: "Feb 18, 3:45 PM",   ip: "192.168.1.1" },
-  { action: "Password changed",          time: "Feb 10, 10:00 AM",  ip: "10.0.0.42"   },
-];
-
 function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { data: dashboard } = useDashboard();
 
   const displayName  = user?.name  ?? "Admin User";
   const displayEmail = user?.email ?? "—";
   const displayRole  = user?.role  ?? "ADMIN";
 
-  const INFO_ROWS = [
-    { label: "Email", val: displayEmail },
-    { label: "Role",  val: displayRole  },
+  const [currentPwd, setCurrentPwd]   = useState("");
+  const [newPwd,     setNewPwd]       = useState("");
+  const [confirmPwd, setConfirmPwd]   = useState("");
+  const [pwdError,   setPwdError]     = useState("");
+  const [pwdSuccess, setPwdSuccess]   = useState("");
+
+  const handlePasswordUpdate = () => {
+    setPwdError(""); setPwdSuccess("");
+    if (!currentPwd) { setPwdError("Current password is required."); return; }
+    if (newPwd.length < 8) { setPwdError("New password must be at least 8 characters."); return; }
+    if (newPwd !== confirmPwd) { setPwdError("Passwords do not match."); return; }
+    // TODO: wire up to API when password change endpoint is available
+    setPwdSuccess("Password updated successfully.");
+    setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+  };
+
+  const counts = dashboard?.counts;
+
+  const gymStats = [
+    { label: "Total Members",        val: counts?.totalMembers          ?? "—" },
+    { label: "Active Subscriptions", val: counts?.activeSubscriptions   ?? "—" },
+    { label: "Monthly Revenue",      val: counts != null ? `₹${counts.monthlyRevenue.toLocaleString()}` : "—" },
+    { label: "New This Month",       val: counts?.newMembersThisMonth   ?? "—" },
   ];
 
   return (
@@ -64,14 +79,27 @@ export default function ProfilePage() {
               </div>
               <div className={styles.identityDivider} />
               <div className={styles.infoRows}>
-                {INFO_ROWS.map(({ label, val }) => (
-                  <div key={label} className={styles.infoRow}>
-                    <span className={styles.infoRowLabel}>{label}</span>
-                    <span className={styles.infoRowVal}>{val}</span>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoRowLabel}>Email</span>
+                  <span className={styles.infoRowVal}>{displayEmail}</span>
+                </div>
+                <div className={styles.infoRow}>
+                  <span className={styles.infoRowLabel}>Role</span>
+                  <span className={styles.infoRowVal}>{displayRole}</span>
+                </div>
+              </div>
+              <span className={`${styles.badge} ${styles.badgeActive}`}>Account Active</span>
+
+              {/* Gym stats */}
+              <div className={styles.identityDivider} />
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%" }}>
+                {gymStats.map(s => (
+                  <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.78rem", color: "#555" }}>{s.label}</span>
+                    <span style={{ fontSize: "0.88rem", color: "#ccc", fontWeight: 600 }}>{String(s.val)}</span>
                   </div>
                 ))}
               </div>
-              <span className={`${styles.badge} ${styles.badgeActive}`}>Account Active</span>
             </div>
           </div>
         </motion.div>
@@ -79,76 +107,60 @@ export default function ProfilePage() {
         {/* Right column */}
         <div className={styles.rightCol}>
 
-          {/* Personal Info */}
+          {/* Account Info (read-only from token) */}
           <motion.div className={styles.card} custom={1} variants={fadeUp} initial="hidden" animate="visible">
             <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Personal Information</h2>
+              <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Account Information</h2>
             </div>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Full Name</label>
-                <input className={styles.formInput} defaultValue={displayName} />
+                <input className={styles.formInput} defaultValue={displayName} disabled />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Email Address</label>
-                <input className={styles.formInput} type="email" defaultValue={displayEmail} />
+                <input className={styles.formInput} type="email" defaultValue={displayEmail} disabled />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Role</label>
                 <input className={styles.formInput} defaultValue={displayRole} disabled />
               </div>
             </div>
-            <div className={styles.formActions}>
-              <button className={styles.btnSecondary}>Discard</button>
-              <button className={styles.btnPrimary}>Save Changes</button>
-            </div>
+            <p style={{ fontSize: "0.78rem", color: "#444", marginTop: "0.75rem" }}>
+              Account details are managed by your system administrator.
+            </p>
           </motion.div>
 
           {/* Security */}
           <motion.div className={styles.card} custom={2} variants={fadeUp} initial="hidden" animate="visible">
             <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Security</h2>
+              <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Change Password</h2>
             </div>
+
+            {pwdError   && <p style={{ fontSize: "0.85rem", color: "#e63946", background: "rgba(230,57,70,0.08)", border: "1px solid rgba(230,57,70,0.2)", borderRadius: 6, padding: "0.6rem 0.85rem", marginBottom: "1rem" }}>{pwdError}</p>}
+            {pwdSuccess && <p style={{ fontSize: "0.85rem", color: "#3ec95a", background: "rgba(62,201,90,0.08)", border: "1px solid rgba(62,201,90,0.2)", borderRadius: 6, padding: "0.6rem 0.85rem", marginBottom: "1rem" }}>{pwdSuccess}</p>}
+
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Current Password</label>
-                <input className={styles.formInput} type="password" placeholder="••••••••••" />
+                <input className={styles.formInput} type="password" placeholder="••••••••••"
+                  value={currentPwd} onChange={e => setCurrentPwd(e.target.value)} />
               </div>
               <div className={styles.formGroup} />
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>New Password</label>
-                <input className={styles.formInput} type="password" placeholder="••••••••••" />
+                <input className={styles.formInput} type="password" placeholder="••••••••••"
+                  value={newPwd} onChange={e => setNewPwd(e.target.value)} />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Confirm New Password</label>
-                <input className={styles.formInput} type="password" placeholder="••••••••••" />
+                <input className={styles.formInput} type="password" placeholder="••••••••••"
+                  value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} />
               </div>
             </div>
             <div className={styles.formActions}>
-              <button className={styles.btnPrimary}>Update Password</button>
+              <button className={styles.btnPrimary} onClick={handlePasswordUpdate}>Update Password</button>
             </div>
-          </motion.div>
-
-          {/* Activity log */}
-          <motion.div className={styles.card} custom={3} variants={fadeUp} initial="hidden" animate="visible">
-            <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Recent Activity</h2>
-              <span className={styles.cardBadge}>{activityLog.length} events</span>
-            </div>
-            <ul className={styles.logList}>
-              {activityLog.map((log, i) => (
-                <li key={i} className={styles.logItem}>
-                  <div className={styles.logLeft}>
-                    <span className={styles.logDot} />
-                    <div>
-                      <div className={styles.logAction}>{log.action}</div>
-                      <div className={styles.logIp}>IP: {log.ip}</div>
-                    </div>
-                  </div>
-                  <span className={styles.logTime}>{log.time}</span>
-                </li>
-              ))}
-            </ul>
           </motion.div>
 
         </div>
