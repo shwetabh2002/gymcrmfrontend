@@ -1,6 +1,5 @@
+// lib/api.ts
+// Interceptors are already registered in apiClient.ts — just re-export.
 import apiClient from "@/services/apiClient";
-import { setupInterceptors } from "@/services/interceptor";
-
-setupInterceptors(apiClient);
 
 export default apiClient;

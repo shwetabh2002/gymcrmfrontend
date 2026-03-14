@@ -1,9 +1,33 @@
 .footer {
-  height: 40px;
-  background-color: #f3f4f6;
+  height: 36px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
   display: flex;
-  justify-content: center;
   align-items: center;
-  border-top: 1px solid #e5e7eb;
-  font-size: 14px;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.left {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+}
+
+.right {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.divider {
+  width: 1px;
+  height: 10px;
+  background: var(--border-2);
 }

@@ -1,4 +1,90 @@
-.title {
-  font-size: 24px;
-  font-weight: 600;
+/* ─── Profile.module.css ──────────────────────────────────── */
+
+.page { display: flex; flex-direction: column; gap: 24px; padding: 32px 36px; min-height: 100%; background: var(--bg); font-family: var(--sans); color: var(--text); }
+.pageHeader { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-2); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.eyebrow::before { content: ''; display: block; width: 16px; height: 1px; background: var(--text-2); }
+.pageTitle { font-size: clamp(20px, 2.4vw, 26px); font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin: 0; line-height: 1.1; }
+.pageDesc  { font-family: var(--mono); font-size: 11px; color: var(--text-2); letter-spacing: 0.03em; margin: 4px 0 0; }
+
+/* Layout */
+.profileGrid { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+.rightCol    { display: flex; flex-direction: column; gap: 18px; }
+
+/* Identity card */
+.identityCard { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.identityAccent { height: 2px; background: linear-gradient(90deg, var(--border-2), transparent); }
+.identityBody { padding: 28px 22px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.avatarLarge {
+  width: 68px; height: 68px; border-radius: 50%;
+  background: var(--surface-3); border: 1px solid var(--border-2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--sans); font-size: 22px; font-weight: 700; color: var(--text);
+}
+.identityName { font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.identityRole { font-family: var(--mono); font-size: 10px; color: var(--text-2); letter-spacing: 0.08em; text-transform: uppercase; }
+.identityDivider { width: 100%; height: 1px; background: var(--border); }
+.infoRows { width: 100%; display: flex; flex-direction: column; gap: 9px; }
+.infoRow  { display: flex; justify-content: space-between; align-items: center; }
+.infoRowLabel { font-family: var(--mono); font-size: 9px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; }
+.infoRowVal   { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
+
+/* Status badge */
+.badge { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 9px; font-weight: 500; padding: 3px 7px; border-radius: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+.badge::before { content: ''; width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+.badgeActive { background: rgba(62,201,90,0.07); color: #5ab870; border: 1px solid rgba(62,201,90,0.15); }
+
+/* Form cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.cardHeader { display: flex; align-items: center; justify-content: space-between; padding: 16px 22px; border-bottom: 1px solid var(--border); }
+.cardTitle  { font-size: 12px; font-weight: 600; color: var(--text); margin: 0; display: flex; align-items: center; gap: 8px; letter-spacing: 0.02em; }
+.cardTitleBar { width: 2px; height: 12px; background: var(--text-3); border-radius: 2px; flex-shrink: 0; }
+.cardBadge  { font-family: var(--mono); font-size: 9px; color: var(--text-2); letter-spacing: 0.08em; background: var(--surface-3); padding: 3px 7px; border-radius: 3px; border: 1px solid var(--border); }
+
+/* Form fields */
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 20px 22px; }
+.formGroup { display: flex; flex-direction: column; gap: 6px; }
+.formGroupFull { display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1; }
+.formLabel { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2); }
+.formInput {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 5px; padding: 9px 13px;
+  font-family: var(--sans); font-size: 13px; color: var(--text);
+  outline: none; transition: border-color 0.15s;
+  box-sizing: border-box; width: 100%;
+}
+.formInput:focus { border-color: var(--border-2); }
+.formInput:disabled { opacity: 0.4; cursor: not-allowed; }
+.formTextarea {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 5px; padding: 9px 13px;
+  font-family: var(--mono); font-size: 12px; color: var(--text);
+  outline: none; transition: border-color 0.15s;
+  box-sizing: border-box; width: 100%; resize: vertical; min-height: 88px;
+}
+.formTextarea:focus { border-color: var(--border-2); }
+
+.formActions { display: flex; gap: 8px; padding: 0 22px 20px; justify-content: flex-end; }
+
+/* Buttons */
+.btnPrimary { display: flex; align-items: center; gap: 6px; background: var(--red); color: #fff; border: none; padding: 8px 16px; border-radius: 5px; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; transition: opacity 0.15s; }
+.btnPrimary:hover { opacity: 0.88; }
+.btnSecondary { display: flex; align-items: center; gap: 6px; background: transparent; color: var(--text-2); border: 1px solid var(--border); padding: 8px 14px; border-radius: 5px; font-family: var(--sans); font-size: 12px; font-weight: 500; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+.btnSecondary:hover { color: var(--text); border-color: var(--border-2); }
+
+/* Activity log */
+.logList { list-style: none; margin: 0; padding: 6px 0; }
+.logItem { display: flex; align-items: center; justify-content: space-between; padding: 11px 22px; border-bottom: 1px solid var(--border); transition: background 0.1s; gap: 16px; }
+.logItem:last-child { border-bottom: none; }
+.logItem:hover { background: var(--surface-2); }
+.logLeft  { display: flex; align-items: center; gap: 10px; }
+.logDot   { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+.logAction { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.logIp     { font-family: var(--mono); font-size: 10px; color: var(--text-2); letter-spacing: 0.04em; }
+.logTime   { font-family: var(--mono); font-size: 10px; color: var(--text-2); letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0; }
+
+@media (max-width: 900px) {
+  .page { padding: 20px 16px; }
+  .profileGrid { grid-template-columns: 1fr; }
+  .formGrid { grid-template-columns: 1fr; }
 }

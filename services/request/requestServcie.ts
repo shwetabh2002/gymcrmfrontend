@@ -11,6 +11,11 @@ export const requestService = {
     return data;
   },
 
+  put: async <T, D = unknown>(url: string, payload: D): Promise<T> => {
+    const { data } = await apiClient.put<T>(url, payload);
+    return data;
+  },
+
   patch: async <T, D = unknown>(url: string, payload: D): Promise<T> => {
     const { data } = await apiClient.patch<T>(url, payload);
     return data;

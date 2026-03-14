@@ -1,0 +1,157 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 100;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  margin-top: -280px;
+  margin-left: -280px;
+  z-index: 101;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 1.75rem;
+  width: 560px;
+  max-width: calc(100vw - 2rem);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.modalTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+.closeBtn:hover { color: #fff; }
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.label {
+  font-size: 0.78rem;
+  color: #888;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.input {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 0.6rem 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.input:focus { border-color: var(--red, #e63946); }
+
+/* Status chips */
+.statusRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.statusChip {
+  padding: 0.4rem 1rem;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.statusChip:hover { color: #fff; border-color: #444; }
+
+.chipPaid     { background: rgba(62,201,90,0.12);  color: #3ec95a; border-color: rgba(62,201,90,0.3); }
+.chipPending  { background: rgba(240,164,75,0.12); color: #f0a44b; border-color: rgba(240,164,75,0.3); }
+.chipFailed   { background: rgba(230,57,70,0.12);  color: #f07070; border-color: rgba(230,57,70,0.3); }
+.chipRefunded { background: rgba(255,255,255,0.06); color: #aaa;   border-color: #333; }
+
+.errorMsg {
+  font-size: 0.85rem;
+  color: #e63946;
+  background: rgba(230, 57, 70, 0.08);
+  border: 1px solid rgba(230, 57, 70, 0.2);
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.btnPrimary {
+  background: var(--red, #e63946);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btnPrimary:hover { opacity: 0.85; }
+
+.btnSecondary {
+  background: #1e1e1e;
+  color: #ccc;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btnSecondary:hover { background: #252525; }

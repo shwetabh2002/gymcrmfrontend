@@ -1,0 +1,377 @@
+/* ─── Invoice Container ─────────────────────────────────────────────────── */
+.invoiceContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+}
+
+.actionBar {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #e63946;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s;
+  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+.actionBtn:hover {
+  opacity: 0.88;
+  background: #d32f36;
+}
+
+.actionBtn:active {
+  transform: scale(0.98);
+}
+
+/* ─── Invoice Wrapper ───────────────────────────────────────────────────── */
+.invoice {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  background: white;
+  color: #212121;
+  padding: 48px 40px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  line-height: 1.6;
+  page-break-after: avoid;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 48px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.headerLeft {
+  flex: 1;
+}
+
+.headerRight {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.gymName {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #212121;
+  letter-spacing: -0.5px;
+}
+
+.gymDetail {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  letter-spacing: 0.02em;
+}
+
+.gymDetail a {
+  color: #e63946;
+  text-decoration: none;
+}
+
+.gymDetail a:hover {
+  text-decoration: underline;
+}
+
+.invoiceTitle {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 6px;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+}
+
+.invoiceNumber {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e63946;
+  letter-spacing: -0.5px;
+}
+
+/* ─── Details Grid ──────────────────────────────────────────────────────── */
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detailsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #999;
+  margin: 0 0 8px 0;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+}
+
+.detailName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #212121;
+  margin: 0;
+}
+
+.detailText {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.detailLabel {
+  font-size: 12px;
+  color: #999;
+  font-weight: 500;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  letter-spacing: 0.02em;
+}
+
+.detailValue {
+  font-size: 13px;
+  color: #212121;
+  font-weight: 600;
+}
+
+/* ─── Table ────────────────────────────────────────────────────────────── */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+}
+
+.table thead {
+  border-top: 2px solid #212121;
+  border-bottom: 2px solid #212121;
+}
+
+.table th {
+  padding: 12px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #212121;
+  text-align: left;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+}
+
+.thDescription {
+  width: 70%;
+}
+
+.thAmount {
+  width: 30%;
+  text-align: right;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.1s;
+}
+
+.table tbody tr:hover {
+  background: #fafafa;
+}
+
+.table td {
+  padding: 14px 0;
+  font-size: 13px;
+  color: #333;
+}
+
+.tdDescription {
+  font-weight: 500;
+}
+
+.tdAmount {
+  text-align: right;
+  font-weight: 600;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  color: #212121;
+}
+
+/* ─── Summary Section ───────────────────────────────────────────────────── */
+.summarySection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 32px;
+  padding: 20px;
+  background: #f7f7f7;
+  border-radius: 6px;
+  border-left: 3px solid #e63946;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.summaryLabel {
+  color: #666;
+  font-weight: 500;
+}
+
+.summaryValue {
+  color: #212121;
+  font-weight: 600;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  font-size: 13px;
+}
+
+.totalRow {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  font-size: 15px;
+}
+
+.totalLabel {
+  color: #212121;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.totalValue {
+  color: #e63946;
+  font-weight: 700;
+  font-size: 18px;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  letter-spacing: 0.02em;
+}
+
+/* ─── Notes Section ─────────────────────────────────────────────────────── */
+.notesSection {
+  margin-bottom: 32px;
+  padding: 16px;
+  background: #fffbf0;
+  border-radius: 6px;
+  border-left: 3px solid #f0a44b;
+}
+
+.notesTitle {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #c9913e;
+  margin: 0 0 8px 0;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+}
+
+.notesText {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  line-height: 1.7;
+}
+
+/* ─── Footer ────────────────────────────────────────────────────────────── */
+.footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.footerText {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  letter-spacing: 0.02em;
+}
+
+/* ─── Print Styles ──────────────────────────────────────────────────────── */
+@media print {
+  .actionBar {
+    display: none;
+  }
+
+  .invoice {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    page-break-inside: avoid;
+  }
+
+  body {
+    background: white;
+    color: #212121;
+  }
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .invoice {
+    padding: 32px 24px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .headerRight {
+    text-align: left;
+  }
+
+  .detailsGrid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .summarySection {
+    font-size: 12px;
+  }
+
+  .totalValue {
+    font-size: 16px;
+  }
+}

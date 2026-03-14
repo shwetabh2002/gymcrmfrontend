@@ -64,7 +64,7 @@ export default function LoginPage() {
       const accessToken = data?.tokens?.accessToken;
       if (!accessToken) throw new Error("Access token missing");
 
-      login(data.tokens.accessToken, data.tokens.refreshToken);
+      login(data.tokens.accessToken, data.tokens.refreshToken, data.user);
       router.replace("/dashboard");
     } catch (err: any) {
       setError(
