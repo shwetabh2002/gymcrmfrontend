@@ -139,7 +139,7 @@ function ModalShell({ title, onClose, width = 520, children }: {
         onClick={onClose}
       />
       <motion.div className={styles.modal}
-        style={{ width, maxWidth: "calc(100vw - 2rem)" }}
+        style={{ maxWidth: "calc(100vw - 2rem)" }}
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.97 }}
@@ -198,7 +198,7 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
   });
   const [error, setError] = useState("");
 
-  const activeMembers = members?.filter(m => m.currentSubscriptionId) ?? [];
+  const activeMembers = members ?? [];
 
   const memberSubs = useMemo(() => {
     if (!subs || !form.memberId) return [];

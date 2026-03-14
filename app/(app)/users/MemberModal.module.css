@@ -11,18 +11,22 @@
 
 .modal {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  margin-top: -300px;
-  margin-left: -280px;
+  inset: 0;
+  margin: auto;
   z-index: 101;
   background: #111;
   border: 1px solid #2a2a2a;
   border-radius: 12px;
-  padding: 1.75rem;
-  width: 560px;
-  max-width: calc(100vw - 2rem);
+  padding: 2rem;
+  width: 600px;
+  height: fit-content;
+  max-width: calc(100vw - 3rem);
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Header */
@@ -39,31 +43,38 @@
   color: #fff;
 }
 
-.closeBtn {
-  background: none;
-  border: none;
+.modalClose {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
   color: #666;
-  font-size: 1rem;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  transition: color 0.2s;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  transition: color 0.12s, background 0.12s;
 }
 
-.closeBtn:hover { color: #fff; }
+.modalClose:hover { color: #ccc; background: #252525; }
 
 /* Fields */
 .fields {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
   margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.25rem;
+  width: 100%;
 }
 
 .field {
@@ -86,13 +97,16 @@
   border-radius: 6px;
   color: #fff;
   font-size: 0.9rem;
-  padding: 0.6rem 0.85rem;
+  padding: 0.65rem 0.85rem;
   outline: none;
   transition: border-color 0.2s;
   width: 100%;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
 .input:focus { border-color: var(--red, #e63946); }
+.input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Error */
 .errorMsg {

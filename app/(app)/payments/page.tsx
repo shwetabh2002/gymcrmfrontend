@@ -23,7 +23,6 @@ function getPaymentMember(p: Payment) {
 export default function PaymentsPage() {
   const { data: payments, isLoading, isError } = usePayments();
   const { data: revenue } = useRevenueAnalytics();
-
   const [modalOpen,  setModalOpen]  = useState(false);
   const [search,     setSearch]     = useState("");
   const [modeFilter, setModeFilter] = useState("ALL");
@@ -54,7 +53,6 @@ export default function PaymentsPage() {
         {modalOpen && <RecordPaymentModal onClose={() => setModalOpen(false)} />}
       </AnimatePresence>
 
-      {/* Header */}
       <motion.div className={styles.pageHeader}
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
@@ -69,7 +67,6 @@ export default function PaymentsPage() {
         </div>
       </motion.div>
 
-      {/* Stats */}
       <motion.div className={styles.statStrip} custom={0} variants={fadeUp} initial="hidden" animate="visible">
         {STATS.map(st => (
           <div key={st.label} className={styles.statCell}>
@@ -80,7 +77,6 @@ export default function PaymentsPage() {
         ))}
       </motion.div>
 
-      {/* Table */}
       <motion.div className={styles.card} custom={1} variants={fadeUp} initial="hidden" animate="visible">
         <div className={styles.cardHeader}>
           <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Transaction History</h2>
@@ -118,9 +114,7 @@ export default function PaymentsPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={6} style={{ padding: "2.5rem", textAlign: "center", color: "#444", fontSize: "0.875rem" }}>
-                      {payments?.length === 0
-                        ? "No payments recorded yet."
-                        : "No payments match your filters."}
+                      {payments?.length === 0 ? "No payments recorded yet." : "No payments match your filters."}
                     </td>
                   </tr>
                 )}
@@ -158,7 +152,6 @@ export default function PaymentsPage() {
         </div>
       </motion.div>
 
-      {/* Payment mode breakdown */}
       {revenue?.paymentModeBreakdown && revenue.paymentModeBreakdown.length > 0 && (
         <motion.div className={styles.card} custom={2} variants={fadeUp} initial="hidden" animate="visible">
           <div className={styles.cardHeader}>

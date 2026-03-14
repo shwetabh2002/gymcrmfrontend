@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import {
-  useAddSubscriptionPayment,
   useCreateMemberSubscription,
   useDeleteMemberSubscription,
 } from "@/services/subscriptions/subscriptions.hook";
@@ -36,8 +35,6 @@ function highlight(text: string, query: string) {
 }
 
 /* ─── Searchable Member Combobox ──────────────────────────────── */
-// Uses a <div role="button"> for the trigger so it NEVER nests a
-// <button> inside another <button> — which caused the hydration error.
 interface MemberComboboxProps {
   members: Member[];
   value: string;
@@ -60,7 +57,6 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
       )
     : members;
 
-  // Close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
@@ -72,7 +68,6 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Auto-focus search when dropdown opens
   useEffect(() => {
     if (open) setTimeout(() => searchRef.current?.focus(), 40);
   }, [open]);
@@ -95,12 +90,6 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
 
   return (
     <div ref={wrapRef} className={styles.comboboxWrap}>
-      {/*
-        ✅ Using a <div role="button"> instead of <button> here.
-        This prevents the HTML error "button cannot be a descendant of button"
-        because this component is sometimes rendered inside a <button>-like context.
-        Keyboard a11y is preserved via onKeyDown.
-      */}
       <div
         role="button"
         tabIndex={disabled ? -1 : 0}
@@ -123,7 +112,6 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
 
         <span className={styles.comboboxSuffix}>
           {selected ? (
-            /* ✅ Plain <span> acting as clear button — NOT a <button> */
             <span
               role="button"
               tabIndex={0}
@@ -203,7 +191,7 @@ function ModalShell({ title, onClose, width = 420, children }: ModalShellProps) 
       />
       <motion.div
         className={styles.modal}
-        style={{ width, maxWidth: "calc(100vw - 2rem)" }}
+        style={{ maxWidth: "calc(100vw - 2rem)" }}
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.97 }}
@@ -249,57 +237,6 @@ function ModalFooter({ onClose, onConfirm, isPending, confirmLabel, pendingLabel
   );
 }
 
-/* ─── Add Payment Modal ───────────────────────────────────────── */
-export function PaymentModal({ sub, onClose }: { sub: MemberSubscription; onClose: () => void }) {
-  const [amount, setAmount] = useState("");
-  const [error, setError]   = useState("");
-  const { mutate: addPayment, isPending } = useAddSubscriptionPayment();
-  const plan   = getPlan(sub);
-  const member = getMember(sub);
-
-  const handlePay = () => {
-    const amt = Number(amount);
-    if (!amt || amt <= 0)        { setError("Enter a valid amount."); return; }
-    if (amt > sub.pendingAmount) { setError(`Amount cannot exceed pending ₹${sub.pendingAmount.toLocaleString()}.`); return; }
-    setError("");
-    addPayment(
-      { id: sub._id, payload: { amount: amt } },
-      { onSuccess: onClose, onError: (e: any) => setError(e?.response?.data?.message ?? "Payment failed.") }
-    );
-  };
-
-  return (
-    <ModalShell title="Add Payment" onClose={onClose} width={420}>
-      <div className={styles.paymentSummary}>
-        <div className={styles.paymentSummaryName}>{member?.name ?? "Member"}</div>
-        <div className={styles.paymentSummaryDetail}>
-          Plan: <strong style={{ color: "#ccc" }}>{plan?.name ?? "—"}</strong> · ₹{sub.planPrice.toLocaleString()}
-        </div>
-        <div className={styles.paymentSummaryDetail}>
-          Paid: <span className={styles.textSuccess}>₹{sub.totalPaid.toLocaleString()}</span>
-          {" · "}Pending:{" "}
-          <span className={sub.pendingAmount > 0 ? styles.textWarning : styles.textSuccess}>
-            ₹{sub.pendingAmount.toLocaleString()}
-          </span>
-        </div>
-      </div>
-
-      {error && <ErrorBanner message={error} />}
-
-      <Field label="Amount (₹) *">
-        <input
-          type="number" min="1" max={sub.pendingAmount}
-          placeholder={`Up to ₹${sub.pendingAmount.toLocaleString()}`}
-          value={amount} onChange={e => { setAmount(e.target.value); setError(""); }}
-          className={styles.input} autoFocus
-        />
-      </Field>
-
-      <ModalFooter onClose={onClose} onConfirm={handlePay} isPending={isPending} confirmLabel="Add Payment" pendingLabel="Processing…" />
-    </ModalShell>
-  );
-}
-
 /* ─── Create Subscription Modal ───────────────────────────────── */
 export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
   const { data: members, isLoading: membersLoading } = useMembers();
@@ -309,29 +246,22 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({
     memberId: "", planId: "",
     startDate: new Date().toISOString().split("T")[0],
-    initialPayment: "",
   });
   const [error, setError] = useState("");
 
-  const selectedPlan   = plans?.find(p => p._id === form.planId);
-  const selectedMember = members?.find(m => m._id === form.memberId);
+  const selectedMember    = members?.find(m => m._id === form.memberId);
   const assignableMembers = members?.filter(m => m.memberStatus === "ACTIVE") ?? [];
   const activePlans       = plans?.filter(p => p.status === "ACTIVE") ?? [];
 
-  const initPayNum  = form.initialPayment !== "" ? Number(form.initialPayment) : 0;
-  const pendingCalc = selectedPlan ? Math.max(0, selectedPlan.price - initPayNum) : null;
   const memberHasActiveSub = !!selectedMember?.currentSubscriptionId;
 
   const handleSubmit = () => {
     if (!form.memberId)  { setError("Please select a member."); return; }
     if (!form.planId)    { setError("Please select a plan."); return; }
     if (!form.startDate) { setError("Start date is required."); return; }
-    if (selectedPlan && initPayNum > selectedPlan.price) {
-      setError(`Initial payment cannot exceed plan price ₹${selectedPlan.price.toLocaleString()}.`); return;
-    }
     setError("");
     create(
-      { memberId: form.memberId, planId: form.planId, startDate: form.startDate, initialPayment: initPayNum },
+      { memberId: form.memberId, planId: form.planId, startDate: form.startDate, initialPayment: 0 },
       { onSuccess: onClose, onError: (e: any) => setError(e?.response?.data?.message ?? "Failed to assign subscription.") }
     );
   };
@@ -358,7 +288,7 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
           <Field label="Plan *">
             <select
               value={form.planId}
-              onChange={e => { setForm(p => ({ ...p, planId: e.target.value, initialPayment: "" })); setError(""); }}
+              onChange={e => { setForm(p => ({ ...p, planId: e.target.value })); setError(""); }}
               className={styles.select}
             >
               <option value="">Select a plan…</option>
@@ -370,35 +300,14 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
             </select>
           </Field>
 
-          <div className={styles.twoCol}>
-            <Field label="Start Date *">
-              <input type="date" value={form.startDate}
-                onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))}
-                className={styles.input}
-              />
-            </Field>
-            <Field label={selectedPlan ? `Initial Payment (max ₹${selectedPlan.price.toLocaleString()})` : "Initial Payment"}>
-              <input type="number" min="0" max={selectedPlan?.price} placeholder="0"
-                value={form.initialPayment} disabled={!selectedPlan}
-                onChange={e => { setForm(p => ({ ...p, initialPayment: e.target.value })); setError(""); }}
-                className={styles.input}
-              />
-            </Field>
-          </div>
-
-          {selectedPlan && (
-            <div className={styles.pendingPreview}>
-              {form.initialPayment !== "" && initPayNum > 0 ? (
-                <>
-                  Paying <strong style={{ color: "#5ab870" }}>₹{Math.min(initPayNum, selectedPlan.price).toLocaleString()}</strong> now
-                  {pendingCalc! > 0 && <> · <strong className={styles.textWarning}>₹{pendingCalc!.toLocaleString()}</strong> will remain pending</>}
-                  {pendingCalc === 0 && <> · <strong className={styles.textSuccess}>Fully paid ✓</strong></>}
-                </>
-              ) : (
-                <>Plan price: <strong style={{ color: "#ccc" }}>₹{selectedPlan.price.toLocaleString()}</strong> — no initial payment</>
-              )}
-            </div>
-          )}
+          <Field label="Start Date *">
+            <input
+              type="date"
+              value={form.startDate}
+              onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))}
+              className={styles.input}
+            />
+          </Field>
         </div>
       )}
 

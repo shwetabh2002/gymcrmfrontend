@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemberSubscriptions, useUpdateMemberSubscription } from "@/services/subscriptions/subscriptions.hook";
 import { MemberSubscription } from "@/services/subscriptions/subscriptions.api";
-import { CreateSubscriptionModal, DeleteSubDialog, PaymentModal, getMember, getPlan } from "./SubscriptionModals";
+import { CreateSubscriptionModal, DeleteSubDialog, getMember, getPlan } from "./SubscriptionModals";
 import styles from "./subscriptions.module.css";
 
 const fadeUp = {
@@ -21,12 +21,6 @@ function subStatusClass(s: string) {
   if (s === "CANCELLED") return styles.badgeCancelled;
   return "";
 }
-function payStatusClass(s: string) {
-  if (s === "FULLY_PAID")     return styles.badgeFullyPaid;
-  if (s === "PARTIALLY_PAID") return styles.badgePartiallyPaid;
-  return styles.badgeUnpaid;
-}
-
 /* ─── Inline cancel confirmation popover ─────────────────────── */
 function CancelPopover({ onConfirm, onDismiss, isPending }: {
   onConfirm: () => void; onDismiss: () => void; isPending: boolean;
@@ -68,18 +62,15 @@ export default function SubscriptionsPage() {
   const { mutate: updateSub, isPending: isUpdating } = useUpdateMemberSubscription();
 
   const [createOpen,   setCreateOpen]   = useState(false);
-  const [payTarget,    setPayTarget]    = useState<MemberSubscription | null>(null);
   const [delTarget,    setDelTarget]    = useState<MemberSubscription | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
 
   const [search,       setSearch]       = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [payFilter,    setPayFilter]    = useState("ALL");
 
   const total   = subs?.length ?? 0;
   const active  = subs?.filter(s => s.subscriptionStatus === "ACTIVE").length ?? 0;
   const expired = subs?.filter(s => s.subscriptionStatus === "EXPIRED").length ?? 0;
-  const pending = subs?.filter(s => s.paymentStatus !== "FULLY_PAID" && s.subscriptionStatus !== "CANCELLED").length ?? 0;
 
   const filtered = useMemo(() => {
     if (!subs) return [];
@@ -92,10 +83,9 @@ export default function SubscriptionsPage() {
         member?.email.toLowerCase().includes(q) ||
         plan?.name.toLowerCase().includes(q);
       const matchStatus = statusFilter === "ALL" || sub.subscriptionStatus === statusFilter;
-      const matchPay    = payFilter    === "ALL" || sub.paymentStatus    === payFilter;
-      return matchSearch && matchStatus && matchPay;
+      return matchSearch && matchStatus;
     });
-  }, [subs, search, statusFilter, payFilter]);
+  }, [subs, search, statusFilter]);
 
   const handleCancel = (id: string) => {
     updateSub(
@@ -105,17 +95,15 @@ export default function SubscriptionsPage() {
   };
 
   const STATS = [
-    { label: "Total",           val: total   },
-    { label: "Active",          val: active  },
-    { label: "Expired",         val: expired },
-    { label: "Pending Payment", val: pending },
+    { label: "Total",   val: total   },
+    { label: "Active",  val: active  },
+    { label: "Expired", val: expired },
   ];
 
   return (
     <div className={styles.page}>
       <AnimatePresence>
         {createOpen && <CreateSubscriptionModal onClose={() => setCreateOpen(false)} />}
-        {payTarget  && <PaymentModal sub={payTarget} onClose={() => setPayTarget(null)} />}
         {delTarget  && <DeleteSubDialog sub={delTarget} onClose={() => setDelTarget(null)} />}
       </AnimatePresence>
 
@@ -160,12 +148,6 @@ export default function SubscriptionsPage() {
               <option value="EXPIRED">Expired</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
-            <select className={styles.filterSelect} value={payFilter} onChange={e => setPayFilter(e.target.value)}>
-              <option value="ALL">All Payments</option>
-              <option value="FULLY_PAID">Fully Paid</option>
-              <option value="PARTIALLY_PAID">Partial</option>
-              <option value="UNPAID">Unpaid</option>
-            </select>
           </div>
         </div>
 
@@ -177,14 +159,14 @@ export default function SubscriptionsPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  {["Member","Plan","Start","Expiry","Price","Paid","Pending","Sub Status","Pay Status","Actions"].map(h => (
+                  {["Member","Plan","Start","Expiry","Status","Actions"].map(h => (
                     <th key={h} className={styles.th}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 && (
-                  <tr><td colSpan={10} className={styles.stateEmpty}>
+                  <tr><td colSpan={6} className={styles.stateEmpty}>
                     {total === 0 ? "No subscriptions yet. Assign one to get started." : "No subscriptions match your filters."}
                   </td></tr>
                 )}
@@ -201,23 +183,11 @@ export default function SubscriptionsPage() {
                       <td className={`${styles.td} ${styles.tdPlanName}`}>{plan?.name ?? "—"}</td>
                       <td className={`${styles.td} ${styles.tdMono}`}>{new Date(sub.startDate).toLocaleDateString()}</td>
                       <td className={`${styles.td} ${styles.tdMono}`}>{new Date(sub.expiryDate).toLocaleDateString()}</td>
-                      <td className={`${styles.td} ${styles.tdPrice}`}>₹{sub.planPrice.toLocaleString()}</td>
-                      <td className={`${styles.td} ${styles.tdPaid}`}>₹{sub.totalPaid.toLocaleString()}</td>
-                      <td className={`${styles.td} ${styles.tdPending} ${sub.pendingAmount > 0 ? styles.tdPendingPositive : styles.tdPendingClear}`}>
-                        ₹{sub.pendingAmount.toLocaleString()}
-                      </td>
                       <td className={styles.td}>
                         <span className={`${styles.badge} ${subStatusClass(sub.subscriptionStatus)}`}>{sub.subscriptionStatus}</span>
                       </td>
                       <td className={styles.td}>
-                        <span className={`${styles.badge} ${payStatusClass(sub.paymentStatus)}`}>{sub.paymentStatus.replace(/_/g, " ")}</span>
-                      </td>
-                      <td className={styles.td}>
                         <div className={styles.actionGroup}>
-                          {sub.subscriptionStatus === "ACTIVE" && sub.pendingAmount > 0 && (
-                            <button className={`${styles.actionBtn} ${styles.actionBtnPay}`}
-                              onClick={() => setPayTarget(sub)} title="Add Payment">₊</button>
-                          )}
                           {sub.subscriptionStatus === "ACTIVE" && (
                             <>
                               <button className={`${styles.actionBtn} ${styles.actionBtnCancel}`}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import styles from "./Users.module.css";
 import { useMembers } from "@/services/members/members.hook";
@@ -32,10 +32,25 @@ export default function UsersPage() {
   const [modalOpen,   setModalOpen]   = useState(false);
   const [deleteOpen,  setDeleteOpen]  = useState(false);
   const [selected,    setSelected]    = useState<Member | null>(null);
+  const [search,      setSearch]      = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
   const openCreate = () => { setSelected(null); setModalOpen(true); };
   const openEdit   = (m: Member) => { setSelected(m); setModalOpen(true); };
   const openDelete = (m: Member) => { setSelected(m); setDeleteOpen(true); };
+
+  const filtered = useMemo(() => {
+    if (!members) return [];
+    return members.filter(m => {
+      const q = search.toLowerCase();
+      const matchSearch = !q ||
+        m.name.toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q) ||
+        m.phone.includes(q);
+      const matchStatus = statusFilter === "ALL" || m.memberStatus === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [members, search, statusFilter]);
 
   return (
     <div className={styles.page}>
@@ -100,20 +115,21 @@ export default function UsersPage() {
           <div className={styles.toolbar}>
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>⌕</span>
-              <input className={styles.searchInput} placeholder="Search members…" />
+              <input className={styles.searchInput} placeholder="Search members…"
+                value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <select className={styles.filterSelect}>
-              <option>All Status</option>
-              <option>ACTIVE</option>
-              <option>INACTIVE</option>
-              <option>SUSPENDED</option>
+            <select className={styles.filterSelect} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+              <option value="SUSPENDED">SUSPENDED</option>
             </select>
           </div>
         </div>
 
         <div className={styles.tableWrap}>
           {isLoading && <p style={{ padding: "1rem" }}>Loading members…</p>}
-          {isError   && <p style={{ padding: "1rem", color: "red" }}>Failed to load members.</p>}
+          {isError   && <p style={{ padding: "1rem", color: "#e63946" }}>Failed to load members. Please refresh.</p>}
 
           {!isLoading && !isError && (
             <table className={styles.table}>
@@ -127,7 +143,12 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {members?.map((m) => (
+                {filtered.length === 0 && (
+                  <tr><td colSpan={5} style={{ padding: "2rem", textAlign: "center", color: "#444" }}>
+                    {members?.length === 0 ? "No members found. Create one to get started." : "No members match your filters."}
+                  </td></tr>
+                )}
+                {filtered.map((m) => (
                   <tr key={m._id}>
                     <td>
                       <div className={styles.avatarCell}>
@@ -170,12 +191,14 @@ export default function UsersPage() {
 
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
-            Showing {members?.length ?? 0} members
+            {filtered.length !== members?.length
+              ? `Showing ${filtered.length} of ${members?.length ?? 0} members`
+              : `${members?.length ?? 0} member${members?.length !== 1 ? "s" : ""}`}
           </span>
           <div className={styles.paginationBtns}>
-            <button className={styles.pageBtn}>‹</button>
+            <button className={styles.pageBtn} disabled>‹</button>
             <button className={`${styles.pageBtn} ${styles.pageBtnActive}`}>1</button>
-            <button className={styles.pageBtn}>›</button>
+            <button className={styles.pageBtn} disabled>›</button>
           </div>
         </div>
       </motion.div>
