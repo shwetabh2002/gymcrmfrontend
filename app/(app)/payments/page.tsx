@@ -20,6 +20,14 @@ function getPaymentMember(p: Payment) {
   return typeof p.memberId === "object" && p.memberId !== null ? p.memberId : null;
 }
 
+function mopBadgeClass(mode: string, styles: any) {
+  const m = mode?.toUpperCase();
+  if (m === "CASH")    return styles.badgeCash;
+  if (m === "UPI")     return styles.badgeUpi;
+  if (m === "CARD")    return styles.badgeCard;
+  return styles.badgePaid;
+}
+
 export default function PaymentsPage() {
   const { data: payments, isLoading, isError } = usePayments();
   const { data: revenue } = useRevenueAnalytics();
@@ -34,17 +42,17 @@ export default function PaymentsPage() {
       const q = search.toLowerCase();
       const matchSearch = !q ||
         member?.name.toLowerCase().includes(q) ||
-        member?.email.toLowerCase().includes(q);
+        (member?.phone ?? "").includes(q);
       const matchMode = modeFilter === "ALL" || p.paymentMode === modeFilter;
       return matchSearch && matchMode;
     });
   }, [payments, search, modeFilter]);
 
   const STATS = [
-    { label: "Total Collected", val: revenue ? `₹${revenue.totalRevenue.toLocaleString()}`         : "—", sub: "all time" },
-    { label: "This Month",      val: revenue ? `₹${revenue.currentMonth.revenue.toLocaleString()}` : "—", sub: `${revenue?.currentMonth.payments ?? 0} payments` },
-    { label: "Last Month",      val: revenue ? `₹${revenue.lastMonth.revenue.toLocaleString()}`    : "—", sub: `${revenue?.lastMonth.payments ?? 0} payments` },
-    { label: "Pending Amount",  val: revenue ? `₹${revenue.pending.amount.toLocaleString()}`       : "—", sub: `${revenue?.pending.subscriptions ?? 0} subscriptions` },
+    { label: "Total Collected", val: revenue ? `₹${revenue.totalRevenue.toLocaleString("en-IN")}`         : "—", sub: "all time" },
+    { label: "This Month",      val: revenue ? `₹${revenue.currentMonth.revenue.toLocaleString("en-IN")}` : "—", sub: `${revenue?.currentMonth.payments ?? 0} payments` },
+    { label: "Last Month",      val: revenue ? `₹${revenue.lastMonth.revenue.toLocaleString("en-IN")}`    : "—", sub: `${revenue?.lastMonth.payments ?? 0} payments` },
+    { label: "Pending Amount",  val: revenue ? `₹${revenue.pending.amount.toLocaleString("en-IN")}`       : "—", sub: `${revenue?.pending.subscriptions ?? 0} subscriptions` },
   ];
 
   return (
@@ -83,7 +91,7 @@ export default function PaymentsPage() {
           <div className={styles.toolbar}>
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>⌕</span>
-              <input className={styles.searchInput} placeholder="Search by member…"
+              <input className={styles.searchInput} placeholder="Search by member name or contact…"
                 value={search} onChange={e => setSearch(e.target.value)} />
             </div>
             <select className={styles.filterSelect} value={modeFilter} onChange={e => setModeFilter(e.target.value)}>
@@ -96,13 +104,14 @@ export default function PaymentsPage() {
         </div>
 
         <div className={styles.tableWrap}>
-          {isLoading && <p style={{ padding: "1.5rem", color: "#555" }}>Loading payments…</p>}
-          {isError   && <p style={{ padding: "1.5rem", color: "#e63946" }}>Failed to load payments.</p>}
+          {isLoading && <p style={{ padding: "1.5rem", color: "#555", fontSize: 13 }}>Loading payments…</p>}
+          {isError   && <p style={{ padding: "1.5rem", color: "#e63946", fontSize: 13 }}>Failed to load payments.</p>}
           {!isLoading && !isError && (
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>Member</th>
+                  <th>Contact</th>
                   <th>Amount</th>
                   <th>Mode</th>
                   <th>Transaction ID</th>
@@ -113,7 +122,7 @@ export default function PaymentsPage() {
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ padding: "2.5rem", textAlign: "center", color: "#444", fontSize: "0.875rem" }}>
+                    <td colSpan={7} style={{ padding: "2.5rem", textAlign: "center", color: "#444", fontSize: 13 }}>
                       {payments?.length === 0 ? "No payments recorded yet." : "No payments match your filters."}
                     </td>
                   </tr>
@@ -124,16 +133,16 @@ export default function PaymentsPage() {
                     <tr key={p._id}>
                       <td>
                         <div className={styles.cellName}>{member?.name ?? "—"}</div>
-                        <div className={styles.cellMono} style={{ fontSize: "0.78rem", color: "#666" }}>{member?.email ?? "—"}</div>
                       </td>
-                      <td className={styles.cellAmount}>₹{p.amount.toLocaleString()}</td>
+                      <td className={styles.cellMono}>{member?.phone ?? "—"}</td>
+                      <td className={styles.cellAmount}>₹{p.amount.toLocaleString("en-IN")}</td>
                       <td>
-                        <span className={`${styles.badge} ${styles.badgePaid}`}>
+                        <span className={`${styles.badge} ${mopBadgeClass(p.paymentMode, styles)}`}>
                           {p.paymentMode.replace("_", " ")}
                         </span>
                       </td>
                       <td className={styles.cellMono}>{p.transactionId ?? "—"}</td>
-                      <td className={styles.cellMono}>{new Date(p.paymentDate).toLocaleDateString()}</td>
+                      <td className={styles.cellMono}>{new Date(p.paymentDate).toLocaleDateString("en-IN")}</td>
                       <td style={{ color: "#666", fontSize: "0.82rem" }}>{p.notes ?? "—"}</td>
                     </tr>
                   );
@@ -163,7 +172,7 @@ export default function PaymentsPage() {
                 <div style={{ fontSize: "0.72rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.5rem" }}>
                   {mode._id.replace("_", " ")}
                 </div>
-                <div style={{ fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>₹{mode.total.toLocaleString()}</div>
+                <div style={{ fontSize: "1.25rem", fontWeight: 700, color: "#fff" }}>₹{mode.total.toLocaleString("en-IN")}</div>
                 <div style={{ fontSize: "0.78rem", color: "#666", marginTop: "0.2rem" }}>
                   {mode.count} payment{mode.count !== 1 ? "s" : ""}
                 </div>

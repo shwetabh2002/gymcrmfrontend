@@ -3,36 +3,51 @@ import { API_CONFIG } from "@/config/config";
 
 export interface Member {
   _id: string;
+  idNo: string;
+  date: string;
   name: string;
-  email: string;
-  role: "USER" | "ADMIN" | "MANAGER" | "SUPER_ADMIN";
-  userType: "MEMBER";
-  phone: string;
-  address?: string;
-  emergencyContact?: string | null;
-  memberStatus: "ACTIVE" | "INACTIVE" | "SUSPENDED";
-  currentSubscriptionId: string | null;
+  contactNumber: string;
+  dob?: string;
+  instagramHandle?: string;
+  membershipPlan: string;
+  amount: number;
+  received: number;
+  pending: number;
+  mop: string;
+  salesPerson: string;
+  trainingType: "GT" | "PT" | "OTHER";
+  trainer: string;
+  memberType: "New" | "Old" | "Renewal";
+  startingDate: string;
+  expiryDate: string;
+  memberStatus: "ACTIVE" | "INACTIVE" | "EXPIRED";
+  currentSubscriptionId?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateMemberPayload {
+  idNo?: string;
+  date?: string;
   name: string;
-  email: string;
-  phone: string;
-  address?: string;
-  emergencyContact?: string;
-  memberStatus?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  contactNumber: string;
+  dob?: string;
+  instagramHandle?: string;
+  membershipPlan?: string;
+  amount?: number;
+  received?: number;
+  pending?: number;
+  mop?: string;
+  salesPerson?: string;
+  trainingType?: "GT" | "PT" | "OTHER";
+  trainer?: string;
+  memberType?: "New" | "Old" | "Renewal";
+  startingDate?: string;
+  expiryDate?: string;
+  memberStatus?: "ACTIVE" | "INACTIVE" | "EXPIRED";
 }
 
-export interface UpdateMemberPayload {
-  name?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  emergencyContact?: string;
-  memberStatus?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
-}
+export interface UpdateMemberPayload extends Partial<CreateMemberPayload> {}
 
 export const membersApi = {
   getMembers: () =>

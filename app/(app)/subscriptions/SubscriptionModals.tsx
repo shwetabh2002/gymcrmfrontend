@@ -49,19 +49,17 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
   const searchRef         = useRef<HTMLInputElement>(null);
 
   const selected = members.find(m => m._id === value) ?? null;
-
   const filtered = query.trim()
     ? members.filter(m =>
         m.name.toLowerCase().includes(query.toLowerCase()) ||
-        m.email.toLowerCase().includes(query.toLowerCase())
+        (m.contactNumber ?? "").includes(query)
       )
     : members;
 
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
+        setOpen(false); setQuery("");
       }
     }
     document.addEventListener("mousedown", handler);
@@ -73,59 +71,36 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
   }, [open]);
 
   const handleSelect = useCallback((m: Member) => {
-    onChange(m._id);
-    setOpen(false);
-    setQuery("");
+    onChange(m._id); setOpen(false); setQuery("");
   }, [onChange]);
 
   const handleClear = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange("");
-    setQuery("");
-  };
-
-  const handleToggle = () => {
-    if (!disabled) setOpen(v => !v);
+    e.stopPropagation(); onChange(""); setQuery("");
   };
 
   return (
     <div ref={wrapRef} className={styles.comboboxWrap}>
       <div
-        role="button"
-        tabIndex={disabled ? -1 : 0}
-        aria-haspopup="listbox"
-        aria-expanded={open}
+        role="button" tabIndex={disabled ? -1 : 0}
+        aria-haspopup="listbox" aria-expanded={open}
         className={`${styles.comboboxTrigger} ${open ? styles.comboboxTriggerOpen : ""}`}
-        onClick={handleToggle}
-        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleToggle(); } }}
+        onClick={() => { if (!disabled) setOpen(v => !v); }}
+        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!disabled) setOpen(v => !v); } }}
       >
         {selected ? (
           <span className={styles.comboboxSelectedVal}>
             <span className={styles.comboboxSelectedName}>{selected.name}</span>
-            <span className={styles.comboboxSelectedEmail}>{selected.email}</span>
+            <span className={styles.comboboxSelectedEmail}>{selected.contactNumber}</span>
           </span>
         ) : (
-          <span className={styles.comboboxPlaceholder}>
-            Search and select a member…
-          </span>
+          <span className={styles.comboboxPlaceholder}>Search and select a member…</span>
         )}
-
         <span className={styles.comboboxSuffix}>
           {selected ? (
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label="Clear selection"
-              className={styles.comboboxClearBtn}
-              onClick={handleClear}
-              onKeyDown={e => { if (e.key === "Enter") handleClear(e as any); }}
-            >
-              ✕
-            </span>
+            <span role="button" tabIndex={0} aria-label="Clear selection" className={styles.comboboxClearBtn}
+              onClick={handleClear} onKeyDown={e => { if (e.key === "Enter") handleClear(e as any); }}>✕</span>
           ) : (
-            <span className={`${styles.comboboxChevron} ${open ? styles.comboboxChevronOpen : ""}`}>
-              ▾
-            </span>
+            <span className={`${styles.comboboxChevron} ${open ? styles.comboboxChevronOpen : ""}`}>▾</span>
           )}
         </span>
       </div>
@@ -134,11 +109,8 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
         <div className={styles.comboboxDropdown} role="listbox">
           <div className={styles.comboboxSearchWrap}>
             <span className={styles.comboboxSearchIcon}>⌕</span>
-            <input
-              ref={searchRef}
-              className={styles.comboboxSearchInput}
-              placeholder={`Search ${members.length} members…`}
-              value={query}
+            <input ref={searchRef} className={styles.comboboxSearchInput}
+              placeholder={`Search ${members.length} members…`} value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => { if (e.key === "Escape") { setOpen(false); setQuery(""); } }}
             />
@@ -148,15 +120,11 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
               <div className={styles.comboboxEmpty}>No members match "{query}"</div>
             ) : (
               filtered.map(m => (
-                <div
-                  key={m._id}
-                  role="option"
-                  aria-selected={m._id === value}
+                <div key={m._id} role="option" aria-selected={m._id === value}
                   className={`${styles.comboboxItem} ${m._id === value ? styles.comboboxItemActive : ""}`}
-                  onClick={() => handleSelect(m)}
-                >
+                  onClick={() => handleSelect(m)}>
                   <div className={styles.comboboxItemName}>{highlight(m.name, query)}</div>
-                  <div className={styles.comboboxItemEmail}>{highlight(m.email, query)}</div>
+                  <div className={styles.comboboxItemEmail}>{m.contactNumber} {m.instagramHandle ? `· ${m.instagramHandle}` : ""}</div>
                 </div>
               ))
             )}
@@ -168,14 +136,7 @@ function MemberCombobox({ members, value, onChange, disabled }: MemberComboboxPr
 }
 
 /* ─── Shared Modal Shell ──────────────────────────────────────── */
-interface ModalShellProps {
-  title: string;
-  onClose: () => void;
-  width?: number;
-  children: React.ReactNode;
-}
-
-function ModalShell({ title, onClose, width = 420, children }: ModalShellProps) {
+function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
@@ -184,16 +145,12 @@ function ModalShell({ title, onClose, width = 420, children }: ModalShellProps) 
 
   return createPortal(
     <>
-      <motion.div
-        className={styles.backdrop}
+      <motion.div className={styles.backdrop}
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
       />
-      <motion.div
-        className={styles.modal}
-        style={{ maxWidth: "calc(100vw - 2rem)" }}
-        initial={{ opacity: 0, scale: 0.97 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <motion.div className={styles.modal}
+        initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.97 }}
         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] as any }}
       >
@@ -208,7 +165,6 @@ function ModalShell({ title, onClose, width = 420, children }: ModalShellProps) 
   );
 }
 
-/* ─── Shared sub-components ───────────────────────────────────── */
 function ErrorBanner({ message }: { message: string }) {
   return <p className={styles.errorBanner}>⚠ {message}</p>;
 }
@@ -252,7 +208,6 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
   const selectedMember    = members?.find(m => m._id === form.memberId);
   const assignableMembers = members?.filter(m => m.memberStatus === "ACTIVE") ?? [];
   const activePlans       = plans?.filter(p => p.status === "ACTIVE") ?? [];
-
   const memberHasActiveSub = !!selectedMember?.currentSubscriptionId;
 
   const handleSubmit = () => {
@@ -267,9 +222,8 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <ModalShell title="Assign Subscription" onClose={onClose} width={520}>
+    <ModalShell title="Assign Subscription" onClose={onClose}>
       {error && <ErrorBanner message={error} />}
-
       {(membersLoading || plansLoading) ? (
         <p className={styles.stateLoading}>Loading…</p>
       ) : (
@@ -278,19 +232,15 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
             label={`Member * (${assignableMembers.length} active)`}
             hint={memberHasActiveSub ? "⚠ This member already has an active subscription." : undefined}
           >
-            <MemberCombobox
-              members={assignableMembers}
-              value={form.memberId}
+            <MemberCombobox members={assignableMembers} value={form.memberId}
               onChange={id => { setForm(p => ({ ...p, memberId: id })); setError(""); }}
             />
           </Field>
 
           <Field label="Plan *">
-            <select
-              value={form.planId}
+            <select value={form.planId}
               onChange={e => { setForm(p => ({ ...p, planId: e.target.value })); setError(""); }}
-              className={styles.select}
-            >
+              className={styles.select}>
               <option value="">Select a plan…</option>
               {activePlans.map(p => (
                 <option key={p._id} value={p._id}>
@@ -301,17 +251,15 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
           </Field>
 
           <Field label="Start Date *">
-            <input
-              type="date"
-              value={form.startDate}
+            <input type="date" value={form.startDate}
               onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))}
               className={styles.input}
             />
           </Field>
         </div>
       )}
-
-      <ModalFooter onClose={onClose} onConfirm={handleSubmit} isPending={isPending} confirmLabel="Assign Subscription" pendingLabel="Assigning…" />
+      <ModalFooter onClose={onClose} onConfirm={handleSubmit} isPending={isPending}
+        confirmLabel="Assign Subscription" pendingLabel="Assigning…" />
     </ModalShell>
   );
 }
@@ -320,7 +268,7 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
 export function DeleteSubDialog({ sub, onClose }: { sub: MemberSubscription; onClose: () => void }) {
   const { mutate: del, isPending } = useDeleteMemberSubscription();
   return (
-    <ModalShell title="Delete Subscription" onClose={onClose} width={400}>
+    <ModalShell title="Delete Subscription" onClose={onClose}>
       <p className={styles.deleteBody}>
         Are you sure you want to permanently delete the subscription for{" "}
         <strong className={styles.deleteHighlight}>{getMember(sub)?.name ?? "this member"}</strong>?{" "}

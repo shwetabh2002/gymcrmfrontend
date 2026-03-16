@@ -59,6 +59,10 @@
 .badgePending  { background: rgba(240,164,75,0.07);  color: #c9913e;  border: 1px solid rgba(240,164,75,0.15); }
 .badgeFailed   { background: rgba(212,43,43,0.07);   color: #c45c5c;  border: 1px solid rgba(212,43,43,0.15); }
 .badgeRefunded { background: rgba(255,255,255,0.03); color: var(--text-2); border: 1px solid var(--border); }
+.badgeCash     { background: rgba(62,201,90,0.07);   color: #5ab870;  border: 1px solid rgba(62,201,90,0.15); }
+.badgeUpi      { background: rgba(99,179,237,0.07);  color: #60a5d4;  border: 1px solid rgba(99,179,237,0.15); }
+.badgeCard     { background: rgba(160,120,220,0.07); color: #9b7ec8;  border: 1px solid rgba(160,120,220,0.15); }
+.cellSub       { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin-top: 2px; }
 
 /* Row actions */
 .rowActions { display: flex; align-items: center; gap: 5px; }

@@ -13,8 +13,8 @@ export interface InvoiceGeneratorData {
   dueDate?: string;
   memberId: string;
   memberName: string;
-  memberEmail: string;
-  memberPhone?: string;
+  memberContact: string;
+  memberInstagram?: string;
   items: Array<{
     description: string;
     amount: number;
@@ -49,8 +49,8 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
         invoiceDate: invoiceData.invoiceDate,
         dueDate: invoiceData.dueDate,
         memberName: invoiceData.memberName,
-        memberEmail: invoiceData.memberEmail,
-        memberPhone: invoiceData.memberPhone,
+        memberContact: invoiceData.memberContact,
+        memberInstagram: invoiceData.memberInstagram,
         items: invoiceData.items,
         subtotal: invoiceData.subtotal,
         taxPercentage: invoiceData.taxPercentage,
@@ -131,8 +131,8 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                     invoiceDate={invoiceData.invoiceDate}
                     dueDate={invoiceData.dueDate}
                     memberName={invoiceData.memberName}
-                    memberEmail={invoiceData.memberEmail}
-                    memberPhone={invoiceData.memberPhone}
+                    memberContact={invoiceData.memberContact}
+                    memberInstagram={invoiceData.memberInstagram}
                     items={invoiceData.items}
                     subtotal={invoiceData.subtotal}
                     taxPercentage={invoiceData.taxPercentage}
@@ -168,7 +168,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
 
                     <div className={styles.configItem}>
                       <label className={styles.configLabel}>Member Email</label>
-                      <div className={styles.configValue}>{invoiceData.memberEmail}</div>
+                      <div className={styles.configValue}>{invoiceData.memberContact}</div>
                     </div>
 
                     <div className={styles.configItem}>

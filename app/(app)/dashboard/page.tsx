@@ -201,7 +201,7 @@ export default function DashboardPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #1e1e1e" }}>
-                  {["Member","Email","Plan","Expiry","Days Left","Pending"].map(h => (
+                  {["Member","Contact","Plan","Expiry","Days Left","Pending"].map(h => (
                     <th key={h} style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#555", fontWeight: 500, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</th>
                   ))}
                 </tr>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                 {nearExpiry.map((m, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid #161616" }}>
                     <td style={{ padding: "0.65rem 1rem", color: "#fff" }}>{m.memberName}</td>
-                    <td style={{ padding: "0.65rem 1rem", color: "#666" }}>{m.email}</td>
+                    <td style={{ padding: "0.65rem 1rem", color: "#666" }}>{m.phone}</td>
                     <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{m.planName}</td>
                     <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{new Date(m.expiryDate).toLocaleDateString()}</td>
                     <td style={{ padding: "0.65rem 1rem" }}>

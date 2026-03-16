@@ -6,8 +6,8 @@ export interface InvoiceData {
   invoiceDate: string;
   dueDate?: string;
   memberName: string;
-  memberEmail: string;
-  memberPhone?: string;
+  memberContact: string;
+  memberInstagram?: string;
   items: Array<{
     description: string;
     amount: number;

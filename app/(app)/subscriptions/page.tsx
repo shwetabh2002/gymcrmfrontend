@@ -21,7 +21,13 @@ function subStatusClass(s: string) {
   if (s === "CANCELLED") return styles.badgeCancelled;
   return "";
 }
-/* ─── Inline cancel confirmation popover ─────────────────────── */
+
+function payStatusClass(s: string) {
+  if (s === "FULLY_PAID")     return styles.badgeFullyPaid;
+  if (s === "PARTIALLY_PAID") return styles.badgePartiallyPaid;
+  return styles.badgeUnpaid;
+}
+
 function CancelPopover({ onConfirm, onDismiss, isPending }: {
   onConfirm: () => void; onDismiss: () => void; isPending: boolean;
 }) {
@@ -56,7 +62,6 @@ function CancelPopover({ onConfirm, onDismiss, isPending }: {
   );
 }
 
-/* ─── Main Page ───────────────────────────────────────────────── */
 export default function SubscriptionsPage() {
   const { data: subs, isLoading, isError } = useMemberSubscriptions();
   const { mutate: updateSub, isPending: isUpdating } = useUpdateMemberSubscription();
@@ -64,13 +69,14 @@ export default function SubscriptionsPage() {
   const [createOpen,   setCreateOpen]   = useState(false);
   const [delTarget,    setDelTarget]    = useState<MemberSubscription | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
-
   const [search,       setSearch]       = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [payFilter,    setPayFilter]    = useState("ALL");
 
-  const total   = subs?.length ?? 0;
-  const active  = subs?.filter(s => s.subscriptionStatus === "ACTIVE").length ?? 0;
-  const expired = subs?.filter(s => s.subscriptionStatus === "EXPIRED").length ?? 0;
+  const total     = subs?.length ?? 0;
+  const active    = subs?.filter(s => s.subscriptionStatus === "ACTIVE").length ?? 0;
+  const expired   = subs?.filter(s => s.subscriptionStatus === "EXPIRED").length ?? 0;
+  const totalPending = subs?.reduce((acc, s) => acc + (s.pendingAmount ?? 0), 0) ?? 0;
 
   const filtered = useMemo(() => {
     if (!subs) return [];
@@ -80,12 +86,13 @@ export default function SubscriptionsPage() {
       const q = search.toLowerCase();
       const matchSearch = !q ||
         member?.name.toLowerCase().includes(q) ||
-        member?.email.toLowerCase().includes(q) ||
+        (member?.contactNumber ?? "").includes(q) ||
         plan?.name.toLowerCase().includes(q);
       const matchStatus = statusFilter === "ALL" || sub.subscriptionStatus === statusFilter;
-      return matchSearch && matchStatus;
+      const matchPay    = payFilter    === "ALL" || sub.paymentStatus === payFilter;
+      return matchSearch && matchStatus && matchPay;
     });
-  }, [subs, search, statusFilter]);
+  }, [subs, search, statusFilter, payFilter]);
 
   const handleCancel = (id: string) => {
     updateSub(
@@ -93,12 +100,6 @@ export default function SubscriptionsPage() {
       { onSuccess: () => setCancelTarget(null) }
     );
   };
-
-  const STATS = [
-    { label: "Total",   val: total   },
-    { label: "Active",  val: active  },
-    { label: "Expired", val: expired },
-  ];
 
   return (
     <div className={styles.page}>
@@ -124,7 +125,12 @@ export default function SubscriptionsPage() {
 
       {/* Stats */}
       <motion.div className={styles.statsGrid} custom={0} variants={fadeUp} initial="hidden" animate="visible">
-        {STATS.map(s => (
+        {[
+          { label: "Total",    val: total },
+          { label: "Active",   val: active },
+          { label: "Expired",  val: expired },
+          { label: "Pending ₹", val: `₹${totalPending.toLocaleString("en-IN")}` },
+        ].map(s => (
           <div key={s.label} className={styles.statCard}>
             <span className={styles.statLabel}><span className={styles.statDot} />{s.label}</span>
             <span className={styles.statValue}>{isLoading ? "…" : s.val}</span>
@@ -148,6 +154,12 @@ export default function SubscriptionsPage() {
               <option value="EXPIRED">Expired</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
+            <select className={styles.filterSelect} value={payFilter} onChange={e => setPayFilter(e.target.value)}>
+              <option value="ALL">All Payment</option>
+              <option value="FULLY_PAID">Fully Paid</option>
+              <option value="PARTIALLY_PAID">Partial</option>
+              <option value="UNPAID">Unpaid</option>
+            </select>
           </div>
         </div>
 
@@ -159,14 +171,14 @@ export default function SubscriptionsPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  {["Member","Plan","Start","Expiry","Status","Actions"].map(h => (
+                  {["Member", "Contact", "Plan", "Start", "Expiry", "Plan Price", "Paid", "Pending", "Pay Status", "Status", "Actions"].map(h => (
                     <th key={h} className={styles.th}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 && (
-                  <tr><td colSpan={6} className={styles.stateEmpty}>
+                  <tr><td colSpan={11} className={styles.stateEmpty}>
                     {total === 0 ? "No subscriptions yet. Assign one to get started." : "No subscriptions match your filters."}
                   </td></tr>
                 )}
@@ -178,11 +190,22 @@ export default function SubscriptionsPage() {
                     <tr key={sub._id} className={styles.tr}>
                       <td className={styles.td}>
                         <div className={styles.memberName}>{member?.name ?? "—"}</div>
-                        <div className={styles.memberEmail}>{member?.email ?? "—"}</div>
+                        {member?.instagramHandle && <div className={styles.memberEmail}>{member.instagramHandle}</div>}
                       </td>
+                      <td className={`${styles.td} ${styles.tdMono}`}>{member?.contactNumber ?? "—"}</td>
                       <td className={`${styles.td} ${styles.tdPlanName}`}>{plan?.name ?? "—"}</td>
-                      <td className={`${styles.td} ${styles.tdMono}`}>{new Date(sub.startDate).toLocaleDateString()}</td>
-                      <td className={`${styles.td} ${styles.tdMono}`}>{new Date(sub.expiryDate).toLocaleDateString()}</td>
+                      <td className={`${styles.td} ${styles.tdMono}`}>{new Date(sub.startDate).toLocaleDateString("en-IN")}</td>
+                      <td className={`${styles.td} ${styles.tdMono}`}>{new Date(sub.expiryDate).toLocaleDateString("en-IN")}</td>
+                      <td className={`${styles.td} ${styles.tdPrice}`}>₹{sub.planPrice?.toLocaleString("en-IN") ?? "—"}</td>
+                      <td className={`${styles.td} ${styles.tdPaid}`}>₹{sub.totalPaid?.toLocaleString("en-IN") ?? "0"}</td>
+                      <td className={`${styles.td} ${sub.pendingAmount > 0 ? styles.tdPendingPositive : styles.tdPendingClear}`}>
+                        {sub.pendingAmount > 0 ? `₹${sub.pendingAmount.toLocaleString("en-IN")}` : "Nil"}
+                      </td>
+                      <td className={styles.td}>
+                        <span className={`${styles.badge} ${payStatusClass(sub.paymentStatus)}`}>
+                          {sub.paymentStatus.replace("_", " ")}
+                        </span>
+                      </td>
                       <td className={styles.td}>
                         <span className={`${styles.badge} ${subStatusClass(sub.subscriptionStatus)}`}>{sub.subscriptionStatus}</span>
                       </td>

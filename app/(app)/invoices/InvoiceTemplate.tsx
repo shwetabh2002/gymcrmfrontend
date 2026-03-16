@@ -5,8 +5,8 @@ export interface InvoiceTemplateProps {
   invoiceDate: string;
   dueDate?: string;
   memberName: string;
-  memberEmail: string;
-  memberPhone?: string;
+  memberContact: string;
+  memberInstagram?: string;
   items: Array<{
     description: string;
     amount: number;
@@ -30,8 +30,8 @@ export default function InvoiceTemplate({
   invoiceDate,
   dueDate,
   memberName,
-  memberEmail,
-  memberPhone,
+  memberContact,
+  memberInstagram,
   items,
   subtotal,
   taxPercentage,
@@ -103,8 +103,8 @@ export default function InvoiceTemplate({
           <div className={styles.detailsSection}>
             <h3 className={styles.sectionTitle}>Bill To</h3>
             <p className={styles.detailName}>{memberName}</p>
-            <p className={styles.detailText}>{memberEmail}</p>
-            {memberPhone && <p className={styles.detailText}>{memberPhone}</p>}
+            <p className={styles.detailText}>{memberContact}</p>
+            {memberInstagram && <p className={styles.detailText}>{memberInstagram}</p>}
           </div>
 
           <div className={styles.detailsSection}>

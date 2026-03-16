@@ -51,7 +51,7 @@ export default function InvoicesPage() {
       return !q ||
         inv.invoiceNumber.toLowerCase().includes(q) ||
         member?.name.toLowerCase().includes(q) ||
-        member?.email.toLowerCase().includes(q);
+        (member?.phone ?? "").includes(q);
     });
   }, [invoices, search]);
 
@@ -70,8 +70,8 @@ export default function InvoicesPage() {
       dueDate:       inv.dueDate,
       memberId:      typeof inv.memberId === "object" ? inv.memberId._id : inv.memberId,
       memberName:    member?.name  ?? "Unknown",
-      memberEmail:   member?.email ?? "unknown@example.com",
-      memberPhone:   member?.phone,
+      memberContact:   member?.phone ?? "—",
+      memberInstagram: undefined,
       items:         inv.items,
       subtotal:      inv.subtotal,
       taxPercentage: inv.taxPercentage,
@@ -153,7 +153,7 @@ export default function InvoicesPage() {
                       <td className={styles.cellId}>{inv.invoiceNumber}</td>
                       <td>
                         <div className={styles.cellName}>{member?.name ?? "—"}</div>
-                        <div className={styles.cellEmail}>{member?.email ?? "—"}</div>
+                        <div className={styles.cellEmail}>{member?.phone ?? "—"}</div>
                       </td>
                       <td style={{ color: "#666", fontSize: "0.82rem" }}>
                         {inv.items.map(it => it.description).join(", ")}
@@ -231,8 +231,8 @@ export default function InvoicesPage() {
                     invoiceDate={selectedInvoice.invoiceDate}
                     dueDate={selectedInvoice.dueDate}
                     memberName={getMember(selectedInvoice)?.name || ""}
-                    memberEmail={getMember(selectedInvoice)?.email || ""}
-                    memberPhone={getMember(selectedInvoice)?.phone}
+                    memberContact={getMember(selectedInvoice)?.phone || ""}
+                    memberInstagram={undefined}
                     items={selectedInvoice.items}
                     subtotal={selectedInvoice.subtotal}
                     taxPercentage={selectedInvoice.taxPercentage}

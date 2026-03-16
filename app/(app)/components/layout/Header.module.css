@@ -1,5 +1,5 @@
 .header {
-  height: 56px;
+  height: 52px;
   flex-shrink: 0;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -53,14 +53,13 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #3ec95a;
-  box-shadow: 0 0 5px #3ec95a;
+  background: #27ae60;
   animation: statusPulse 2.5s ease-in-out infinite;
 }
 
 @keyframes statusPulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.25; }
+  50%       { opacity: 0.3; }
 }
 
 /* ─── Logout button ───────────────────────────────────────── */
@@ -68,22 +67,22 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  background: var(--red-dim);
-  color: #f07070;
-  border: 1px solid rgba(212, 43, 43, 0.25);
-  padding: 7px 14px;
+  background: rgba(192, 57, 43, 0.06);
+  color: #c0392b;
+  border: 1px solid rgba(192, 57, 43, 0.18);
+  padding: 6px 13px;
   border-radius: 5px;
   font-family: var(--sans);
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .logoutBtn:hover {
-  background: var(--red);
-  border-color: var(--red);
+  background: #c0392b;
+  border-color: #c0392b;
   color: #fff;
 }
 

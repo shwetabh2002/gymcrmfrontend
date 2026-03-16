@@ -40,7 +40,7 @@ function MemberCombobox({ members, value, onChange }: MemberComboboxProps) {
   const filtered = query.trim()
     ? members.filter(m =>
         m.name.toLowerCase().includes(query.toLowerCase()) ||
-        m.email.toLowerCase().includes(query.toLowerCase())
+        (m.contactNumber ?? "").includes(query)
       )
     : members;
 
@@ -77,7 +77,7 @@ function MemberCombobox({ members, value, onChange }: MemberComboboxProps) {
         {selected ? (
           <span className={styles.comboboxSelectedVal}>
             <span className={styles.comboboxSelectedName}>{selected.name}</span>
-            <span className={styles.comboboxSelectedEmail}>{selected.email}</span>
+            <span className={styles.comboboxSelectedEmail}>{selected.contactNumber}</span>
           </span>
         ) : (
           <span className={styles.comboboxPlaceholder}>Search and select a member…</span>
@@ -99,7 +99,7 @@ function MemberCombobox({ members, value, onChange }: MemberComboboxProps) {
           <div className={styles.comboboxSearchWrap}>
             <span className={styles.comboboxSearchIcon}>⌕</span>
             <input ref={searchRef} className={styles.comboboxSearchInput}
-              placeholder={`Search ${members.length} members…`} value={query}
+              placeholder={`Search ${members.length} members by name or contact…`} value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={e => { if (e.key === "Escape") { setOpen(false); setQuery(""); } }}
             />
@@ -112,7 +112,7 @@ function MemberCombobox({ members, value, onChange }: MemberComboboxProps) {
                 className={`${styles.comboboxItem} ${m._id === value ? styles.comboboxItemActive : ""}`}
                 onClick={() => handleSelect(m)}>
                 <div className={styles.comboboxItemName}>{highlight(m.name, query)}</div>
-                <div className={styles.comboboxItemEmail}>{highlight(m.email, query)}</div>
+                <div className={styles.comboboxItemEmail}>{highlight(m.contactNumber, query)}</div>
               </div>
             ))}
           </div>
