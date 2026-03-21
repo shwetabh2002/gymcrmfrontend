@@ -1,5 +1,5 @@
-import styles from "./Dashboard.module.css";
+import { redirect } from "next/navigation";
 
-export default function DashboardPage() {
-  return <h1 className={styles.title}>Welcome to Dalyfstyle Fitness Dashboard</h1>;
+export default function RootAppPage() {
+  redirect("/dashboard");
 }
