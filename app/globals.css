@@ -12,10 +12,10 @@
   --surface-3:  #f0efe9;
   --border:     rgba(0,0,0,0.07);
   --border-2:   rgba(0,0,0,0.13);
-  --red:        #c0392b;
-  --red-bright: #e74c3c;
-  --red-dim:    rgba(192,57,43,0.08);
-  --red-glow:   rgba(192,57,43,0.12);
+  --red:        #1e5ba8;
+  --red-bright: #2874c7;
+  --red-dim:    rgba(30,91,168,0.08);
+  --red-glow:   rgba(30,91,168,0.12);
   --green-text: #219150;
   --text:       #1a1a1a;
   --text-2:     #777;

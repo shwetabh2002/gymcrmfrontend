@@ -9,8 +9,9 @@ export const API_CONFIG = {
   },
 
   MEMBERS: {
-    BASE:   "/members",
-    BY_ID:  (id: string) => `/members/${id}`,
+    BASE:     "/members",
+    REGISTER: "/members/register",
+    BY_ID:    (id: string) => `/members/${id}`,
   },
 
   PLANS: {

@@ -38,7 +38,7 @@ export default function InvoiceTemplate({
   taxAmount,
   totalAmount,
   notes,
-  gymName = "Gym Admin",
+  gymName = "Dalyfstyle Fitness",
   gymAddress = "123 Fitness St, City",
   gymEmail = "admin@gym.com",
   gymPhone = "+1 (555) 123-4567",

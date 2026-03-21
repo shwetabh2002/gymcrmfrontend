@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/lib/context/AuthContext";
 import { adminLogin } from "@/services/admin/admin.api";
 import { motion, AnimatePresence, Variants, Easing } from "framer-motion";
@@ -94,6 +95,9 @@ export default function LoginPage() {
         </div>
 
         <div className={styles.visualCenter}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "32px" }}>
+            <Image src="/big_logo.png" alt="Dalyfstyle Fitness" width={200} height={200} style={{ objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(212, 43, 43, 0.3))" }} />
+          </div>
           <h2 className={styles.visualHeadline}>
             Secure<br />
             <em>Admin</em><br />

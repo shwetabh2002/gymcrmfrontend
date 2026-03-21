@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMemberSubscriptions, useUpdateMemberSubscription } from "@/services/subscriptions/subscriptions.hook";
 import { MemberSubscription } from "@/services/subscriptions/subscriptions.api";
 import { CreateSubscriptionModal, DeleteSubDialog, getMember, getPlan } from "./SubscriptionModals";
+import PaymentModal from "./PaymentModal";
 import styles from "./subscriptions.module.css";
 
 const fadeUp = {
@@ -66,12 +67,14 @@ export default function SubscriptionsPage() {
   const { data: subs, isLoading, isError } = useMemberSubscriptions();
   const { mutate: updateSub, isPending: isUpdating } = useUpdateMemberSubscription();
 
-  const [createOpen,   setCreateOpen]   = useState(false);
-  const [delTarget,    setDelTarget]    = useState<MemberSubscription | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<string | null>(null);
-  const [search,       setSearch]       = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [payFilter,    setPayFilter]    = useState("ALL");
+  const [createOpen,    setCreateOpen]    = useState(false);
+  const [paymentOpen,   setPaymentOpen]   = useState(false);
+  const [delTarget,     setDelTarget]     = useState<MemberSubscription | null>(null);
+  const [paymentTarget, setPaymentTarget] = useState<MemberSubscription | null>(null);
+  const [cancelTarget,  setCancelTarget]  = useState<string | null>(null);
+  const [search,        setSearch]        = useState("");
+  const [statusFilter,  setStatusFilter]  = useState("ALL");
+  const [payFilter,     setPayFilter]     = useState("ALL");
 
   const total     = subs?.length ?? 0;
   const active    = subs?.filter(s => s.subscriptionStatus === "ACTIVE").length ?? 0;
@@ -105,6 +108,7 @@ export default function SubscriptionsPage() {
     <div className={styles.page}>
       <AnimatePresence>
         {createOpen && <CreateSubscriptionModal onClose={() => setCreateOpen(false)} />}
+        {paymentOpen && <PaymentModal open={paymentOpen} onClose={() => { setPaymentOpen(false); setPaymentTarget(null); }} subscription={paymentTarget} />}
         {delTarget  && <DeleteSubDialog sub={delTarget} onClose={() => setDelTarget(null)} />}
       </AnimatePresence>
 
@@ -211,6 +215,10 @@ export default function SubscriptionsPage() {
                       </td>
                       <td className={styles.td}>
                         <div className={styles.actionGroup}>
+                          {sub.subscriptionStatus === "ACTIVE" && sub.pendingAmount > 0 && (
+                            <button className={`${styles.actionBtn} ${styles.actionBtnPay}`}
+                              onClick={() => { setPaymentTarget(sub); setPaymentOpen(true); }} title="Record Payment">₹</button>
+                          )}
                           {sub.subscriptionStatus === "ACTIVE" && (
                             <>
                               <button className={`${styles.actionBtn} ${styles.actionBtnCancel}`}

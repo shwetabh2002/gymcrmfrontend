@@ -8,10 +8,10 @@
   --surface-3:   #1c1c1c;
   --border:      rgba(255,255,255,0.06);
   --border-hover:rgba(255,255,255,0.12);
-  --red:         #d42b2b;
-  --red-bright:  #f03535;
-  --red-dim:     rgba(212, 43, 43, 0.18);
-  --red-glow:    rgba(212, 43, 43, 0.22);
+  --red:         #2874c7;
+  --red-bright:  #3d8fd9;
+  --red-dim:     rgba(40,116,199,0.18);
+  --red-glow:    rgba(40,116,199,0.22);
   --text:        #f2ede8;
   --text-2:      #888;
   --text-3:      #444;

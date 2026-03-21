@@ -7,6 +7,8 @@ import { useMembers } from "@/services/members/members.hook";
 import { Member } from "@/services/members/members.api";
 import MemberModal from "./MemberModal";
 import DeleteMemberDialog from "./DeleteMemberDialog";
+import ImportMembersModal from "./ImportMembersModal";
+import ExportMembersButton from "./ExportMembersButton";
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -20,19 +22,19 @@ function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
-function statusBadgeClass(status: string, styles: any) {
+function statusBadgeClass(status: string | undefined, styles: any) {
   if (status === "ACTIVE")   return styles.badgeActive;
   if (status === "EXPIRED")  return styles.badgeExpired;
   return styles.badgeInactive;
 }
 
-function memberTypeBadgeClass(type: string, styles: any) {
+function memberTypeBadgeClass(type: string | undefined, styles: any) {
   if (type === "New")     return styles.badgeNew;
   if (type === "Old")     return styles.badgeOld;
   return styles.badgeRenewal;
 }
 
-function trainingBadgeClass(type: string, styles: any) {
+function trainingBadgeClass(type: string | undefined, styles: any) {
   if (type === "PT") return styles.badgePT;
   if (type === "GT") return styles.badgeGT;
   return styles.badgePending;
@@ -55,6 +57,7 @@ export default function UsersPage() {
 
   const [modalOpen,    setModalOpen]    = useState(false);
   const [deleteOpen,   setDeleteOpen]   = useState(false);
+  const [importOpen,   setImportOpen]   = useState(false);
   const [selected,     setSelected]     = useState<Member | null>(null);
   const [search,       setSearch]       = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -69,9 +72,11 @@ export default function UsersPage() {
     if (!members) return [];
     return members.filter(m => {
       const q = search.toLowerCase();
+      const contactValue = (m.contactNumber || m.phone || "").toLowerCase();
       const matchSearch = !q ||
         m.name.toLowerCase().includes(q) ||
-        m.contactNumber.includes(q) ||
+        contactValue.includes(q) ||
+        (m.email ?? "").toLowerCase().includes(q) ||
         (m.idNo ?? "").toLowerCase().includes(q) ||
         (m.trainer ?? "").toLowerCase().includes(q) ||
         (m.salesPerson ?? "").toLowerCase().includes(q);
@@ -89,6 +94,7 @@ export default function UsersPage() {
     <div className={styles.page}>
       <MemberModal open={modalOpen} onClose={() => setModalOpen(false)} existing={selected} />
       <DeleteMemberDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} member={selected} />
+      <ImportMembersModal open={importOpen} onClose={() => setImportOpen(false)} />
 
       {/* Header */}
       <motion.div
@@ -98,13 +104,17 @@ export default function UsersPage() {
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
       >
         <div>
-          <p className={styles.eyebrow}>Admin Panel</p>
           <h1 className={styles.pageTitle}>Members</h1>
-          <p className={styles.pageDesc}>Manage all registered gym members and their details.</p>
+          <p className={styles.pageSubtitle}>Manage gym members and their subscriptions</p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.btnSecondary}>⬇ Export</button>
-          <button className={styles.btnPrimary} onClick={openCreate}>+ Add Member</button>
+          <ExportMembersButton members={members || []} buttonClassName={styles.btnSecondary} />
+          <button className={styles.btnSecondary} onClick={() => setImportOpen(true)}>
+            ⬆ Import Excel
+          </button>
+          <button className={styles.btnPrimary} onClick={() => setModalOpen(true)}>
+            + Add Member
+          </button>
         </div>
       </motion.div>
 
@@ -209,29 +219,29 @@ export default function UsersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className={styles.cellMono}>{m.contactNumber}</td>
-                    <td className={styles.cellMono}>{m.membershipPlan ?? "—"}</td>
+                    <td className={styles.cellMono}>{m.contactNumber || m.phone || "—"}</td>
+                    <td className={styles.cellMono}>{m.membershipPlan || (m.membershipMonths ? `${m.membershipMonths} months` : "—")}</td>
                     <td>
                       <span className={`${styles.badge} ${trainingBadgeClass(m.trainingType, styles)}`}>
-                        {m.trainingType}
+                        {m.trainingType ?? "OTHER"}
                       </span>
                     </td>
                     <td className={styles.cellPerson}>{m.trainer ?? "—"}</td>
                     <td className={styles.cellMono}>{formatCurrency(m.amount)}</td>
                     <td className={`${styles.cellMono} ${styles.cellGreen}`}>{formatCurrency(m.received)}</td>
-                    <td className={`${styles.cellMono} ${m.pending > 0 ? styles.cellRed : ""}`}>
-                      {m.pending > 0 ? formatCurrency(m.pending) : <span style={{ color: "var(--text-3)" }}>Nil</span>}
+                    <td className={`${styles.cellMono} ${(m.pending ?? 0) > 0 ? styles.cellRed : ""}`}>
+                      {(m.pending ?? 0) > 0 ? formatCurrency(m.pending ?? 0) : <span style={{ color: "var(--text-3)" }}>Nil</span>}
                     </td>
                     <td className={styles.cellMono} style={{ fontSize: 11 }}>{m.mop ?? "—"}</td>
                     <td>
                       <span className={`${styles.badge} ${memberTypeBadgeClass(m.memberType, styles)}`}>
-                        {m.memberType}
+                        {m.memberType ?? "Renewal"}
                       </span>
                     </td>
                     <td className={styles.cellMono}>{formatDate(m.expiryDate)}</td>
                     <td>
                       <span className={`${styles.badge} ${statusBadgeClass(m.memberStatus, styles)}`}>
-                        {m.memberStatus}
+                        {m.memberStatus ?? "ACTIVE"}
                       </span>
                     </td>
                     <td>

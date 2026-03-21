@@ -90,3 +90,67 @@
   font-size: 13px;
   line-height: 1;
 }
+
+/* ─── Mobile responsive ───────────────────────────────────── */
+@media (max-width: 1024px) {
+  .header {
+    padding: 0 20px;
+    height: 48px;
+  }
+
+  .left {
+    font-size: 9px;
+  }
+
+  .right {
+    gap: 12px;
+  }
+
+  .logoutBtn {
+    padding: 5px 11px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+    margin-left: 44px;
+    height: 48px;
+  }
+
+  .left {
+    display: none;
+  }
+
+  .right {
+    gap: 10px;
+  }
+
+  .status {
+    display: none;
+  }
+
+  .logoutBtn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .logoutIcon {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0 12px;
+    height: 44px;
+    margin-left: 40px;
+  }
+
+  .logoutBtn {
+    padding: 4px 8px;
+    font-size: 10px;
+    gap: 4px;
+  }
+}

@@ -1,5 +1,67 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap');
 
+/* ─── Mobile toggle button ────────────────────────────────── */
+.mobileToggle {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 30;
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.mobileToggle:hover {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+}
+
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 20px;
+  height: 16px;
+}
+
+.hamburger span {
+  width: 100%;
+  height: 2px;
+  background: var(--text);
+  border-radius: 1px;
+  transition: all 0.3s ease;
+}
+
+/* ─── Backdrop for mobile ─────────────────────────────────── */
+/* BUG FIX 1: Backdrop is conditionally rendered in TSX ({isOpen && <div>}),
+   so it should always be visible when it exists in the DOM.
+   Removed the media query override that set display:block unconditionally,
+   which would have shown the backdrop even when the sidebar was closed
+   on any re-render that kept the element in the DOM. */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 15;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────── */
 .sidebar {
   width: 236px;
   flex-shrink: 0;
@@ -11,6 +73,23 @@
   overflow: hidden;
   position: relative;
   z-index: 20;
+  transition: width 0.3s ease-out;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.sidebar.collapsed .collapseBtn {
+  transform: scaleX(-1);
+}
+
+/* BUG FIX 2: Hide nav link text labels when collapsed.
+   Previously the text was always visible because only the icon gap/padding
+   were adjusted — the label text itself was never hidden. */
+.sidebar.collapsed .navLink .navLabel,
+.sidebar.collapsed .navLinkLabel {
+  display: none;
 }
 
 /* ─── Brand ───────────────────────────────────────────────── */
@@ -18,40 +97,84 @@
   padding: 20px 20px 16px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .brandRow {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.collapseBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
 }
 
 .brandIcon {
-  width: 28px;
-  height: 28px;
+  width: 48px;
+  height: 48px;
   background: var(--red);
-  border-radius: 5px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
-.brandIcon span {
-  font-family: var(--sans);
-  font-size: 10px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.01em;
+.collapseBtn:hover {
+  background: var(--surface-3);
+  border-color: var(--border-2);
+  color: var(--text);
+}
+
+/* BUG FIX 3: Hide collapse button on tablet/mobile to prevent users from
+   triggering the collapsed state on viewports where it's not handled.
+   This prevents a ghost-collapsed layout on tablet where the button is
+   hidden but the collapsed class can still be applied via state. */
+@media (max-width: 1024px) {
+  .collapseBtn {
+    display: none;
+  }
+
+  /* Also reset collapsed state visually on tablet/mobile since the
+     button to toggle it back is hidden */
+  .sidebar.collapsed {
+    width: 200px;
+  }
+
+  .sidebar.collapsed .navLinkLabel {
+    display: inline;
+  }
 }
 
 .brandName {
   font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text);
   letter-spacing: -0.01em;
   line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brandSub {
@@ -104,6 +227,16 @@
   letter-spacing: 0.005em;
   transition: color 0.13s, background 0.13s;
   position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar.collapsed .navLink {
+  gap: 0;
+  justify-content: center;
+  padding: 8px;
+  font-size: 14px;
 }
 
 .navLink:hover {
@@ -184,4 +317,160 @@
   color: var(--text-3);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* ─── Responsive ──────────────────────────────────────────── */
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .brandName {
+    font-size: 13px;
+  }
+
+  .navLink {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+}
+
+/* Mobile (< 768px) */
+@media (max-width: 768px) {
+  .mobileToggle {
+    display: flex;
+  }
+
+  /* KEY FIX: A CSS transform creates a new containing block for any
+     position:fixed descendants — they get positioned relative to the
+     sidebar instead of the viewport, which makes them appear at wrong
+     coordinates when the sidebar is off-screen (translateX(-100%)).
+     Solution: use `left` transition instead of `transform` so no
+     new containing block is created, and fixed children behave normally.
+     Also remove overflow:hidden — it was clipping the shadow and
+     is not needed since we control visibility via left position. */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -240px;
+    height: 100vh;
+    width: 240px;
+    box-shadow: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: left 0.3s ease-out, box-shadow 0.3s ease-out;
+    /* Remove the transform-based transition inherited from base */
+    transform: none;
+  }
+
+  .sidebar.open {
+    left: 0;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Brand stays normal in flow — sidebar scrolls as a unit */
+  .brand {
+    position: relative;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav {
+    margin-top: 0;
+  }
+
+  .brandRow {
+    gap: 8px;
+  }
+
+  .brandIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .brandName {
+    font-size: 12px;
+  }
+
+  .brandSub {
+    font-size: 8px;
+  }
+
+  .navLabel {
+    font-size: 8px;
+  }
+
+  .navLink {
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+
+  .sidebarFooter {
+    padding: 12px 14px;
+  }
+
+  .userRow {
+    gap: 8px;
+  }
+
+  .avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+  }
+
+  .userName {
+    font-size: 11px;
+  }
+
+  .userRole {
+    font-size: 8px;
+  }
+}
+
+/* Small mobile (< 480px) */
+@media (max-width: 480px) {
+  .mobileToggle {
+    top: 12px;
+    left: 12px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .hamburger {
+    gap: 4px;
+  }
+
+  .sidebar {
+    width: 220px;
+    left: -220px;
+  }
+
+  .brand {
+    width: 100%;
+  }
+
+  .brandRow {
+    gap: 6px;
+  }
+
+  .brandIcon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .brandName {
+    font-size: 11px;
+  }
+
+  .brandSub {
+    font-size: 7px;
+  }
+
+  .navLink {
+    font-size: 10px;
+    padding: 5px 8px;
+  }
 }

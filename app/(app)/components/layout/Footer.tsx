@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className={styles.footer}>
       <span className={styles.left}>
-        © {year} Gym Admin. All rights reserved.
+        © {year} Dalyfstyle Fitness. All rights reserved.
       </span>
       <span className={styles.right}>
         <span>v2.4.1</span>

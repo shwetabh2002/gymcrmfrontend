@@ -112,7 +112,7 @@ function MemberCombobox({ members, value, onChange }: MemberComboboxProps) {
                 className={`${styles.comboboxItem} ${m._id === value ? styles.comboboxItemActive : ""}`}
                 onClick={() => handleSelect(m)}>
                 <div className={styles.comboboxItemName}>{highlight(m.name, query)}</div>
-                <div className={styles.comboboxItemEmail}>{highlight(m.contactNumber, query)}</div>
+                <div className={styles.comboboxItemEmail}>{highlight(m.contactNumber ?? m.phone ?? "", query)}</div>
               </div>
             ))}
           </div>
