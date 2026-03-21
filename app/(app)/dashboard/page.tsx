@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { motion, Variants, Easing } from "framer-motion";
 import styles from "./Dashboard.module.css";
-import { useDashboard, usePaymentTrends } from "@/services/analytics/analytics.hooks";
+import { useDashboard, usePaymentTrends, useExpiringIn7Days, usePaymentUpdates } from "@/services/analytics/analytics.hooks";
+import { DashboardFilters } from "@/services/analytics/analytics.api";
 
 const customEase: Easing = [0.16, 1, 0.3, 1] as any;
 
@@ -83,8 +85,30 @@ function RevenueChart({ trends }: { trends: { revenue: number; payments: number;
 
 /* ─── Main Page ───────────────────────────────────────────── */
 export default function DashboardPage() {
-  const { data: dashboard, isLoading } = useDashboard();
+  const [filterType, setFilterType] = useState<'all' | 'month' | 'year' | 'custom'>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
+  const filters: DashboardFilters | undefined = useMemo(() => {
+    if (filterType === 'all') return undefined;
+    if (filterType === 'month' && selectedMonth && selectedYear) {
+      return { month: selectedMonth, year: selectedYear };
+    }
+    if (filterType === 'year' && selectedYear) {
+      return { year: selectedYear };
+    }
+    if (filterType === 'custom' && startDate && endDate) {
+      return { startDate, endDate };
+    }
+    return undefined;
+  }, [filterType, selectedMonth, selectedYear, startDate, endDate]);
+
+  const { data: dashboard, isLoading } = useDashboard(filters);
   const { data: trendsData } = usePaymentTrends();
+  const { data: expiringData, isLoading: isLoadingExpiring } = useExpiringIn7Days();
+  const { data: paymentUpdatesData, isLoading: isLoadingPaymentUpdates } = usePaymentUpdates();
 
   const counts = dashboard?.counts;
 
@@ -110,9 +134,80 @@ export default function DashboardPage() {
           <p className={styles.eyebrow}>Admin Panel</p>
           <h1 className={styles.heading}>Dashboard Overview</h1>
         </div>
-        <div className={styles.headerMeta}>
-          <span className={styles.liveDot} />
-          {isLoading ? "Loading…" : "Live · updated just now"}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {/* Date Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fafaf8', border: '1px solid rgba(0,0,0,0.07)', borderRadius: '6px', padding: '6px 10px' }}>
+            <label style={{ fontSize: '0.75rem', color: '#777', fontWeight: 500 }}>Filter:</label>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as any)}
+              style={{ fontSize: '0.8rem', padding: '4px 8px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}
+            >
+              <option value="all">All Time</option>
+              <option value="month">By Month</option>
+              <option value="year">By Year</option>
+              <option value="custom">Custom Range</option>
+            </select>
+
+            {filterType === 'month' && (
+              <>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  style={{ fontSize: '0.8rem', padding: '4px 8px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px', background: '#fff', cursor: 'pointer' }}
+                >
+                  <option value="">Select Month</option>
+                  {['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'].map((m, i) => (
+                    <option key={m} value={m}>{['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i]}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  placeholder="Year"
+                  min="2020"
+                  max="2030"
+                  style={{ fontSize: '0.8rem', padding: '4px 8px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px', background: '#fff', width: '80px' }}
+                />
+              </>
+            )}
+
+            {filterType === 'year' && (
+              <input
+                type="number"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                placeholder="Year"
+                min="2020"
+                max="2030"
+                style={{ fontSize: '0.8rem', padding: '4px 8px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px', background: '#fff', width: '80px' }}
+              />
+            )}
+
+            {filterType === 'custom' && (
+              <>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  style={{ fontSize: '0.8rem', padding: '4px 8px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px', background: '#fff' }}
+                />
+                <span style={{ fontSize: '0.75rem', color: '#777' }}>to</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  style={{ fontSize: '0.8rem', padding: '4px 8px', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '4px', background: '#fff' }}
+                />
+              </>
+            )}
+          </div>
+
+          <div className={styles.headerMeta}>
+            <span className={styles.liveDot} />
+            {isLoading ? "Loading…" : "Live · updated just now"}
+          </div>
         </div>
       </motion.div>
 
@@ -184,7 +279,99 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* Expiring soon */}
+      {/* NEW SECTIONS - Below Recent Payments */}
+      <div className={styles.lowerGrid}>
+
+        {/* Expiring in 7 Days */}
+        <motion.div className={styles.section} custom={6} variants={fadeUp} initial="hidden" animate="visible">
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.sectionTitleBar} />Expiring in 7 Days
+            </h2>
+            <span className={styles.sectionBadge} style={{ color: "#f0a44b", borderColor: "rgba(240,164,75,0.3)", background: "rgba(240,164,75,0.08)" }}>
+              {expiringData?.count ?? 0} members
+            </span>
+          </div>
+          {isLoadingExpiring
+            ? <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>Loading…</p>
+            : (expiringData?.members && expiringData.members.length > 0 ? (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #1e1e1e" }}>
+                      {["Member","Contact","Plan","Expiry","Days Left","Pending"].map(h => (
+                        <th key={h} style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#555", fontWeight: 500, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {expiringData.members.map((m, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid #161616" }}>
+                        <td style={{ padding: "0.65rem 1rem", color: "#fff" }}>{m.memberName}</td>
+                        <td style={{ padding: "0.65rem 1rem", color: "#666" }}>{m.phone}</td>
+                        <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{m.planName}</td>
+                        <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{new Date(m.expiryDate).toLocaleDateString()}</td>
+                        <td style={{ padding: "0.65rem 1rem" }}>
+                          <span style={{ color: m.daysRemaining <= 3 ? "#e63946" : "#f0a44b", fontWeight: 600 }}>
+                            {m.daysRemaining}d
+                          </span>
+                        </td>
+                        <td style={{ padding: "0.65rem 1rem", color: m.pendingAmount > 0 ? "#f0a44b" : "#3ec95a" }}>
+                          {m.pendingAmount > 0 ? `₹${m.pendingAmount}` : "Paid"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No memberships expiring in the next 7 days.</p>
+            ))
+          }
+        </motion.div>
+
+        {/* Payment Updates */}
+        <motion.div className={styles.section} custom={7} variants={fadeUp} initial="hidden" animate="visible">
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.sectionTitleBar} />Payment Updates
+            </h2>
+            <span className={styles.sectionBadge}>{paymentUpdatesData?.count ?? 0} latest</span>
+          </div>
+          {isLoadingPaymentUpdates
+            ? <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>Loading…</p>
+            : (
+              <ul className={styles.feedList}>
+                {!paymentUpdatesData?.payments || paymentUpdatesData.payments.length === 0 ? (
+                  <li className={styles.feedItem} style={{ color: "#555" }}>No payment updates yet.</li>
+                ) : (
+                  paymentUpdatesData.payments.map((p, i) => (
+                    <li key={i} className={styles.feedItem}>
+                      <span className={`${styles.feedDot} ${styles.payment}`} />
+                      <div className={styles.feedContent}>
+                        <div className={styles.feedAction}>{p.memberName}</div>
+                        <div className={styles.feedDetail}>
+                          {p.flow === 'simplified' && p.received != null
+                            ? `Received: ₹${p.received}${p.pending ? ` · Pending: ₹${p.pending}` : ''} · ${p.paymentMode}`
+                            : `₹${p.amount} · ${p.paymentMode}`
+                          }
+                          {p.notes && ` · ${p.notes}`}
+                        </div>
+                      </div>
+                      <span className={styles.feedTime}>
+                        {new Date(p.createdAt).toLocaleDateString()}
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            )
+          }
+        </motion.div>
+
+      </div>
+
+      {/* Expiring soon (old section from dashboard overview - keeping it for now) */}
       {(nearExpiry.length > 0 || isLoading) && (
         <motion.div className={styles.section} custom={6} variants={fadeUp} initial="hidden" animate="visible"
           style={{ marginTop: "1.5rem" }}

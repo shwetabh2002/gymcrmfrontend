@@ -59,3 +59,25 @@ export const useDeleteMember = () => {
   });
 };
 
+// 🔹 Add Payment to Member
+export const useAddPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) => membersApi.addPayment(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+  });
+};
+
+// 🔹 Import Members from Excel
+export const useImportMembers = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => membersApi.importMembers(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+  });
+};
+

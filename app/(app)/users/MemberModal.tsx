@@ -55,6 +55,15 @@ export default function MemberModal({ open, onClose, existing }: Props) {
 
   useEffect(() => {
     if (existing) {
+      // Get active membership info, fallback to paymentSummary or direct fields
+      const activeMembership = existing.memberships?.find(m => m.status === "ACTIVE");
+      const totalReceived = activeMembership?.amountPaid ?? existing.paymentSummary?.totalReceived ?? existing.received ?? 0;
+      const totalPending = activeMembership?.pendingAmount ?? existing.paymentSummary?.totalPending ?? existing.pending ?? 0;
+      const totalAmount = activeMembership?.totalAmount ?? existing.membershipAmount ?? existing.amount ?? 0;
+      const months = activeMembership?.months ?? existing.membershipMonths;
+      const startDate = activeMembership?.startDate ?? existing.startingDate;
+      const expiryDate = activeMembership?.expiryDate ?? existing.expiryDate;
+
       setForm({
         idNo:             existing.idNo ?? "",
         date:             existing.date ? existing.date.slice(0, 10) : "",
@@ -65,19 +74,19 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         email:            existing.email ?? "",
         phone:            existing.phone ?? existing.contactNumber ?? "",
         membershipPlan:   existing.membershipPlan ?? "",
-        membershipMonths: existing.membershipMonths ?? undefined,
-        amount:           existing.amount ?? existing.membershipAmount,
-        membershipAmount: existing.membershipAmount ?? existing.amount,
-        received:         existing.received ?? 0,
-        pending:          existing.pending ?? Math.max(0, (existing.amount ?? existing.membershipAmount ?? 0) - (existing.received ?? 0)),
+        membershipMonths: months ?? undefined,
+        amount:           totalAmount,
+        membershipAmount: totalAmount,
+        received:         totalReceived,
+        pending:          totalPending,
         mop:              existing.mop ?? "",
         transactionId:    (existing as any).transactionId ?? "",
         salesPerson:      existing.salesPerson ?? "",
         trainingType:     existing.trainingType ?? "GT",
         trainer:          existing.trainer ?? "",
         memberType:       existing.memberType ?? "New",
-        startingDate:     existing.startingDate ? existing.startingDate.slice(0, 10) : "",
-        expiryDate:       existing.expiryDate ? existing.expiryDate.slice(0, 10) : "",
+        startingDate:     startDate ? startDate.slice(0, 10) : "",
+        expiryDate:       expiryDate ? expiryDate.slice(0, 10) : "",
         memberStatus:     existing.memberStatus ?? "ACTIVE",
         address:          existing.address ?? "",
         emergencyContact: existing.emergencyContact ?? "",
@@ -266,7 +275,22 @@ export default function MemberModal({ open, onClose, existing }: Props) {
               </div>
 
               {/* Section: Membership & Payment */}
-              <div className={styles.sectionLabel}>Membership & Payment</div>
+              <div className={styles.sectionLabel}>
+                Membership & Payment
+                {isEdit && existing?.paymentSummary && existing.paymentSummary.paymentCount > 1 && (
+                  <span style={{
+                    marginLeft: '12px',
+                    fontSize: '11px',
+                    color: '#6b7280',
+                    fontWeight: 400,
+                    backgroundColor: '#f3f4f6',
+                    padding: '2px 8px',
+                    borderRadius: '4px'
+                  }}>
+                    Total from {existing.paymentSummary.paymentCount} payments
+                  </span>
+                )}
+              </div>
               <div className={styles.fields}>
                 <div className={styles.row}>
                   <div className={styles.field}>

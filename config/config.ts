@@ -12,6 +12,8 @@ export const API_CONFIG = {
     BASE:     "/members",
     REGISTER: "/members/register",
     BY_ID:    (id: string) => `/members/${id}`,
+    PAYMENTS: "/members/payments",
+    IMPORT:   "/members/import",
   },
 
   PLANS: {
@@ -41,10 +43,12 @@ export const API_CONFIG = {
   },
 
   ANALYTICS: {
-    DASHBOARD:      "/analytics/dashboard",
-    MEMBERS:        "/analytics/members",
-    REVENUE:        "/analytics/revenue",
-    SUBSCRIPTIONS:  "/analytics/subscriptions",
-    PAYMENT_TRENDS: "/analytics/payment-trends",
+    DASHBOARD:         "/analytics/dashboard",
+    MEMBERS:           "/analytics/members",
+    REVENUE:           "/analytics/revenue",
+    SUBSCRIPTIONS:     "/analytics/subscriptions",
+    PAYMENT_TRENDS:    "/analytics/payment-trends",
+    EXPIRING_IN_7_DAYS: "/analytics/expiring-in-7-days",
+    PAYMENT_UPDATES:   "/analytics/payment-updates",
   },
 } as const;

@@ -3,12 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCreateMember } from "@/services/members/members.hook";
-import {
-  parseExcelFile,
-  validateExcelFile,
-} from "@/services/members/members.excel-handler";
-import { createPayloadToRegisterPayload } from "@/services/members/members.import-export";
+import { useImportMembers } from "@/services/members/members.hook";
+import { ImportResult } from "@/services/members/members.api";
 import styles from "./ImportMembersModal.module.css";
 
 interface Props {
@@ -20,12 +16,11 @@ export default function ImportMembersModal({ open, onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
-  const [progress, setProgress] = useState(0);
   const [importing, setImporting] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [preview, setPreview] = useState<any[]>([]);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
-  const { mutate: createMember } = useCreateMember();
+  const { mutate: importMembers, isPending } = useImportMembers();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -34,26 +29,22 @@ export default function ImportMembersModal({ open, onClose }: Props) {
     if (!selectedFile) return;
 
     setError("");
-    setPreview([]);
-    setProgress(0);
+    setImportResult(null);
 
-    // Validate file
-    const validation = await validateExcelFile(selectedFile);
-    if (!validation.valid) {
-      setError(validation.error || "Invalid file");
+    // Validate file type
+    const isExcel = selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls');
+    if (!isExcel) {
+      setError("Please select a valid Excel file (.xlsx or .xls)");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      setError("File size must be less than 5MB");
       return;
     }
 
     setFile(selectedFile);
-
-    try {
-      // Parse and preview
-      const members = await parseExcelFile(selectedFile);
-      setPreview(members.slice(0, 5));
-    } catch (err: any) {
-      setError(err.message || "Failed to parse file");
-      setFile(null);
-    }
   };
 
   const handleImport = async () => {
@@ -64,58 +55,33 @@ export default function ImportMembersModal({ open, onClose }: Props) {
 
     setImporting(true);
     setError("");
-    setProgress(0);
+    setImportResult(null);
 
-    try {
-      const members = await parseExcelFile(file);
-
-      if (members.length === 0) {
-        setError("No valid members found in the file");
+    importMembers(file, {
+      onSuccess: (result) => {
         setImporting(false);
-        return;
-      }
+        setImportResult(result);
 
-      // Import members one by one
-      let imported = 0;
-      for (const member of members) {
-        try {
-          await new Promise<void>((resolve, reject) => {
-            createMember(createPayloadToRegisterPayload(member), {
-              onSuccess: () => {
-                imported++;
-                setProgress(Math.round((imported / members.length) * 100));
-                resolve();
-              },
-              onError: (err: any) => {
-                // Log error but continue with next member
-                console.error(`Failed to import ${member.name}:`, err);
-                imported++;
-                setProgress(Math.round((imported / members.length) * 100));
-                resolve();
-              },
-            });
-          });
-        } catch (err) {
-          console.error(`Import error for ${member.name}:`, err);
+        // If all successful, close modal after a delay
+        if (result.failed === 0 && result.errors.length === 0) {
+          setTimeout(() => {
+            onClose();
+            resetModal();
+          }, 2000);
         }
-      }
-
-      setProgress(100);
-      setTimeout(() => {
-        onClose();
-        resetModal();
-      }, 1500);
-    } catch (err: any) {
-      setError(err.message || "Import failed");
-      setImporting(false);
-    }
+      },
+      onError: (err: any) => {
+        setImporting(false);
+        setError(err?.response?.data?.message || err.message || "Import failed");
+      },
+    });
   };
 
   const resetModal = () => {
     setFile(null);
-    setProgress(0);
     setError("");
-    setPreview([]);
+    setImportResult(null);
+    setImporting(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -180,48 +146,68 @@ export default function ImportMembersModal({ open, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Preview */}
-              {preview.length > 0 && (
-                <div className={styles.previewSection}>
-                  <h3 className={styles.previewTitle}>Preview (first 5 members)</h3>
-                  <div className={styles.previewTable}>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Phone</th>
-                          <th>Package</th>
-                          <th>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {preview.map((member, idx) => (
-                          <tr key={idx}>
-                            <td>{member.name}</td>
-                            <td>{member.contactNumber}</td>
-                            <td>{member.membershipPlan || "—"}</td>
-                            <td>₹{member.amount?.toLocaleString() || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              {/* Import Result */}
+              {importResult && (
+                <div className={styles.resultSection}>
+                  <h3 className={styles.resultTitle}>Import Results</h3>
+                  <div className={styles.resultStats}>
+                    <div className={styles.resultStat}>
+                      <span className={styles.resultLabel}>Total:</span>
+                      <span className={styles.resultValue}>{importResult.success + importResult.failed + importResult.skipped}</span>
+                    </div>
+                    <div className={`${styles.resultStat} ${styles.success}`}>
+                      <span className={styles.resultLabel}>✓ Success:</span>
+                      <span className={styles.resultValue}>{importResult.success}</span>
+                    </div>
+                    {importResult.failed > 0 && (
+                      <div className={`${styles.resultStat} ${styles.failed}`}>
+                        <span className={styles.resultLabel}>✗ Failed:</span>
+                        <span className={styles.resultValue}>{importResult.failed}</span>
+                      </div>
+                    )}
+                    {importResult.skipped > 0 && (
+                      <div className={`${styles.resultStat} ${styles.skipped}`}>
+                        <span className={styles.resultLabel}>⊘ Skipped:</span>
+                        <span className={styles.resultValue}>{importResult.skipped}</span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Errors */}
+                  {importResult.errors && importResult.errors.length > 0 && (
+                    <div className={styles.errorList}>
+                      <h4>Errors:</h4>
+                      <ul>
+                        {importResult.errors.map((err, idx) => (
+                          <li key={idx}>
+                            Row {err.row}: {err.error}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Skipped */}
+                  {importResult.skippedMembers && importResult.skippedMembers.length > 0 && (
+                    <div className={styles.skippedList}>
+                      <h4>Skipped Members:</h4>
+                      <ul>
+                        {importResult.skippedMembers.map((skip, idx) => (
+                          <li key={idx}>
+                            Row {skip.row} - {skip.name}: {skip.reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Progress */}
               {importing && (
                 <div className={styles.progressSection}>
-                  <p className={styles.progressLabel}>Importing members...</p>
-                  <div className={styles.progressBar}>
-                    <motion.div
-                      className={styles.progressFill}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </div>
-                  <p className={styles.progressPercent}>{progress}%</p>
+                  <p className={styles.progressLabel}>Importing members from Excel...</p>
+                  <div className={styles.spinner}></div>
                 </div>
               )}
 
@@ -239,14 +225,14 @@ export default function ImportMembersModal({ open, onClose }: Props) {
 
             <div className={styles.modalFooter}>
               <button className={styles.btnSecondary} onClick={onClose} disabled={importing}>
-                {importing ? "Importing..." : "Cancel"}
+                {importResult ? "Close" : "Cancel"}
               </button>
               <button
                 className={styles.btnPrimary}
                 onClick={handleImport}
-                disabled={!file || importing}
+                disabled={!file || importing || !!importResult}
               >
-                {importing ? `Importing (${progress}%)` : "Import Members"}
+                {importing ? "Importing..." : importResult ? "Import Complete" : "Import Members"}
               </button>
             </div>
           </motion.div>

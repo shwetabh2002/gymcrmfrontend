@@ -9,6 +9,7 @@ import MemberModal from "./MemberModal";
 import DeleteMemberDialog from "./DeleteMemberDialog";
 import ImportMembersModal from "./ImportMembersModal";
 import ExportMembersButton from "./ExportMembersButton";
+import AddPaymentModal from "./AddPaymentModal";
 
 const PAGE_SIZE = 10;
 
@@ -54,54 +55,106 @@ function formatCurrency(amount?: number) {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
+// Helper to get active membership from memberships array
+function getActiveMembership(member: Member) {
+  return member.memberships?.find(m => m.status === "ACTIVE") || null;
+}
+
+// Helper to get membership info with fallback to legacy fields
+function getMembershipInfo(member: Member) {
+  const activeMembership = getActiveMembership(member);
+
+  if (activeMembership) {
+    return {
+      totalAmount: activeMembership.totalAmount,
+      amountPaid: activeMembership.amountPaid,
+      pendingAmount: activeMembership.pendingAmount,
+      startDate: activeMembership.startDate,
+      expiryDate: activeMembership.expiryDate,
+      months: activeMembership.months,
+      status: activeMembership.status,
+    };
+  }
+
+  // Fallback to legacy fields or payment summary
+  return {
+    totalAmount: member.membershipAmount ?? member.amount ?? 0,
+    amountPaid: member.paymentSummary?.totalReceived ?? member.received ?? 0,
+    pendingAmount: member.paymentSummary?.totalPending ?? member.pending ?? 0,
+    startDate: member.startingDate,
+    expiryDate: member.expiryDate,
+    months: member.membershipMonths,
+    status: member.memberStatus,
+  };
+}
+
 export default function UsersPage() {
   const { data: members, isLoading, isError } = useMembers();
 
   const [modalOpen,    setModalOpen]    = useState(false);
   const [deleteOpen,   setDeleteOpen]   = useState(false);
   const [importOpen,   setImportOpen]   = useState(false);
+  const [paymentOpen,  setPaymentOpen]  = useState(false);
   const [selected,     setSelected]     = useState<Member | null>(null);
   const [search,       setSearch]       = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [typeFilter,   setTypeFilter]   = useState("ALL");
-  const [trainFilter,  setTrainFilter]  = useState("ALL");
-  const [page,         setPage]         = useState(1);
+  const [statusFilter,  setStatusFilter]  = useState("ALL");
+  const [typeFilter,    setTypeFilter]    = useState("ALL");
+  const [trainFilter,   setTrainFilter]   = useState("ALL");
+  const [pendingFilter, setPendingFilter] = useState("ALL");
+  const [page,          setPage]          = useState(1);
 
-  const openCreate = () => { setSelected(null); setModalOpen(true); };
-  const openEdit   = (m: Member) => { setSelected(m); setModalOpen(true); };
-  const openDelete = (m: Member) => { setSelected(m); setDeleteOpen(true); };
+  const openCreate  = () => { setSelected(null); setModalOpen(true); };
+  const openEdit    = (m: Member) => { setSelected(m); setModalOpen(true); };
+  const openDelete  = (m: Member) => { setSelected(m); setDeleteOpen(true); };
+  const openPayment = (m: Member) => { setSelected(m); setPaymentOpen(true); };
 
   // Reset to page 1 whenever filters/search change
-  const handleSearch = (val: string) => { setSearch(val); setPage(1); };
-  const handleStatus = (val: string) => { setStatusFilter(val); setPage(1); };
-  const handleType   = (val: string) => { setTypeFilter(val); setPage(1); };
-  const handleTrain  = (val: string) => { setTrainFilter(val); setPage(1); };
+  const handleSearch  = (val: string) => { setSearch(val); setPage(1); };
+  const handleStatus  = (val: string) => { setStatusFilter(val); setPage(1); };
+  const handleType    = (val: string) => { setTypeFilter(val); setPage(1); };
+  const handleTrain   = (val: string) => { setTrainFilter(val); setPage(1); };
+  const handlePending = (val: string) => { setPendingFilter(val); setPage(1); };
 
   const filtered = useMemo(() => {
     if (!members) return [];
-    return members.filter(m => {
-      const q = search.toLowerCase();
-      const contactValue = (m.contactNumber || m.phone || "").toLowerCase();
-      const matchSearch = !q ||
-        m.name.toLowerCase().includes(q) ||
-        contactValue.includes(q) ||
-        (m.email ?? "").toLowerCase().includes(q) ||
-        (m.idNo ?? "").toLowerCase().includes(q) ||
-        (m.trainer ?? "").toLowerCase().includes(q) ||
-        (m.salesPerson ?? "").toLowerCase().includes(q);
-      const matchStatus = statusFilter === "ALL" || m.memberStatus === statusFilter;
-      const matchType   = typeFilter   === "ALL" || m.memberType   === typeFilter;
-      const matchTrain  = trainFilter  === "ALL" || m.trainingType === trainFilter;
-      return matchSearch && matchStatus && matchType && matchTrain;
-    });
-  }, [members, search, statusFilter, typeFilter, trainFilter]);
+    return members
+      .filter(m => {
+        const q = search.toLowerCase();
+        const contactValue = (m.contactNumber || m.phone || "").toLowerCase();
+        const matchSearch = !q ||
+          m.name.toLowerCase().includes(q) ||
+          contactValue.includes(q) ||
+          (m.email ?? "").toLowerCase().includes(q) ||
+          (m.idNo ?? "").toLowerCase().includes(q) ||
+          (m.trainer ?? "").toLowerCase().includes(q) ||
+          (m.salesPerson ?? "").toLowerCase().includes(q);
+        const matchStatus = statusFilter === "ALL" || m.memberStatus === statusFilter;
+        const matchType   = typeFilter   === "ALL" || m.memberType   === typeFilter;
+        const matchTrain  = trainFilter  === "ALL" || m.trainingType === trainFilter;
+        // Check pending using memberships array first, then fallback
+        const membershipInfo = getMembershipInfo(m);
+        const hasPending = membershipInfo.pendingAmount > 0;
+
+        const matchPending = pendingFilter === "ALL" ||
+          (pendingFilter === "HAS_PENDING" && hasPending) ||
+          (pendingFilter === "FULLY_PAID" && !hasPending);
+        return matchSearch && matchStatus && matchType && matchTrain && matchPending;
+      })
+      .sort((a, b) => {
+        // Sort by createdAt descending (newest first)
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+  }, [members, search, statusFilter, typeFilter, trainFilter, pendingFilter]);
 
   // Pagination slice
   const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const totalPending  = filtered.reduce((s, m) => s + (m.pending  ?? 0), 0);
-  const totalReceived = filtered.reduce((s, m) => s + (m.received ?? 0), 0);
+  // Calculate totals using membership info
+  const totalPending  = filtered.reduce((s, m) => s + getMembershipInfo(m).pendingAmount, 0);
+  const totalReceived = filtered.reduce((s, m) => s + getMembershipInfo(m).amountPaid, 0);
 
   // Build page number buttons — show at most 5 around current page
   const pageNumbers = () => {
@@ -122,6 +175,7 @@ export default function UsersPage() {
       <MemberModal open={modalOpen} onClose={() => setModalOpen(false)} existing={selected} />
       <DeleteMemberDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} member={selected} />
       <ImportMembersModal open={importOpen} onClose={() => setImportOpen(false)} />
+      <AddPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} member={selected} />
 
       {/* Header */}
       <motion.div
@@ -201,6 +255,11 @@ export default function UsersPage() {
               <option value="GT">GT</option>
               <option value="OTHER">Other</option>
             </select>
+            <select className={styles.filterSelect} value={pendingFilter} onChange={e => handlePending(e.target.value)}>
+              <option value="ALL">All Payments</option>
+              <option value="HAS_PENDING">⚠ Has Pending</option>
+              <option value="FULLY_PAID">✓ Fully Paid</option>
+            </select>
           </div>
         </div>
 
@@ -241,23 +300,42 @@ export default function UsersPage() {
                       <div className={styles.avatarCell}>
                         <div className={styles.avatar}>{initials(m.name)}</div>
                         <div>
-                          <div className={styles.avatarName}>{m.name}</div>
+                          <div className={styles.avatarName}>
+                            {m.name}
+                            {getMembershipInfo(m).pendingAmount > 0 && (
+                              <span style={{
+                                marginLeft: '6px',
+                                fontSize: '10px',
+                                backgroundColor: '#fee2e2',
+                                color: '#dc2626',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontWeight: 600
+                              }}>
+                                ⚠ Pending
+                              </span>
+                            )}
+                          </div>
                           {m.instagramHandle && <div className={styles.avatarSub}>{m.instagramHandle}</div>}
                         </div>
                       </div>
                     </td>
                     <td className={styles.cellMono}>{m.contactNumber || m.phone || "—"}</td>
-                    <td className={styles.cellMono}>{m.membershipPlan || (m.membershipMonths ? `${m.membershipMonths} months` : "—")}</td>
+                    <td className={styles.cellMono}>{m.membershipPlan || (getMembershipInfo(m).months ? `${getMembershipInfo(m).months} months` : "—")}</td>
                     <td>
                       <span className={`${styles.badge} ${trainingBadgeClass(m.trainingType, styles)}`}>
                         {m.trainingType ?? "OTHER"}
                       </span>
                     </td>
                     <td className={styles.cellPerson}>{m.trainer ?? "—"}</td>
-                    <td className={styles.cellMono}>{formatCurrency(m.amount)}</td>
-                    <td className={`${styles.cellMono} ${styles.cellGreen}`}>{formatCurrency(m.received)}</td>
-                    <td className={`${styles.cellMono} ${(m.pending ?? 0) > 0 ? styles.cellRed : ""}`}>
-                      {(m.pending ?? 0) > 0 ? formatCurrency(m.pending ?? 0) : <span style={{ color: "var(--text-3)" }}>Nil</span>}
+                    <td className={styles.cellMono}>{formatCurrency(getMembershipInfo(m).totalAmount)}</td>
+                    <td className={`${styles.cellMono} ${styles.cellGreen}`}>
+                      {formatCurrency(getMembershipInfo(m).amountPaid)}
+                    </td>
+                    <td className={`${styles.cellMono} ${getMembershipInfo(m).pendingAmount > 0 ? styles.cellRed : ""}`}>
+                      {getMembershipInfo(m).pendingAmount > 0
+                        ? formatCurrency(getMembershipInfo(m).pendingAmount)
+                        : <span style={{ color: "var(--text-3)" }}>Nil</span>}
                     </td>
                     <td className={styles.cellMono} style={{ fontSize: 11 }}>{m.mop ?? "—"}</td>
                     <td>
@@ -265,7 +343,7 @@ export default function UsersPage() {
                         {m.memberType ?? "Renewal"}
                       </span>
                     </td>
-                    <td className={styles.cellMono}>{formatDate(m.expiryDate)}</td>
+                    <td className={styles.cellMono}>{formatDate(getMembershipInfo(m).expiryDate)}</td>
                     <td>
                       <span className={`${styles.badge} ${statusBadgeClass(m.memberStatus, styles)}`}>
                         {m.memberStatus ?? "ACTIVE"}
@@ -273,6 +351,7 @@ export default function UsersPage() {
                     </td>
                     <td>
                       <div className={styles.rowActions}>
+                        <button className={styles.iconBtn} onClick={() => openPayment(m)} title="Add Payment" style={{ fontSize: '14px' }}>₹</button>
                         <button className={styles.iconBtn} onClick={() => openEdit(m)} title="Edit">✎</button>
                         <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => openDelete(m)} title="Delete">✕</button>
                       </div>

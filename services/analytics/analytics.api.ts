@@ -102,9 +102,63 @@ export interface PaymentTrends {
   monthlyTrends: { revenue: number; payments: number; year: number; month: number }[];
 }
 
+export interface MemberExpiringIn7Days {
+  memberName: string;
+  email: string;
+  phone: string;
+  planName: string;
+  expiryDate: string;
+  daysRemaining: number;
+  pendingAmount: number;
+  paymentStatus: string;
+  flow: string;
+}
+
+export interface ExpiringIn7DaysData {
+  count: number;
+  members: MemberExpiringIn7Days[];
+}
+
+export interface PaymentUpdate {
+  memberName: string;
+  email: string;
+  phone: string;
+  amount: number;
+  received?: number;
+  pending?: number;
+  paymentMode: string;
+  paymentDate: string;
+  transactionId?: string;
+  notes?: string;
+  createdAt: string;
+  flow: string;
+}
+
+export interface PaymentUpdatesData {
+  count: number;
+  payments: PaymentUpdate[];
+}
+
+export interface DashboardFilters {
+  startDate?: string;
+  endDate?: string;
+  month?: string;
+  year?: string;
+}
+
 export const analyticsApi = {
-  getDashboard: () =>
-    requestService.get<DashboardData>(API_CONFIG.ANALYTICS.DASHBOARD),
+  getDashboard: (filters?: DashboardFilters) => {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.month) params.append('month', filters.month);
+    if (filters?.year) params.append('year', filters.year);
+    const queryString = params.toString();
+    const url = queryString
+      ? `${API_CONFIG.ANALYTICS.DASHBOARD}?${queryString}`
+      : API_CONFIG.ANALYTICS.DASHBOARD;
+    return requestService.get<DashboardData>(url);
+  },
 
   getMemberAnalytics: () =>
     requestService.get<MemberAnalytics>(API_CONFIG.ANALYTICS.MEMBERS),
@@ -117,4 +171,10 @@ export const analyticsApi = {
 
   getPaymentTrends: () =>
     requestService.get<PaymentTrends>(API_CONFIG.ANALYTICS.PAYMENT_TRENDS),
+
+  getExpiringIn7Days: () =>
+    requestService.get<ExpiringIn7DaysData>(API_CONFIG.ANALYTICS.EXPIRING_IN_7_DAYS),
+
+  getPaymentUpdates: () =>
+    requestService.get<PaymentUpdatesData>(API_CONFIG.ANALYTICS.PAYMENT_UPDATES),
 };

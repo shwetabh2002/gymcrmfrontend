@@ -1,5 +1,33 @@
 import { requestService } from "../request/requestServcie";
 import { API_CONFIG } from "@/config/config";
+import apiClient from "../apiClient";
+
+export interface PaymentSummary {
+  totalReceived: number;
+  totalPending: number;
+  hasPendingBalance: boolean;
+  lastPaymentDate: string | null;
+  lastPaymentAmount: number;
+  paymentCount: number;
+}
+
+export interface Membership {
+  _id: string;
+  startDate: string;
+  expiryDate: string;
+  months: number;
+  totalAmount: number;
+  amountPaid: number;
+  pendingAmount: number;
+  status: "ACTIVE" | "EXPIRED" | "CANCELLED";
+  package?: string;
+  trainingType?: string;
+  trainer?: string;
+  salesPerson?: string;
+  memberType?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface Member {
   _id: string;
@@ -30,6 +58,8 @@ export interface Member {
   emergencyContact?: string;
   createdAt?: string;
   updatedAt?: string;
+  paymentSummary?: PaymentSummary;
+  memberships?: Membership[]; // NEW: Array of memberships
 }
 
 export interface CreateMemberPayload {
@@ -63,6 +93,19 @@ export interface CreateMemberPayload {
 }
 
 export interface UpdateMemberPayload extends Partial<CreateMemberPayload> {}
+
+export interface AddPaymentPayload {
+  memberId: string;
+  amount: number;
+  received: number;
+  pending?: number;
+  mop: string;
+  paymentDate: string;
+  transactionId?: string;
+  notes?: string;
+  renewalMonths?: number;
+  newExpiryDate?: string;
+}
 
 export interface RegisterMemberPayload {
   date: string;
@@ -109,6 +152,26 @@ export const normalizeMember = (m: Partial<Member>): Member => {
     membershipPlan: m.membershipPlan ?? "",
   } as Member;
 };
+export interface ImportResult {
+  total: number;
+  success: number;
+  failed: number;
+  skipped: number;
+  imported: Array<{
+    member: Member;
+    payment: any;
+  }>;
+  errors: Array<{
+    row: number;
+    error: string;
+  }>;
+  skippedMembers: Array<{
+    row: number;
+    name: string;
+    reason: string;
+  }>;
+}
+
 export const membersApi = {
   getMembers: () =>
     requestService.get<Member[]>(API_CONFIG.MEMBERS.BASE),
@@ -127,4 +190,25 @@ export const membersApi = {
 
   deleteMember: (id: string) =>
     requestService.delete<{ message: string }>(API_CONFIG.MEMBERS.BY_ID(id)),
+
+  addPayment: (payload: AddPaymentPayload) =>
+    requestService.post<{ payment: any; member: Member }, AddPaymentPayload>(
+      API_CONFIG.MEMBERS.PAYMENTS,
+      payload
+    ),
+
+  importMembers: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<ImportResult>(
+      API_CONFIG.MEMBERS.IMPORT,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return data;
+  },
 };
