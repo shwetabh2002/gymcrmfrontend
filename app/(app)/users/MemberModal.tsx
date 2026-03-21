@@ -105,6 +105,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     const amount = form.amount ?? form.membershipAmount ?? 0;
     const received = form.received ?? 0;
     const membershipMonths = Math.max(1, Number(form.membershipMonths) || 1);
+    const pending = form.pending ?? Math.max(0, amount - received);
 
     return {
       date: form.date || new Date().toISOString().split('T')[0],
@@ -116,15 +117,18 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       mop: form.mop ?? "cash",
       startingDate: form.startingDate || new Date().toISOString().split('T')[0],
       expiryDate: form.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      idNo: form.idNo || undefined,
       dob: form.dob || undefined,
       instagramHandle: form.instagramHandle || undefined,
+      pending,
+      transactionId: form.transactionId || undefined,
       salesPerson: form.salesPerson || undefined,
       trainingType: form.trainingType ?? "GT",
       trainer: form.trainer || undefined,
       memberType: form.memberType ?? "New",
+      memberStatus: form.memberStatus ?? "ACTIVE",
       address: form.address || undefined,
       emergencyContact: form.emergencyContact || undefined,
-      transactionId: form.transactionId || undefined,
     };
   };
 

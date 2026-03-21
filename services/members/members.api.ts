@@ -74,15 +74,18 @@ export interface RegisterMemberPayload {
   mop: string;
   startingDate: string;
   expiryDate: string;
+  idNo?: string;
   dob?: string;
   instagramHandle?: string;
+  pending?: number;
+  transactionId?: string;
   salesPerson?: string;
   trainingType?: "GT" | "PT" | "OTHER";
   trainer?: string;
   memberType?: "New" | "Old" | "Renewal";
+  memberStatus?: "ACTIVE" | "INACTIVE" | "EXPIRED";
   address?: string;
   emergencyContact?: string;
-  transactionId?: string;
 }
 
 export const normalizeMember = (m: Partial<Member>): Member => {

@@ -86,7 +86,30 @@
 .closeBtn:hover { background: var(--surface-3); color: var(--text); border-color: var(--border); }
 
 /* Invoice View Modal */
-.invoiceViewModal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); max-width: 90vw; max-height: 90vh; overflow-y: auto; z-index: 1000; width: 900px; }
+.invoiceViewModal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; margin: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); max-width: 90vw; max-height: 90vh; overflow-y: auto; z-index: 1000; width: 900px; height: fit-content; max-height: 80vh; }
 .invoiceViewHeader { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .invoiceViewTitle { font-size: 16px; font-weight: 600; color: var(--text); margin: 0; }
 .invoiceViewContent { padding: 24px; }
+
+/* Payment Details Styling */
+.paymentDetails { max-width: 600px; margin: 0 auto; }
+.paymentHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.paymentTitle { font-size: 1.5rem; font-weight: 700; color: var(--text); margin: 0; }
+.paymentStatus { display: flex; gap: 0.5rem; }
+
+.statusBadge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.statusComplete { background: #10b981; color: white; }
+.statusPartial { background: #f59e0b; color: white; }
+
+.paymentGrid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-bottom: 2rem; }
+.detailRow { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border); }
+.detailLabel { font-size: 0.875rem; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+.detailValue { font-size: 1rem; font-weight: 600; color: var(--text); }
+
+.amountReceived { color: #10b981; }
+.amountPending { color: #ef4444; }
+.amountZero { color: var(--text-2); }
+
+.notesSection { margin-top: 2rem; padding: 1.5rem; background: var(--surface-2); border-radius: 8px; border: 1px solid var(--border); }
+.notesTitle { font-size: 1rem; font-weight: 600; color: var(--text); margin: 0 0 0.5rem 0; }
+.notesText { font-size: 0.875rem; color: var(--text-2); line-height: 1.5; margin: 0; }

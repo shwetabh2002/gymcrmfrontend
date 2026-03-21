@@ -1,68 +1,68 @@
 import { requestService } from "../request/requestServcie";
 import { API_CONFIG } from "@/config/config";
 
-export interface InvoiceItem {
-  description: string;
-  amount: number;
-}
-
-export interface Invoice {
+// Payment-focused interfaces (replacing old invoice system)
+export interface PaymentRecord {
   _id: string;
-  invoiceNumber: string;
-  memberId: string | { _id: string; name: string; email: string; phone: string };
-  subscriptionId: string | { _id: string; planPrice: number; paymentStatus: string };
-  items: InvoiceItem[];
-  subtotal: number;
-  taxPercentage: number;
-  taxAmount: number;
-  totalAmount: number;
-  invoiceDate: string;
-  dueDate?: string;
-  paymentId?: string | { _id: string; amount: number; paymentMode: string };
-  generatedBy?: string | { _id: string; name: string; email: string };
-  notes?: string;
+  memberId: {
+    _id: string;
+    email: string;
+    name: string;
+    phone: string;
+  };
+  amount: number;
+  received: number;
+  pending: number;
+  mop: string;
+  paymentDate: string;
+  transactionId: string | null;
+  notes: string;
   createdAt: string;
   updatedAt: string;
+  __v: number;
 }
 
-export interface CreateInvoicePayload {
-  memberId: string;
-  subscriptionId: string;
-  items: InvoiceItem[];
-  taxPercentage?: number;
-  invoiceDate: string;
-  dueDate?: string;
-  paymentId?: string;
-  notes?: string;
+export interface PaymentsResponse {
+  data: PaymentRecord[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
 }
 
-export interface UpdateInvoicePayload {
-  items?: InvoiceItem[];
-  taxPercentage?: number;
-  invoiceDate?: string;
-  dueDate?: string;
-  notes?: string;
+export interface MemberRecord {
+  _id: string;
+  name: string;
+  contactNumber?: string;
+  phone?: string;
+  email?: string;
+  membershipMonths?: number;
+  membershipAmount?: number;
+  startingDate?: string;
+  expiryDate?: string;
+  memberStatus?: "ACTIVE" | "INACTIVE" | "EXPIRED";
+  trainer?: string;
+  trainingType?: string;
 }
 
 export const invoicesApi = {
-  getInvoices: () =>
-    requestService.get<Invoice[]>(API_CONFIG.INVOICES.BASE),
+  // Get all payments for all members (replaces old invoice system)
+  getAllPayments: () =>
+    requestService.get<PaymentsResponse>(`${API_CONFIG.MEMBERS.BASE}/payments`),
 
-  getInvoiceById: (id: string) =>
-    requestService.get<Invoice>(API_CONFIG.INVOICES.BY_ID(id)),
+  // Get payment history for a specific member
+  getPaymentsByMember: (memberId: string) =>
+    requestService.get<PaymentsResponse>(`${API_CONFIG.MEMBERS.BY_ID(memberId)}/payments`),
 
-  getInvoicesByMember: (memberId: string) =>
-    requestService.get<Invoice[]>(API_CONFIG.INVOICES.BY_MEMBER(memberId)),
+  // Get all registered members (for invoice/member selection)
+  getAllMembers: () =>
+    requestService.get<MemberRecord[]>(API_CONFIG.MEMBERS.BASE),
 
-  getInvoicesBySubscription: (subscriptionId: string) =>
-    requestService.get<Invoice[]>(API_CONFIG.INVOICES.BY_SUBSCRIPTION(subscriptionId)),
-
-  createInvoice: (payload: CreateInvoicePayload) =>
-    requestService.post<Invoice, CreateInvoicePayload>(API_CONFIG.INVOICES.BASE, payload),
-
-  updateInvoice: (id: string, payload: UpdateInvoicePayload) =>
-    requestService.put<Invoice, UpdateInvoicePayload>(API_CONFIG.INVOICES.BY_ID(id), payload),
-
-  deleteInvoice: (id: string) =>
-    requestService.delete<{ message: string }>(API_CONFIG.INVOICES.BY_ID(id)),
+  // Get member by ID
+  getMemberById: (id: string) =>
+    requestService.get<MemberRecord>(API_CONFIG.MEMBERS.BY_ID(id)),
 };
