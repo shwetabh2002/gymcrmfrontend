@@ -10,6 +10,8 @@ import DeleteMemberDialog from "./DeleteMemberDialog";
 import ImportMembersModal from "./ImportMembersModal";
 import ExportMembersButton from "./ExportMembersButton";
 
+const PAGE_SIZE = 10;
+
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
   visible: (i: number) => ({
@@ -63,10 +65,17 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [typeFilter,   setTypeFilter]   = useState("ALL");
   const [trainFilter,  setTrainFilter]  = useState("ALL");
+  const [page,         setPage]         = useState(1);
 
   const openCreate = () => { setSelected(null); setModalOpen(true); };
   const openEdit   = (m: Member) => { setSelected(m); setModalOpen(true); };
   const openDelete = (m: Member) => { setSelected(m); setDeleteOpen(true); };
+
+  // Reset to page 1 whenever filters/search change
+  const handleSearch = (val: string) => { setSearch(val); setPage(1); };
+  const handleStatus = (val: string) => { setStatusFilter(val); setPage(1); };
+  const handleType   = (val: string) => { setTypeFilter(val); setPage(1); };
+  const handleTrain  = (val: string) => { setTrainFilter(val); setPage(1); };
 
   const filtered = useMemo(() => {
     if (!members) return [];
@@ -81,14 +90,32 @@ export default function UsersPage() {
         (m.trainer ?? "").toLowerCase().includes(q) ||
         (m.salesPerson ?? "").toLowerCase().includes(q);
       const matchStatus = statusFilter === "ALL" || m.memberStatus === statusFilter;
-      const matchType   = typeFilter   === "ALL" || m.memberType === typeFilter;
+      const matchType   = typeFilter   === "ALL" || m.memberType   === typeFilter;
       const matchTrain  = trainFilter  === "ALL" || m.trainingType === trainFilter;
       return matchSearch && matchStatus && matchType && matchTrain;
     });
   }, [members, search, statusFilter, typeFilter, trainFilter]);
 
+  // Pagination slice
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const totalPending  = filtered.reduce((s, m) => s + (m.pending  ?? 0), 0);
   const totalReceived = filtered.reduce((s, m) => s + (m.received ?? 0), 0);
+
+  // Build page number buttons — show at most 5 around current page
+  const pageNumbers = () => {
+    const delta = 2;
+    const range: number[] = [];
+    for (
+      let i = Math.max(1, page - delta);
+      i <= Math.min(totalPages, page + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+    return range;
+  };
 
   return (
     <div className={styles.page}>
@@ -112,7 +139,7 @@ export default function UsersPage() {
           <button className={styles.btnSecondary} onClick={() => setImportOpen(true)}>
             ⬆ Import Excel
           </button>
-          <button className={styles.btnPrimary} onClick={() => setModalOpen(true)}>
+          <button className={styles.btnPrimary} onClick={openCreate}>
             + Add Member
           </button>
         </div>
@@ -154,21 +181,21 @@ export default function UsersPage() {
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>⌕</span>
               <input className={styles.searchInput} placeholder="Search name, ID, phone, trainer…"
-                value={search} onChange={e => setSearch(e.target.value)} />
+                value={search} onChange={e => handleSearch(e.target.value)} />
             </div>
-            <select className={styles.filterSelect} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <select className={styles.filterSelect} value={statusFilter} onChange={e => handleStatus(e.target.value)}>
               <option value="ALL">All Status</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
               <option value="EXPIRED">Expired</option>
             </select>
-            <select className={styles.filterSelect} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+            <select className={styles.filterSelect} value={typeFilter} onChange={e => handleType(e.target.value)}>
               <option value="ALL">All Types</option>
               <option value="New">New</option>
               <option value="Old">Old</option>
               <option value="Renewal">Renewal</option>
             </select>
-            <select className={styles.filterSelect} value={trainFilter} onChange={e => setTrainFilter(e.target.value)}>
+            <select className={styles.filterSelect} value={trainFilter} onChange={e => handleTrain(e.target.value)}>
               <option value="ALL">All Training</option>
               <option value="PT">PT</option>
               <option value="GT">GT</option>
@@ -202,12 +229,12 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && (
+                {paginated.length === 0 && (
                   <tr><td colSpan={14} style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-2)", fontSize: 13 }}>
                     {members?.length === 0 ? "No members yet. Add one to get started." : "No members match your filters."}
                   </td></tr>
                 )}
-                {filtered.map((m) => (
+                {paginated.map((m) => (
                   <tr key={m._id}>
                     <td className={styles.cellMono} style={{ color: "var(--text-3)", fontSize: 11 }}>{m.idNo ?? "—"}</td>
                     <td>
@@ -257,16 +284,33 @@ export default function UsersPage() {
           )}
         </div>
 
+        {/* Pagination */}
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
             {filtered.length !== members?.length
-              ? `Showing ${filtered.length} of ${members?.length ?? 0} members`
-              : `${members?.length ?? 0} member${members?.length !== 1 ? "s" : ""}`}
+              ? `Showing ${Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–${Math.min(page * PAGE_SIZE, filtered.length)} of ${filtered.length} filtered (${members?.length ?? 0} total)`
+              : `Showing ${Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–${Math.min(page * PAGE_SIZE, filtered.length)} of ${members?.length ?? 0} members`}
           </span>
           <div className={styles.paginationBtns}>
-            <button className={styles.pageBtn} disabled>‹</button>
-            <button className={`${styles.pageBtn} ${styles.pageBtnActive}`}>1</button>
-            <button className={styles.pageBtn} disabled>›</button>
+            <button
+              className={styles.pageBtn}
+              onClick={() => setPage(p => p - 1)}
+              disabled={page === 1}
+            >‹</button>
+
+            {pageNumbers().map(n => (
+              <button
+                key={n}
+                className={`${styles.pageBtn} ${n === page ? styles.pageBtnActive : ""}`}
+                onClick={() => setPage(n)}
+              >{n}</button>
+            ))}
+
+            <button
+              className={styles.pageBtn}
+              onClick={() => setPage(p => p + 1)}
+              disabled={page === totalPages}
+            >›</button>
           </div>
         </div>
       </motion.div>

@@ -1,7 +1,6 @@
 import { requestService } from "../request/requestServcie";
 import { API_CONFIG } from "@/config/config";
 
-// Payment-focused interfaces (replacing old invoice system)
 export interface PaymentRecord {
   _id: string;
   memberId: {
@@ -49,20 +48,32 @@ export interface MemberRecord {
   trainingType?: string;
 }
 
+export interface GetPaymentsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
 export const invoicesApi = {
-  // Get all payments for all members (replaces old invoice system)
-  getAllPayments: () =>
-    requestService.get<PaymentsResponse>(`${API_CONFIG.MEMBERS.BASE}/payments`),
+  getAllPayments: (params?: GetPaymentsParams) => {
+    const query = new URLSearchParams();
+    if (params?.page)   query.set("page",   String(params.page));
+    if (params?.limit)  query.set("limit",  String(params.limit));
+    if (params?.search) query.set("search", params.search);
+    const qs = query.toString();
+    return requestService.get<PaymentsResponse>(
+      `${API_CONFIG.MEMBERS.BASE}/payments${qs ? `?${qs}` : ""}`
+    );
+  },
 
-  // Get payment history for a specific member
   getPaymentsByMember: (memberId: string) =>
-    requestService.get<PaymentsResponse>(`${API_CONFIG.MEMBERS.BY_ID(memberId)}/payments`),
+    requestService.get<PaymentsResponse>(
+      `${API_CONFIG.MEMBERS.BY_ID(memberId)}/payments`
+    ),
 
-  // Get all registered members (for invoice/member selection)
   getAllMembers: () =>
     requestService.get<MemberRecord[]>(API_CONFIG.MEMBERS.BASE),
 
-  // Get member by ID
   getMemberById: (id: string) =>
     requestService.get<MemberRecord>(API_CONFIG.MEMBERS.BY_ID(id)),
 };

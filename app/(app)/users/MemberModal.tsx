@@ -65,7 +65,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         email:            existing.email ?? "",
         phone:            existing.phone ?? existing.contactNumber ?? "",
         membershipPlan:   existing.membershipPlan ?? "",
-        membershipMonths: existing.membershipMonths ? Number(existing.membershipMonths) : 1,
+        membershipMonths: existing.membershipMonths ?? undefined,
         amount:           existing.amount ?? existing.membershipAmount,
         membershipAmount: existing.membershipAmount ?? existing.amount,
         received:         existing.received ?? 0,
@@ -104,31 +104,26 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     const contactNumber = form.contactNumber || form.phone || "";
     const amount = form.amount ?? form.membershipAmount ?? 0;
     const received = form.received ?? 0;
-    const membershipMonths = Math.max(1, Number(form.membershipMonths) || 1);
-    const pending = form.pending ?? Math.max(0, amount - received);
 
     return {
       date: form.date || new Date().toISOString().split('T')[0],
       name: form.name,
       contactNumber,
-      membershipMonths,
+      membershipMonths: form.membershipMonths ?? 1,
       amount,
       received,
       mop: form.mop ?? "cash",
       startingDate: form.startingDate || new Date().toISOString().split('T')[0],
       expiryDate: form.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      idNo: form.idNo || undefined,
       dob: form.dob || undefined,
       instagramHandle: form.instagramHandle || undefined,
-      pending,
-      transactionId: form.transactionId || undefined,
       salesPerson: form.salesPerson || undefined,
       trainingType: form.trainingType ?? "GT",
       trainer: form.trainer || undefined,
       memberType: form.memberType ?? "New",
-      memberStatus: form.memberStatus ?? "ACTIVE",
       address: form.address || undefined,
       emergencyContact: form.emergencyContact || undefined,
+      transactionId: form.transactionId || undefined,
     };
   };
 
@@ -152,8 +147,8 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       setError("Name and contact number are required.");
       return;
     }
-    if (typeof form.membershipMonths !== 'number' || form.membershipMonths < 1) {
-      setError("Membership months must be a number and at least 1.");
+    if (!form.membershipMonths || form.membershipMonths < 1) {
+      setError("Membership months must be at least 1.");
       return;
     }
     if (form.amount === undefined || form.amount < 0) {
@@ -225,11 +220,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
               {/* Section: Personal Info */}
               <div className={styles.sectionLabel}>Personal Info</div>
               <div className={styles.fields}>
-                <div className={styles.row3}>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Member ID</label>
-                    <input className={styles.input} name="idNo" placeholder="e.g. 4819" value={form.idNo ?? ""} onChange={handleChange} />
-                  </div>
+                <div className={styles.row}>
                   <div className={styles.field}>
                     <label className={styles.label}>Registration Date</label>
                     <input className={styles.input} name="date" type="date" value={form.date ?? ""} onChange={handleChange} />

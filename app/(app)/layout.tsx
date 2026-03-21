@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/context/AuthContext";
 
@@ -13,6 +13,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
+  // Sidebar state lives here so both Header and Sidebar can share it
+  const [sidebarOpen,      setSidebarOpen]      = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.replace("/login");
@@ -23,10 +27,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={styles.wrapper}>
-      <Sidebar />
+      <Sidebar
+        isOpen={sidebarOpen}
+        isCollapsed={sidebarCollapsed}
+        onClose={() => setSidebarOpen(false)}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+      />
 
       <div className={styles.main}>
-        <Header />
+        <Header onMenuToggle={() => setSidebarOpen(o => !o)} />
         <div className={styles.content}>
           {children}
         </div>

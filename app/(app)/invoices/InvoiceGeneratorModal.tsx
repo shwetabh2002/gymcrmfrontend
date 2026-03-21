@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import InvoiceTemplate from "./InvoiceTemplate";
 import { generateInvoicePDF, printInvoice } from "@/lib/pdf-generator";
 import styles from "./InvoiceGeneratorModal.module.css";
+import { FaEye } from "react-icons/fa";
 
 export interface InvoiceGeneratorData {
   invoiceNumber: string;
@@ -119,7 +120,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                 className={`${styles.tab} ${showPreview ? styles.tabActive : ""}`}
                 onClick={() => setShowPreview(true)}
               >
-                👁 Preview
+                <FaEye /> Preview
               </button>
             </div>
 

@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import styles from "./Invoices.module.css";
-import { useAllPayments, useAllMembers } from "@/services/invoices/invoices.hooks";
-import { PaymentRecord, MemberRecord } from "@/services/invoices/invoices.api";
-import InvoiceTemplate from "./InvoiceTemplate";
-import InvoiceGeneratorModal, { InvoiceGeneratorData } from "./InvoiceGeneratorModal";
 import { createPortal } from "react-dom";
+import styles from "./Invoices.module.css";
+import { useAllPayments } from "@/services/invoices/invoices.hooks";
+import { PaymentRecord } from "@/services/invoices/invoices.api";
+import InvoiceGeneratorModal from "./InvoiceGeneratorModal";
+import { useInvoiceGenerator } from "@/services/invoices/invoices.generator.hook";
+import { FaEye } from "react-icons/fa";
+
+import { IoMdDocument } from "react-icons/io";
+const PAGE_SIZE = 10;
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -23,48 +27,64 @@ function getMember(payment: PaymentRecord) {
 }
 
 export default function InvoicesPage() {
-  const { data: payments, isLoading, isError } = useAllPayments();
-  const { data: members } = useAllMembers();
-
-  const [search, setSearch] = useState("");
+  const [page, setPage]             = useState(1);
+  const [search, setSearch]         = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
-  const [showInvoiceGenerator, setShowInvoiceGenerator] = useState(false);
-  const [invoiceData, setInvoiceData] = useState<InvoiceGeneratorData | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted]       = useState(false);
+
+  const { isOpen, invoiceData, openFromPayment, close } = useInvoiceGenerator();
 
   useEffect(() => { setMounted(true); }, []);
 
-  const paymentsArray = Array.isArray(payments) ? payments : [];
-  const membersArray = Array.isArray(members) ? members : [];
+  // Debounce search — wait 400ms after user stops typing before hitting the API
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1); // reset to page 1 on new search
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const total        = paymentsArray.length;
-  const totalAmount  = paymentsArray.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const totalReceived = paymentsArray.reduce((sum, p) => sum + (p.received || 0), 0);
-  const totalPending = paymentsArray.reduce((sum, p) => sum + (p.pending || 0), 0);
-  const thisMonth    = paymentsArray.filter(p => {
-    const payDate = new Date(p.paymentDate);
-    const now = new Date();
-    return payDate.getMonth() === now.getMonth() && payDate.getFullYear() === now.getFullYear();
-  }).length;
+  const { data: response, isLoading, isError } = useAllPayments({
+    page,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  });
 
-  const filtered = useMemo(() => {
-    if (!paymentsArray.length) return [];
-    return paymentsArray.filter(payment => {
-      const member = getMember(payment);
-      const q = search.toLowerCase();
-      return !q ||
-        payment.transactionId?.toLowerCase().includes(q) ||
-        member?.name.toLowerCase().includes(q) ||
-        (member?.phone ?? "").includes(q);
-    });
-  }, [paymentsArray, search]);
+  const payments   = response?.data ?? [];
+  const pagination = response?.pagination;
+
+  const totalPages  = pagination?.totalPages ?? 1;
+  const totalCount  = pagination?.total ?? 0;
+  const hasNext     = pagination?.hasNextPage ?? false;
+  const hasPrev     = pagination?.hasPrevPage ?? false;
+
+  // Stats are across ALL payments — sum from current page only as fallback
+  const totalAmount   = payments.reduce((s, p) => s + (p.amount   || 0), 0);
+  const totalReceived = payments.reduce((s, p) => s + (p.received || 0), 0);
+  const totalPending  = payments.reduce((s, p) => s + (p.pending  || 0), 0);
 
   const STATS = [
-    { label: "Total Payments", val: String(total),                       sub: "all time" },
-    { label: "Total Amount",   val: `₹${totalAmount.toLocaleString()}`,  sub: "billed" },
-    { label: "Total Received", val: `₹${totalReceived.toLocaleString()}`, sub: "collected" },
-    { label: "Total Pending",  val: `₹${totalPending.toLocaleString()}`,  sub: "outstanding" },
+    { label: "Total Payments", val: String(totalCount),                   sub: "all time"    },
+    { label: "Total Amount",   val: `₹${totalAmount.toLocaleString()}`,   sub: "this page"   },
+    { label: "Total Received", val: `₹${totalReceived.toLocaleString()}`, sub: "this page"   },
+    { label: "Total Pending",  val: `₹${totalPending.toLocaleString()}`,  sub: "this page"   },
   ];
+
+  // Build page number buttons — show at most 5 around current page
+  const pageNumbers = () => {
+    const delta = 2;
+    const range: number[] = [];
+    for (
+      let i = Math.max(1, page - delta);
+      i <= Math.min(totalPages, page + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+    return range;
+  };
 
   return (
     <div className={styles.page}>
@@ -77,65 +97,6 @@ export default function InvoicesPage() {
           <p className={styles.eyebrow}>Admin Panel</p>
           <h1 className={styles.pageTitle}>Payments</h1>
           <p className={styles.pageDesc}>Track all member payments and outstanding balances.</p>
-        </div>
-        <div className={styles.headerActions}>
-          <button className={styles.btnPrimary} onClick={() => {
-            // Generate invoice from selected payment or create new one
-            if (selectedPayment) {
-              // Generate invoice from the selected payment
-              const member = getMember(selectedPayment);
-              const invoiceData: InvoiceGeneratorData = {
-                invoiceNumber: `INV-${Date.now()}`,
-                invoiceDate: new Date().toISOString().split('T')[0],
-                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                memberId: selectedPayment.memberId?.toString() || '',
-                memberName: member?.name || 'Unknown Member',
-                memberContact: member?.phone || member?.email || '',
-                memberInstagram: '',
-                items: [
-                  { description: `Payment - ${selectedPayment.mop.toUpperCase()}`, amount: selectedPayment.amount }
-                ],
-                subtotal: selectedPayment.amount,
-                taxPercentage: 18,
-                taxAmount: Math.round(selectedPayment.amount * 0.18),
-                totalAmount: selectedPayment.amount + Math.round(selectedPayment.amount * 0.18),
-                notes: selectedPayment.notes || `Payment received via ${selectedPayment.mop.toUpperCase()}`,
-                gymName: 'Your Gym Name',
-                gymAddress: '123 Gym Street, City, State',
-                gymEmail: 'gym@email.com',
-                gymPhone: '+91 1234567890'
-              };
-              setInvoiceData(invoiceData);
-            } else {
-              // Create dummy invoice data
-              const dummyInvoice: InvoiceGeneratorData = {
-                invoiceNumber: `INV-${Date.now()}`,
-                invoiceDate: new Date().toISOString().split('T')[0],
-                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                memberId: '',
-                memberName: 'Sample Member',
-                memberContact: 'sample@email.com',
-                memberInstagram: '@sample',
-                items: [
-                  { description: 'Gym Membership', amount: 5000 }
-                ],
-                subtotal: 5000,
-                taxPercentage: 18,
-                taxAmount: 900,
-                totalAmount: 5900,
-                notes: 'Sample invoice for testing',
-                gymName: 'Your Gym Name',
-                gymAddress: '123 Gym Street, City, State',
-                gymEmail: 'gym@email.com',
-                gymPhone: '+91 1234567890'
-              };
-              setInvoiceData(dummyInvoice);
-            }
-            setShowInvoiceGenerator(true);
-          }}>
-            {selectedPayment ? '📄 Generate Invoice' : '+ Create Invoice'}
-          </button>
-          <button className={styles.btnSecondary}>⬇ Export PDF</button>
         </div>
       </motion.div>
 
@@ -155,8 +116,12 @@ export default function InvoicesPage() {
           <div className={styles.toolbar}>
             <div className={styles.searchWrap}>
               <span className={styles.searchIcon}>⌕</span>
-              <input className={styles.searchInput} placeholder="Search payment or member…"
-                value={search} onChange={e => setSearch(e.target.value)} />
+              <input
+                className={styles.searchInput}
+                placeholder="Search member name or phone…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
             </div>
           </div>
         </div>
@@ -169,18 +134,25 @@ export default function InvoicesPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Transaction ID</th><th>Member</th><th>Amount</th>
-                  <th>Received</th><th>Pending</th><th>Method</th>
-                  <th>Date</th><th>Actions</th>
+                  <th>Transaction ID</th>
+                  <th>Member</th>
+                  <th>Amount</th>
+                  <th>Received</th>
+                  <th>Pending</th>
+                  <th>Method</th>
+                  <th>Date</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && (
-                  <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "#444" }}>
-                    {paymentsArray.length === 0 ? "No payments found." : "No payments match your search."}
-                  </td></tr>
+                {payments.length === 0 && (
+                  <tr>
+                    <td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "#444" }}>
+                      {debouncedSearch ? "No payments match your search." : "No payments found."}
+                    </td>
+                  </tr>
                 )}
-                {filtered.map((payment) => {
+                {payments.map((payment) => {
                   const member = getMember(payment);
                   return (
                     <tr key={payment._id}>
@@ -202,7 +174,12 @@ export default function InvoicesPage() {
                             className={styles.iconBtn}
                             title="View Details"
                             onClick={() => setSelectedPayment(payment)}
-                          >👁</button>
+                          ><FaEye /></button>
+                          <button
+                            className={styles.iconBtn}
+                            title="Generate Invoice"
+                            onClick={() => openFromPayment(payment)}
+                          ><IoMdDocument /></button>
                         </div>
                       </td>
                     </tr>
@@ -213,20 +190,39 @@ export default function InvoicesPage() {
           )}
         </div>
 
+        {/* Pagination */}
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
-            {filtered.length !== paymentsArray.length
-              ? `Showing ${filtered.length} of ${paymentsArray.length} payments`
-              : `${paymentsArray.length} payment${paymentsArray.length !== 1 ? "s" : ""}`}
+            {debouncedSearch
+              ? `${payments.length} result${payments.length !== 1 ? "s" : ""} for "${debouncedSearch}"`
+              : `Showing ${((page - 1) * PAGE_SIZE) + 1}–${Math.min(page * PAGE_SIZE, totalCount)} of ${totalCount} payments`}
           </span>
           <div className={styles.paginationBtns}>
-            <button className={styles.pageBtn} disabled>‹</button>
-            <button className={`${styles.pageBtn} ${styles.pageBtnActive}`}>1</button>
-            <button className={styles.pageBtn} disabled>›</button>
+            <button
+              className={styles.pageBtn}
+              onClick={() => setPage(p => p - 1)}
+              disabled={!hasPrev || isLoading}
+            >‹</button>
+
+            {pageNumbers().map(n => (
+              <button
+                key={n}
+                className={`${styles.pageBtn} ${n === page ? styles.pageBtnActive : ""}`}
+                onClick={() => setPage(n)}
+                disabled={isLoading}
+              >{n}</button>
+            ))}
+
+            <button
+              className={styles.pageBtn}
+              onClick={() => setPage(p => p + 1)}
+              disabled={!hasNext || isLoading}
+            >›</button>
           </div>
         </div>
       </motion.div>
 
+      {/* Payment detail modal */}
       {mounted && selectedPayment && createPortal(
         <AnimatePresence>
           {selectedPayment && (
@@ -253,7 +249,7 @@ export default function InvoicesPage() {
                       <h3 className={styles.paymentTitle}>Payment Details</h3>
                       <div className={styles.paymentStatus}>
                         <span className={`${styles.statusBadge} ${selectedPayment.pending > 0 ? styles.statusPartial : styles.statusComplete}`}>
-                          {selectedPayment.pending > 0 ? 'Partial' : 'Complete'}
+                          {selectedPayment.pending > 0 ? "Partial" : "Complete"}
                         </span>
                       </div>
                     </div>
@@ -263,25 +259,23 @@ export default function InvoicesPage() {
                         <span className={styles.detailLabel}>Payment Method</span>
                         <span className={styles.detailValue}>{selectedPayment.mop.toUpperCase()}</span>
                       </div>
-
                       <div className={styles.detailRow}>
                         <span className={styles.detailLabel}>Payment Date</span>
                         <span className={styles.detailValue}>{new Date(selectedPayment.paymentDate).toLocaleDateString()}</span>
                       </div>
-
                       <div className={styles.detailRow}>
                         <span className={styles.detailLabel}>Total Amount</span>
                         <span className={styles.detailValue}>₹{selectedPayment.amount.toLocaleString()}</span>
                       </div>
-
                       <div className={styles.detailRow}>
                         <span className={styles.detailLabel}>Amount Received</span>
                         <span className={`${styles.detailValue} ${styles.amountReceived}`}>₹{selectedPayment.received.toLocaleString()}</span>
                       </div>
-
                       <div className={styles.detailRow}>
                         <span className={styles.detailLabel}>Pending Amount</span>
-                        <span className={`${styles.detailValue} ${selectedPayment.pending > 0 ? styles.amountPending : styles.amountZero}`}>₹{selectedPayment.pending.toLocaleString()}</span>
+                        <span className={`${styles.detailValue} ${selectedPayment.pending > 0 ? styles.amountPending : styles.amountZero}`}>
+                          ₹{selectedPayment.pending.toLocaleString()}
+                        </span>
                       </div>
                     </div>
 
@@ -291,6 +285,18 @@ export default function InvoicesPage() {
                         <p className={styles.notesText}>{selectedPayment.notes}</p>
                       </div>
                     )}
+
+                    <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        className={styles.btnPrimary}
+                        onClick={() => {
+                          openFromPayment(selectedPayment);
+                          setSelectedPayment(null);
+                        }}
+                      >
+                        📄 Generate Invoice
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -300,13 +306,10 @@ export default function InvoicesPage() {
         document.body
       )}
 
-      {mounted && showInvoiceGenerator && createPortal(
+      {mounted && createPortal(
         <InvoiceGeneratorModal
-          open={showInvoiceGenerator}
-          onClose={() => {
-            setShowInvoiceGenerator(false);
-            setInvoiceData(null);
-          }}
+          open={isOpen}
+          onClose={close}
           invoiceData={invoiceData}
         />,
         document.body

@@ -1,377 +1,474 @@
-/* ─── Invoice Container ─────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ── Variables ────────────────────────────────────────────── */
+:root {
+  --inv-red:     #c8102e;
+  --inv-red-dk:  #a00d24;
+  --inv-ink:     #0f0f0f;
+  --inv-ink-2:   #3a3a3a;
+  --inv-ink-3:   #6b6b6b;
+  --inv-ink-4:   #9b9b9b;
+  --inv-rule:    #e8e8e8;
+  --inv-bg-row:  #f9f9f9;
+  --inv-sans:    'Plus Jakarta Sans', -apple-system, sans-serif;
+  --inv-mono:    'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* ── Outer container ──────────────────────────────────────── */
 .invoiceContainer {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 0;
+  gap: 20px;
 }
 
+/* ── Action bar ───────────────────────────────────────────── */
 .actionBar {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-end;
-  margin-bottom: 12px;
 }
 
 .actionBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  background: #e63946;
-  color: white;
+  padding: 9px 20px;
+  background: var(--inv-red);
+  color: #fff;
   border: none;
   border-radius: 6px;
+  font-family: var(--inv-sans);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s, background 0.2s;
-  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  transition: background 0.18s;
+  letter-spacing: 0.01em;
 }
 
-.actionBtn:hover {
-  opacity: 0.88;
-  background: #d32f36;
+.actionBtn:hover  { background: var(--inv-red-dk); }
+.actionBtn:active { transform: scale(0.98); }
+
+.actionBtnOutline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  background: transparent;
+  color: var(--inv-ink-2);
+  border: 1.5px solid var(--inv-rule);
+  border-radius: 6px;
+  font-family: var(--inv-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s, color 0.18s;
 }
 
-.actionBtn:active {
-  transform: scale(0.98);
+.actionBtnOutline:hover {
+  border-color: var(--inv-ink-3);
+  color: var(--inv-ink);
 }
 
-/* ─── Invoice Wrapper ───────────────────────────────────────────────────── */
+/* ── Invoice document ─────────────────────────────────────── */
 .invoice {
   width: 100%;
-  max-width: 850px;
+  max-width: 780px;
   margin: 0 auto;
-  background: white;
-  color: #212121;
-  padding: 48px 40px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
-  line-height: 1.6;
-  page-break-after: avoid;
+  background: #ffffff;
+  color: var(--inv-ink);
+  font-family: var(--inv-sans);
+  line-height: 1.55;
+  border: 1px solid var(--inv-rule);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.07);
 }
 
-/* ─── Header ────────────────────────────────────────────────────────────── */
+/* ── Top accent bar ───────────────────────────────────────── */
+.accentBar {
+  height: 5px;
+  background: linear-gradient(90deg, var(--inv-red) 0%, #e84060 100%);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 48px;
-  padding-bottom: 24px;
-  border-bottom: 2px solid #e0e0e0;
+  padding: 36px 44px 28px;
+  gap: 24px;
 }
 
 .headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   flex: 1;
 }
 
-.headerRight {
-  text-align: right;
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logoWrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid var(--inv-rule);
 }
 
 .gymName {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: #212121;
-  letter-spacing: -0.5px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--inv-ink);
+  letter-spacing: -0.4px;
+  line-height: 1.15;
 }
 
-.gymDetail {
+.gymTagline {
+  font-family: var(--inv-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--inv-red);
+  margin-top: 2px;
+}
+
+.gymMeta {
+  font-family: var(--inv-mono);
+  font-size: 10.5px;
+  color: var(--inv-ink-3);
+  letter-spacing: 0.01em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.metaDot {
+  color: var(--inv-rule);
   font-size: 12px;
-  color: #666;
-  margin: 4px 0;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
-  letter-spacing: 0.02em;
 }
 
-.gymDetail a {
-  color: #e63946;
-  text-decoration: none;
+/* ── Header right ─────────────────────────────────────────── */
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-.gymDetail a:hover {
-  text-decoration: underline;
-}
-
-.invoiceTitle {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
+.invoiceBadge {
+  font-family: var(--inv-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--inv-ink-4);
   text-transform: uppercase;
-  color: #999;
-  margin-bottom: 6px;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
 }
 
 .invoiceNumber {
-  font-size: 28px;
-  font-weight: 700;
-  color: #e63946;
-  letter-spacing: -0.5px;
+  font-family: var(--inv-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--inv-red);
+  letter-spacing: 0.02em;
+  line-height: 1.1;
 }
 
-/* ─── Details Grid ──────────────────────────────────────────────────────── */
-.detailsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
-  margin-bottom: 40px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.detailsSection {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sectionTitle {
+.paidStamp {
+  margin-top: 8px;
+  padding: 4px 14px;
+  border: 2px solid #22c55e;
+  border-radius: 4px;
+  font-family: var(--inv-mono);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #999;
-  margin: 0 0 8px 0;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  letter-spacing: 0.18em;
+  color: #16a34a;
+  transform: rotate(-2deg);
 }
 
-.detailName {
-  font-size: 15px;
-  font-weight: 600;
-  color: #212121;
-  margin: 0;
+/* ── Divider ──────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--inv-rule);
+  margin: 0 44px;
 }
 
-.detailText {
-  font-size: 13px;
-  color: #666;
-  margin: 0;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
-}
-
-.detailRow {
+/* ── Meta grid (bill-to + dates) ──────────────────────────── */
+.metaGrid {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  gap: 48px;
+  padding: 28px 44px 32px;
 }
 
-.detailLabel {
-  font-size: 12px;
-  color: #999;
-  font-weight: 500;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
-  letter-spacing: 0.02em;
+.metaBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 140px;
 }
 
-.detailValue {
-  font-size: 13px;
-  color: #212121;
+.metaHeading {
+  font-family: var(--inv-mono);
+  font-size: 9px;
   font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--inv-ink-4);
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
-/* ─── Table ────────────────────────────────────────────────────────────── */
+.metaName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--inv-ink);
+  letter-spacing: -0.1px;
+}
+
+.metaDetail {
+  font-family: var(--inv-mono);
+  font-size: 11px;
+  color: var(--inv-ink-3);
+}
+
+/* ── Items table ──────────────────────────────────────────── */
 .table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 32px;
+  margin-bottom: 0;
 }
 
-.table thead {
-  border-top: 2px solid #212121;
-  border-bottom: 2px solid #212121;
+.table thead tr {
+  background: var(--inv-ink);
 }
 
-.table th {
-  padding: 12px 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+.table thead th {
+  font-family: var(--inv-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #212121;
-  text-align: left;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  color: rgba(255,255,255,0.75);
+  padding: 12px 0;
 }
 
-.thDescription {
-  width: 70%;
-}
+.thNo   { width: 60px;  padding-left: 44px !important; text-align: left; }
+.thDesc { padding-left: 8px !important; text-align: left; }
+.thAmt  { width: 140px; padding-right: 44px !important; text-align: right; }
 
-.thAmount {
-  width: 30%;
-  text-align: right;
-}
+.rowEven { background: #ffffff; }
+.rowOdd  { background: var(--inv-bg-row); }
 
 .table tbody tr {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--inv-rule);
   transition: background 0.1s;
 }
 
-.table tbody tr:hover {
-  background: #fafafa;
+.table tbody tr:last-child {
+  border-bottom: none;
 }
 
 .table td {
-  padding: 14px 0;
+  padding: 15px 0;
   font-size: 13px;
-  color: #333;
+  color: var(--inv-ink-2);
 }
 
-.tdDescription {
+.tdNo {
+  padding-left: 44px !important;
+  font-family: var(--inv-mono);
+  font-size: 11px;
+  color: var(--inv-ink-4);
   font-weight: 500;
 }
 
-.tdAmount {
-  text-align: right;
-  font-weight: 600;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
-  color: #212121;
+.tdDesc {
+  padding-left: 8px !important;
+  font-weight: 500;
+  color: var(--inv-ink);
 }
 
-/* ─── Summary Section ───────────────────────────────────────────────────── */
-.summarySection {
+.tdAmt {
+  padding-right: 44px !important;
+  text-align: right;
+  font-family: var(--inv-mono);
+  font-weight: 600;
+  color: var(--inv-ink);
+  font-size: 13px;
+}
+
+/* ── Summary ──────────────────────────────────────────────── */
+.summaryWrap {
+  display: flex;
+  justify-content: flex-end;
+  padding: 24px 44px 28px;
+}
+
+.summaryBox {
+  min-width: 260px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 32px;
-  padding: 20px;
-  background: #f7f7f7;
-  border-radius: 6px;
-  border-left: 3px solid #e63946;
 }
 
-.summaryRow {
+.summaryLine {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  gap: 32px;
 }
 
-.summaryLabel {
-  color: #666;
+.summaryKey {
+  font-size: 12.5px;
+  color: var(--inv-ink-3);
   font-weight: 500;
 }
 
-.summaryValue {
-  color: #212121;
-  font-weight: 600;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
-  font-size: 13px;
+.summaryVal {
+  font-family: var(--inv-mono);
+  font-size: 12.5px;
+  color: var(--inv-ink-2);
+  font-weight: 500;
 }
 
-.totalRow {
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 1px solid #ddd;
-  font-size: 15px;
+.summaryDivider {
+  height: 1px;
+  background: var(--inv-rule);
+  margin: 4px 0;
 }
 
-.totalLabel {
-  color: #212121;
+.totalLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+  background: var(--inv-red);
+  border-radius: 7px;
+  padding: 13px 16px;
+  margin-top: 4px;
+}
+
+.totalKey {
+  font-size: 12px;
   font-weight: 700;
-  font-size: 14px;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: var(--inv-mono);
 }
 
-.totalValue {
-  color: #e63946;
-  font-weight: 700;
+.totalVal {
+  font-family: var(--inv-mono);
   font-size: 18px;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  font-weight: 700;
+  color: #ffffff;
   letter-spacing: 0.02em;
 }
 
-/* ─── Notes Section ─────────────────────────────────────────────────────── */
-.notesSection {
-  margin-bottom: 32px;
-  padding: 16px;
-  background: #fffbf0;
-  border-radius: 6px;
-  border-left: 3px solid #f0a44b;
+/* ── Notes ────────────────────────────────────────────────── */
+.notesWrap {
+  margin: 0 44px 28px;
+  padding: 16px 20px;
+  background: #fffbf5;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 6px 6px 0;
 }
 
-.notesTitle {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+.notesHeading {
+  font-family: var(--inv-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #b45309;
   text-transform: uppercase;
-  color: #c9913e;
-  margin: 0 0 8px 0;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  margin-bottom: 7px;
 }
 
 .notesText {
-  font-size: 13px;
-  color: #666;
+  font-size: 12.5px;
+  color: var(--inv-ink-3);
   margin: 0;
   line-height: 1.7;
 }
 
-/* ─── Footer ────────────────────────────────────────────────────────────── */
+/* ── Footer ───────────────────────────────────────────────── */
 .footer {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid #f0f0f0;
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 44px;
+  background: var(--inv-bg-row);
+  border-top: 1px solid var(--inv-rule);
+  gap: 24px;
 }
 
-.footerText {
+.footerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.footerLogoRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.footerGymName {
   font-size: 12px;
-  color: #999;
-  margin: 0;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  font-weight: 700;
+  color: var(--inv-ink-2);
+  letter-spacing: -0.1px;
+}
+
+.footerSub {
+  font-family: var(--inv-mono);
+  font-size: 10px;
+  color: var(--inv-ink-4);
   letter-spacing: 0.02em;
 }
 
-/* ─── Print Styles ──────────────────────────────────────────────────────── */
+.footerRight {
+  font-family: var(--inv-mono);
+  font-size: 10px;
+  color: var(--inv-ink-4);
+  text-align: right;
+  letter-spacing: 0.01em;
+}
+
+/* ── Print styles ─────────────────────────────────────────── */
 @media print {
-  .actionBar {
-    display: none;
-  }
+  .actionBar  { display: none !important; }
 
   .invoice {
-    background: transparent;
     border: none;
     box-shadow: none;
-    padding: 0;
-    page-break-inside: avoid;
-  }
-
-  body {
-    background: white;
-    color: #212121;
+    border-radius: 0;
+    max-width: 100%;
   }
 }
 
-/* ─── Responsive ────────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .invoice {
-    padding: 32px 24px;
-  }
-
-  .header {
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .headerRight {
-    text-align: left;
-  }
-
-  .detailsGrid {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .summarySection {
-    font-size: 12px;
-  }
-
-  .totalValue {
-    font-size: 16px;
-  }
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 680px) {
+  .header     { flex-direction: column; padding: 28px 24px 20px; }
+  .headerRight { align-items: flex-start; }
+  .divider    { margin: 0 24px; }
+  .metaGrid   { flex-direction: column; gap: 20px; padding: 20px 24px; }
+  .thNo, .tdNo          { padding-left: 24px !important; }
+  .thAmt, .tdAmt        { padding-right: 24px !important; }
+  .summaryWrap          { padding: 20px 24px; }
+  .notesWrap            { margin: 0 24px 20px; }
+  .footer               { flex-direction: column; align-items: flex-start; padding: 16px 24px; }
+  .footerRight          { text-align: left; }
 }

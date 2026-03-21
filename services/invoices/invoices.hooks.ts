@@ -1,12 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { invoicesApi, PaymentsResponse } from "./invoices.api";
+import { useQuery } from "@tanstack/react-query";
+import { invoicesApi, PaymentsResponse, GetPaymentsParams } from "./invoices.api";
 
-// Payment-focused hooks (replacing old invoice system)
-export const useAllPayments = () =>
+// Payments with server-side pagination + search
+export const useAllPayments = (params?: GetPaymentsParams) =>
   useQuery({
-    queryKey: ["payments", "all"],
-    queryFn: invoicesApi.getAllPayments,
-    select: (data: PaymentsResponse) => data.data,
+    queryKey: ["payments", "all", params],
+    queryFn: () => invoicesApi.getAllPayments(params),
+    // Return the full response so the page can access both data and pagination
   });
 
 export const usePaymentsByMember = (memberId: string) =>
@@ -17,7 +17,6 @@ export const usePaymentsByMember = (memberId: string) =>
     select: (data: PaymentsResponse) => data.data,
   });
 
-// Member management hooks for invoice/payment context
 export const useAllMembers = () =>
   useQuery({
     queryKey: ["members", "all"],
