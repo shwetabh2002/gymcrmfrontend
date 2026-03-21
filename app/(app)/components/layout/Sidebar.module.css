@@ -52,12 +52,24 @@
   gap: 8px;
 }
 
+.sidebar.collapsed .brand {
+  padding: 20px 10px 16px;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
 .brandRow {
   display: flex;
   align-items: center;
   gap: 10px;
   flex: 1;
   min-width: 0;
+}
+
+.sidebar.collapsed .brandRow {
+  flex: none;
+  justify-content: center;
 }
 
 .brandIcon {

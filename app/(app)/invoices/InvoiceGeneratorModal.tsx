@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import InvoiceTemplate from "./InvoiceTemplate";
 import { generateInvoicePDF, printInvoice } from "@/lib/pdf-generator";
 import styles from "./InvoiceGeneratorModal.module.css";
 import { FaEye } from "react-icons/fa";
+import { IoSettings } from "react-icons/io5";
 
 export interface InvoiceGeneratorData {
   invoiceNumber: string;
@@ -16,10 +17,13 @@ export interface InvoiceGeneratorData {
   memberName: string;
   memberContact: string;
   memberInstagram?: string;
-  items: Array<{
-    description: string;
-    amount: number;
-  }>;
+  membershipPlan?: string;
+  duration?: string;
+  membershipFee?: number;
+  personalTrainingFee?: number;
+  otherCharges?: number;
+  paymentMode?: "CASH" | "UPI" | "CARD";
+  items: Array<{ description: string; amount: number }>;
   subtotal: number;
   taxPercentage: number;
   taxAmount: number;
@@ -29,6 +33,7 @@ export interface InvoiceGeneratorData {
   gymAddress?: string;
   gymEmail?: string;
   gymPhone?: string;
+  gymGST?: string;
 }
 
 interface Props {
@@ -52,6 +57,12 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
         memberName: invoiceData.memberName,
         memberContact: invoiceData.memberContact,
         memberInstagram: invoiceData.memberInstagram,
+        membershipPlan: invoiceData.membershipPlan,
+        duration: invoiceData.duration,
+        membershipFee: invoiceData.membershipFee,
+        personalTrainingFee: invoiceData.personalTrainingFee,
+        otherCharges: invoiceData.otherCharges,
+        paymentMode: invoiceData.paymentMode,
         items: invoiceData.items,
         subtotal: invoiceData.subtotal,
         taxPercentage: invoiceData.taxPercentage,
@@ -62,6 +73,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
         gymAddress: invoiceData.gymAddress,
         gymEmail: invoiceData.gymEmail,
         gymPhone: invoiceData.gymPhone,
+        gymGST: invoiceData.gymGST,
       });
     } finally {
       setIsGenerating(false);
@@ -87,7 +99,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
             onClick={onClose}
           />
           <motion.div
-            className={styles.modal}
+            className={`${styles.modal} ${showPreview ? styles.modalWide : ""}`}
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
@@ -100,13 +112,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                   Invoice #{invoiceData.invoiceNumber} for {invoiceData.memberName}
                 </p>
               </div>
-              <button
-                className={styles.closeBtn}
-                onClick={onClose}
-                aria-label="Close"
-              >
-                ✕
-              </button>
+              <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
             </div>
 
             <div className={styles.tabsContainer}>
@@ -114,7 +120,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                 className={`${styles.tab} ${!showPreview ? styles.tabActive : ""}`}
                 onClick={() => setShowPreview(false)}
               >
-                🔧 Configure
+                <IoSettings /> Configure
               </button>
               <button
                 className={`${styles.tab} ${showPreview ? styles.tabActive : ""}`}
@@ -134,6 +140,12 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                     memberName={invoiceData.memberName}
                     memberContact={invoiceData.memberContact}
                     memberInstagram={invoiceData.memberInstagram}
+                    membershipPlan={invoiceData.membershipPlan}
+                    duration={invoiceData.duration}
+                    membershipFee={invoiceData.membershipFee}
+                    personalTrainingFee={invoiceData.personalTrainingFee}
+                    otherCharges={invoiceData.otherCharges}
+                    paymentMode={invoiceData.paymentMode}
                     items={invoiceData.items}
                     subtotal={invoiceData.subtotal}
                     taxPercentage={invoiceData.taxPercentage}
@@ -144,6 +156,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                     gymAddress={invoiceData.gymAddress}
                     gymEmail={invoiceData.gymEmail}
                     gymPhone={invoiceData.gymPhone}
+                    gymGST={invoiceData.gymGST}
                     showActions={false}
                   />
                 </div>
@@ -154,38 +167,56 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                       <label className={styles.configLabel}>Invoice Number</label>
                       <div className={styles.configValue}>{invoiceData.invoiceNumber}</div>
                     </div>
-
                     <div className={styles.configItem}>
                       <label className={styles.configLabel}>Invoice Date</label>
                       <div className={styles.configValue}>
                         {new Date(invoiceData.invoiceDate).toLocaleDateString()}
                       </div>
                     </div>
-
                     <div className={styles.configItem}>
                       <label className={styles.configLabel}>Member Name</label>
                       <div className={styles.configValue}>{invoiceData.memberName}</div>
                     </div>
-
                     <div className={styles.configItem}>
-                      <label className={styles.configLabel}>Member Email</label>
+                      <label className={styles.configLabel}>Member Phone</label>
                       <div className={styles.configValue}>{invoiceData.memberContact}</div>
                     </div>
-
-                    <div className={styles.configItem}>
-                      <label className={styles.configLabel}>Subtotal</label>
-                      <div className={styles.configValue}>
-                        ₹{invoiceData.subtotal.toLocaleString()}
+                    {invoiceData.membershipPlan && (
+                      <div className={styles.configItem}>
+                        <label className={styles.configLabel}>Membership Plan</label>
+                        <div className={styles.configValue}>{invoiceData.membershipPlan}</div>
                       </div>
-                    </div>
-
-                    <div className={styles.configItem}>
-                      <label className={styles.configLabel}>Tax ({invoiceData.taxPercentage}%)</label>
-                      <div className={styles.configValue}>
-                        ₹{invoiceData.taxAmount.toLocaleString()}
+                    )}
+                    {invoiceData.duration && (
+                      <div className={styles.configItem}>
+                        <label className={styles.configLabel}>Duration</label>
+                        <div className={styles.configValue}>{invoiceData.duration}</div>
                       </div>
-                    </div>
-
+                    )}
+                    {invoiceData.paymentMode && (
+                      <div className={styles.configItem}>
+                        <label className={styles.configLabel}>Payment Mode</label>
+                        <div className={styles.configValue}>{invoiceData.paymentMode}</div>
+                      </div>
+                    )}
+                    {invoiceData.membershipFee !== undefined && (
+                      <div className={styles.configItem}>
+                        <label className={styles.configLabel}>Membership Fee</label>
+                        <div className={styles.configValue}>₹{invoiceData.membershipFee.toLocaleString()}</div>
+                      </div>
+                    )}
+                    {invoiceData.personalTrainingFee !== undefined && invoiceData.personalTrainingFee > 0 && (
+                      <div className={styles.configItem}>
+                        <label className={styles.configLabel}>Personal Training</label>
+                        <div className={styles.configValue}>₹{invoiceData.personalTrainingFee.toLocaleString()}</div>
+                      </div>
+                    )}
+                    {invoiceData.otherCharges !== undefined && invoiceData.otherCharges > 0 && (
+                      <div className={styles.configItem}>
+                        <label className={styles.configLabel}>Other Charges</label>
+                        <div className={styles.configValue}>₹{invoiceData.otherCharges.toLocaleString()}</div>
+                      </div>
+                    )}
                     <div className={`${styles.configItem} ${styles.span2}`}>
                       <label className={styles.configLabel}>Total Amount</label>
                       <div className={styles.configValueLarge}>
@@ -207,9 +238,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                       {invoiceData.items.map((item, idx) => (
                         <div key={idx} className={styles.itemRow}>
                           <span className={styles.itemDesc}>{item.description}</span>
-                          <span className={styles.itemAmount}>
-                            ₹{item.amount.toLocaleString()}
-                          </span>
+                          <span className={styles.itemAmount}>₹{item.amount.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -219,22 +248,12 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.btnSecondary} onClick={onClose}>
-                Close
-              </button>
+              <button className={styles.btnSecondary} onClick={onClose}>Close</button>
               <div className={styles.actionButtons}>
-                <button
-                  className={styles.btnSecondary}
-                  onClick={handlePrint}
-                  disabled={isGenerating}
-                >
+                <button className={styles.btnSecondary} onClick={handlePrint} disabled={isGenerating}>
                   🖨 Print
                 </button>
-                <button
-                  className={styles.btnPrimary}
-                  onClick={handleGeneratePDF}
-                  disabled={isGenerating}
-                >
+                <button className={styles.btnPrimary} onClick={handleGeneratePDF} disabled={isGenerating}>
                   {isGenerating ? "Generating..." : "⬇ Download PDF"}
                 </button>
               </div>

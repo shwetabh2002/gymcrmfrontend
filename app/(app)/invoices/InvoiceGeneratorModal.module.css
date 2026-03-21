@@ -1,13 +1,11 @@
-/* ─── Backdrop ────────────────────────────────────────────────────────── */
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
   z-index: 100;
 }
 
-/* ─── Modal ───────────────────────────────────────────────────────────── */
 .modal {
   position: fixed;
   top: 0;
@@ -15,326 +13,243 @@
   right: 0;
   bottom: 0;
   margin: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
   z-index: 101;
   background: #111;
   border: 1px solid #2a2a2a;
   border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
-  width: 90vw;
-  max-width: 1000px;
-  height: 90vh;
-  max-height: 900px;
-  overflow: hidden;
+  padding: 1.75rem;
+  width: 560px;
+  height: fit-content;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  transition: width 0.3s ease;
 }
 
-/* ─── Modal Header ────────────────────────────────────────────────────── */
+/* Wide mode when preview is active */
+.modalWide {
+  width: 900px;
+}
+
 .modalHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 1.25rem;
   flex-shrink: 0;
-  border-bottom: 1px solid #2a2a2a;
-  padding-bottom: 1rem;
 }
 
 .modalTitle {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #fff;
-  margin: 0 0 4px 0;
 }
 
 .modalSub {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #666;
-  margin: 0;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  margin-top: 2px;
 }
 
 .closeBtn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 6px;
+  background: none;
+  border: none;
   color: #666;
+  font-size: 1rem;
   cursor: pointer;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  transition: color 0.12s, background 0.12s;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: color 0.2s;
 }
+.closeBtn:hover { color: #fff; }
 
-.closeBtn:hover {
-  color: #ccc;
-  background: #252525;
-}
-
-/* ─── Tabs ────────────────────────────────────────────────────────────── */
+/* ── Tabs ── */
 .tabsContainer {
   display: flex;
   gap: 0;
   border-bottom: 1px solid #2a2a2a;
+  margin-bottom: 1.25rem;
   flex-shrink: 0;
 }
 
 .tab {
-  flex: 1;
-  padding: 12px 16px;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.6rem 1.25rem;
+  background: none;
   border: none;
+  border-bottom: 2px solid transparent;
   color: #666;
-  font-size: 13px;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.2s, background 0.2s;
-  border-bottom: 2px solid transparent;
-  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  transition: color 0.2s, border-color 0.2s;
+  margin-bottom: -1px;
 }
-
-.tab:hover {
-  color: #999;
-}
-
+.tab:hover { color: #ccc; }
 .tabActive {
-  color: #e63946;
+  color: #fff;
   border-bottom-color: #e63946;
 }
 
-/* ─── Modal Content ───────────────────────────────────────────────────── */
+/* ── Scrollable content ── */
 .modalContent {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
 }
+.modalContent::-webkit-scrollbar { width: 4px; }
+.modalContent::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
 
+/* ── Preview ── */
 .previewSection {
-  padding: 20px 0;
-  display: flex;
-  justify-content: center;
+  width: 100%;
 }
 
-/* ─── Config Section ──────────────────────────────────────────────────── */
+/* ── Config ── */
 .configSection {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .configGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
 }
 
 .configItem {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
 }
 
-.configItem.span2 {
-  grid-column: 1 / -1;
-}
+.span2 { grid-column: span 2; }
 
 .configLabel {
-  font-size: 10px;
+  font-size: 0.72rem;
   color: #666;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
-  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
 .configValue {
-  background: #161616;
-  border: 1px solid #2a2a2a;
-  border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 13px;
-  color: #e8e8e8;
-  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-size: 0.92rem;
+  color: #ccc;
+  font-weight: 500;
 }
 
 .configValueLarge {
-  background: rgba(230, 57, 70, 0.1);
-  border: 1px solid rgba(230, 57, 70, 0.2);
-  border-radius: 6px;
-  padding: 12px;
-  font-size: 18px;
+  font-size: 1.3rem;
+  color: #fff;
   font-weight: 700;
-  color: #e63946;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
 }
 
-/* ─── Notes Box ───────────────────────────────────────────────────────── */
 .notesBox {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  background: #161616;
-  border: 1px solid #2a2a2a;
-  border-radius: 6px;
+  gap: 6px;
 }
 
 .notesText {
-  font-size: 12px;
+  font-size: 0.88rem;
   color: #999;
   margin: 0;
   line-height: 1.6;
 }
 
-/* ─── Items Box ───────────────────────────────────────────────────────── */
 .itemsBox {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px;
-  background: #161616;
-  border: 1px solid #2a2a2a;
-  border-radius: 6px;
 }
 
 .itemsList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .itemRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px;
-  background: #1a1a1a;
-  border-radius: 4px;
-  border: 1px solid #222;
+  padding: 6px 0;
+  border-bottom: 1px solid #2a2a2a;
 }
+.itemRow:last-child { border-bottom: none; }
 
 .itemDesc {
-  font-size: 12px;
-  color: #ddd;
+  font-size: 0.88rem;
+  color: #ccc;
 }
 
 .itemAmount {
-  font-size: 12px;
+  font-size: 0.88rem;
+  color: #fff;
   font-weight: 600;
-  color: #5ab870;
-  font-family: var(--mono, "Monaco", "Courier New", monospace);
+  font-family: monospace;
 }
 
-/* ─── Modal Footer ────────────────────────────────────────────────────── */
+/* ── Footer ── */
 .modalFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #2a2a2a;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
   flex-shrink: 0;
+  padding-top: 1rem;
+  border-top: 1px solid #2a2a2a;
 }
 
 .actionButtons {
   display: flex;
-  gap: 8px;
+  gap: 0.75rem;
 }
 
-/* ─── Buttons ─────────────────────────────────────────────────────────── */
 .btnPrimary {
   background: #e63946;
   color: #fff;
   border: none;
   border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
-  transition: opacity 0.15s, background 0.15s;
+  transition: opacity 0.2s;
 }
-
-.btnPrimary:hover:not(:disabled) {
-  opacity: 0.88;
-  background: #d32f36;
-}
-
-.btnPrimary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.btnPrimary:hover { opacity: 0.85; }
+.btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btnSecondary {
   background: #1e1e1e;
   color: #ccc;
   border: 1px solid #2a2a2a;
   border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 500;
   cursor: pointer;
-  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.2s;
 }
-
-.btnSecondary:hover {
-  background: #252525;
-  color: #e8e8e8;
-}
-
-.btnSecondary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* ─── Responsive ──────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .modal {
-    width: calc(100vw - 2rem);
-    height: calc(100vh - 2rem);
-    max-width: 100%;
-    padding: 1.5rem;
-  }
-
-  .configGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .modalFooter {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .actionButtons {
-    width: 100%;
-    flex-direction: column;
-  }
-
-  .btnPrimary,
-  .btnSecondary {
-    width: 100%;
-  }
-}
-
-/* ─── Scrollbar Styling ───────────────────────────────────────────────── */
-.modalContent::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modalContent::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.modalContent::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
-  border-radius: 3px;
-}
-
-.modalContent::-webkit-scrollbar-thumb:hover {
-  background: #333;
-}
+.btnSecondary:hover { background: #252525; }
+.btnSecondary:disabled { opacity: 0.5; cursor: not-allowed; }

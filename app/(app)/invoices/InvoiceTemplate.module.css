@@ -1,27 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ── Variables ────────────────────────────────────────────── */
-:root {
-  --inv-red:     #c8102e;
-  --inv-red-dk:  #a00d24;
-  --inv-ink:     #0f0f0f;
-  --inv-ink-2:   #3a3a3a;
-  --inv-ink-3:   #6b6b6b;
-  --inv-ink-4:   #9b9b9b;
-  --inv-rule:    #e8e8e8;
-  --inv-bg-row:  #f9f9f9;
-  --inv-sans:    'Plus Jakarta Sans', -apple-system, sans-serif;
-  --inv-mono:    'JetBrains Mono', 'Courier New', monospace;
-}
-
-/* ── Outer container ──────────────────────────────────────── */
+/* ── Outer container ─────────────────────────────────────── */
 .invoiceContainer {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* ── Action bar ───────────────────────────────────────────── */
+/* ── Action bar ──────────────────────────────────────────── */
 .actionBar {
   display: flex;
   gap: 10px;
@@ -33,20 +19,17 @@
   align-items: center;
   gap: 6px;
   padding: 9px 20px;
-  background: var(--inv-red);
+  background: #1a1a1a;
   color: #fff;
   border: none;
   border-radius: 6px;
-  font-family: var(--inv-sans);
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.18s;
-  letter-spacing: 0.01em;
 }
-
-.actionBtn:hover  { background: var(--inv-red-dk); }
-.actionBtn:active { transform: scale(0.98); }
+.actionBtn:hover { background: #2d2d2d; }
 
 .actionBtnOutline {
   display: inline-flex;
@@ -54,269 +37,324 @@
   gap: 6px;
   padding: 9px 20px;
   background: transparent;
-  color: var(--inv-ink-2);
-  border: 1.5px solid var(--inv-rule);
+  color: #3a3a3a;
+  border: 1.5px solid #e0e0e0;
   border-radius: 6px;
-  font-family: var(--inv-sans);
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.18s, color 0.18s;
 }
+.actionBtnOutline:hover { border-color: #999; color: #0f0f0f; }
 
-.actionBtnOutline:hover {
-  border-color: var(--inv-ink-3);
-  color: var(--inv-ink);
-}
-
-/* ── Invoice document ─────────────────────────────────────── */
+/* ── Invoice document ────────────────────────────────────── */
 .invoice {
   width: 100%;
-  max-width: 780px;
+  max-width: 100%;
+  height: 1122px;
+  max-height: 1122px;
   margin: 0 auto;
   background: #ffffff;
-  color: var(--inv-ink);
-  font-family: var(--inv-sans);
+  color: #0f0f0f;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   line-height: 1.55;
-  border: 1px solid var(--inv-rule);
-  border-radius: 10px;
+  /* border: 1px solid #e0e0e0; */
+  /* border-radius: 12px; */
   overflow: hidden;
-  box-shadow: 0 4px 32px rgba(0,0,0,0.07);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
 }
 
-/* ── Top accent bar ───────────────────────────────────────── */
-.accentBar {
-  height: 5px;
-  background: linear-gradient(90deg, var(--inv-red) 0%, #e84060 100%);
-}
-
-/* ── Header ───────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────── */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 36px 44px 28px;
+  padding: 36px 44px 32px;
+  /* background: #0f0f0f; */
   gap: 24px;
 }
 
 .headerLeft {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  align-items: flex-start;
+  gap: 18px;
   flex: 1;
 }
 
-.logoRow {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
 .logoWrap {
-  width: 56px;
-  height: 56px;
+  width: 100px;
+  height: 100px;
   border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  border: 1px solid var(--inv-rule);
+  /* background: #1e1e1e; */
+  /* border: 1px solid #333; */
+  padding: 4px;
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .gymName {
-  font-size: 20px;
+  font-size: 30px;
   font-weight: 800;
-  color: var(--inv-ink);
-  letter-spacing: -0.4px;
+  color: black;
+  letter-spacing: -0.3px;
   line-height: 1.15;
 }
 
 .gymTagline {
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  color: var(--inv-red);
-  margin-top: 2px;
+  letter-spacing: 0.22em;
+  color: #161f3c;
+  margin-bottom: 6px;
 }
 
 .gymMeta {
-  font-family: var(--inv-mono);
-  font-size: 10.5px;
-  color: var(--inv-ink-3);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #999;
   letter-spacing: 0.01em;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
 }
 
-.metaDot {
-  color: var(--inv-rule);
-  font-size: 12px;
+.gymGST {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #161f3c;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
 }
 
-/* ── Header right ─────────────────────────────────────────── */
+/* ── Header right ────────────────────────────────────────── */
 .headerRight {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
-.invoiceBadge {
-  font-family: var(--inv-mono);
+.invoiceLabel {
+  font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.22em;
-  color: var(--inv-ink-4);
+  letter-spacing: 0.28em;
+  color: #666;
   text-transform: uppercase;
 }
 
 .invoiceNumber {
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 22px;
   font-weight: 600;
-  color: var(--inv-red);
-  letter-spacing: 0.02em;
+  color: #161f3c;
+  letter-spacing: 0.04em;
   line-height: 1.1;
 }
 
+.invoiceDateRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.invoiceDateLabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  color: #666;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.invoiceDateVal {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #ccc;
+}
+
 .paidStamp {
-  margin-top: 8px;
-  padding: 4px 14px;
-  border: 2px solid #22c55e;
+  margin-top: 10px;
+  padding: 5px 14px;
+  border: 2px solid #161f3c;
   border-radius: 4px;
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.18em;
-  color: #16a34a;
+  letter-spacing: 0.16em;
+  color: #161f3c;
   transform: rotate(-2deg);
 }
 
-/* ── Divider ──────────────────────────────────────────────── */
-.divider {
-  height: 1px;
-  background: var(--inv-rule);
-  margin: 0 44px;
+/* ── Gold accent divider ─────────────────────────────────── */
+.accentDivider {
+  height: 3px;
+  background: linear-gradient(90deg, #161f3c 0%, white 50%, #161f3c 100%);
 }
 
-/* ── Meta grid (bill-to + dates) ──────────────────────────── */
-.metaGrid {
+/* ── Info section (client + membership) ─────────────────── */
+.infoSection {
   display: flex;
-  gap: 48px;
+  gap: 0;
   padding: 28px 44px 32px;
+  background: #fafafa;
+  border-bottom: 1px solid #ebebeb;
 }
 
-.metaBlock {
+.infoBlock {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  min-width: 140px;
+  gap: 8px;
 }
 
-.metaHeading {
-  font-family: var(--inv-mono);
+.infoDividerV {
+  width: 1px;
+  background: #e0e0e0;
+  margin: 0 36px;
+  flex-shrink: 0;
+}
+
+.infoBlockTitle {
+  font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.2em;
-  color: var(--inv-ink-4);
+  color: #161f3c;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8e8e8;
 }
 
-.metaName {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--inv-ink);
-  letter-spacing: -0.1px;
+.infoRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
 }
 
-.metaDetail {
-  font-family: var(--inv-mono);
+.infoKey {
   font-size: 11px;
-  color: var(--inv-ink-3);
+  color: #9b9b9b;
+  font-weight: 500;
+  min-width: 110px;
+  flex-shrink: 0;
 }
 
-/* ── Items table ──────────────────────────────────────────── */
+.infoVal {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f0f0f;
+}
+
+.paymentBadge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #0f0f0f;
+  color: #161f3c;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+/* ── Items table ─────────────────────────────────────────── */
 .table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 0;
 }
 
 .table thead tr {
-  background: var(--inv-ink);
+  background: #1a1a1a;
 }
 
 .table thead th {
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.75);
-  padding: 12px 0;
+  color: rgba(255,255,255,0.55);
+  padding: 13px 0;
 }
 
-.thNo   { width: 60px;  padding-left: 44px !important; text-align: left; }
+.thNo   { width: 70px; padding-left: 44px !important; text-align: left; }
 .thDesc { padding-left: 8px !important; text-align: left; }
-.thAmt  { width: 140px; padding-right: 44px !important; text-align: right; }
+.thAmt  { width: 160px; padding-right: 44px !important; text-align: right; }
+
+/* Gold underline on header */
+.table thead tr::after {
+  content: '';
+}
 
 .rowEven { background: #ffffff; }
-.rowOdd  { background: var(--inv-bg-row); }
+.rowOdd  { background: #f9f9f9; }
 
 .table tbody tr {
-  border-bottom: 1px solid var(--inv-rule);
+  border-bottom: 1px solid #f0f0f0;
   transition: background 0.1s;
 }
+.table tbody tr:last-child { border-bottom: none; }
 
-.table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.table td {
-  padding: 15px 0;
-  font-size: 13px;
-  color: var(--inv-ink-2);
-}
+.table td { padding: 16px 0; font-size: 13px; color: #3a3a3a; }
 
 .tdNo {
   padding-left: 44px !important;
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--inv-ink-4);
-  font-weight: 500;
+  color: #161f3c;
+  font-weight: 600;
 }
 
 .tdDesc {
   padding-left: 8px !important;
   font-weight: 500;
-  color: var(--inv-ink);
+  color: #0f0f0f;
+}
+
+.tdSubtext {
+  color: #9b9b9b;
+  font-weight: 400;
+  font-size: 12px;
 }
 
 .tdAmt {
   padding-right: 44px !important;
   text-align: right;
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 600;
-  color: var(--inv-ink);
+  color: #0f0f0f;
   font-size: 13px;
 }
 
-/* ── Summary ──────────────────────────────────────────────── */
-.summaryWrap {
+/* ── Summary section ─────────────────────────────────────── */
+.summarySection {
   display: flex;
-  justify-content: flex-end;
-  padding: 24px 44px 28px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 28px 44px 32px;
+  gap: 24px;
+  border-top: 1px solid #ebebeb;
+}
+
+.summaryLeft {
+  flex: 1;
 }
 
 .summaryBox {
-  min-width: 260px;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -331,20 +369,20 @@
 
 .summaryKey {
   font-size: 12.5px;
-  color: var(--inv-ink-3);
+  color: #6b6b6b;
   font-weight: 500;
 }
 
 .summaryVal {
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 12.5px;
-  color: var(--inv-ink-2);
+  color: #3a3a3a;
   font-weight: 500;
 }
 
 .summaryDivider {
   height: 1px;
-  background: var(--inv-rule);
+  background: #e8e8e8;
   margin: 4px 0;
 }
 
@@ -353,122 +391,171 @@
   justify-content: space-between;
   align-items: center;
   gap: 32px;
-  background: var(--inv-red);
-  border-radius: 7px;
-  padding: 13px 16px;
+  background: #0f0f0f;
+  border-radius: 8px;
+  padding: 14px 18px;
   margin-top: 4px;
+  border-left: 3px solid #161f3c;
 }
 
 .totalKey {
-  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
   font-weight: 700;
-  color: rgba(255,255,255,0.85);
-  letter-spacing: 0.04em;
+  color: white;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-family: var(--inv-mono);
 }
 
 .totalVal {
-  font-family: var(--inv-mono);
-  font-size: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 0.02em;
 }
 
-/* ── Notes ────────────────────────────────────────────────── */
+/* ── Notes ───────────────────────────────────────────────── */
 .notesWrap {
-  margin: 0 44px 28px;
   padding: 16px 20px;
-  background: #fffbf5;
-  border-left: 3px solid #f59e0b;
+  background: #fffdf5;
+  border-left: 3px solid #161f3c;
   border-radius: 0 6px 6px 0;
+  max-width: 380px;
 }
 
 .notesHeading {
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.2em;
-  color: #b45309;
+  color: #161f3c;
   text-transform: uppercase;
   margin-bottom: 7px;
 }
 
 .notesText {
   font-size: 12.5px;
-  color: var(--inv-ink-3);
+  color: #6b6b6b;
   margin: 0;
   line-height: 1.7;
 }
 
-/* ── Footer ───────────────────────────────────────────────── */
+/* ── Signature section ───────────────────────────────────── */
+.signatureSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 44px 36px;
+  gap: 40px;
+  flex: 1;
+}
+
+.signatureBlock {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.signatureLine {
+  width: 100%;
+  height: 1px;
+  background: #161f3c;
+  margin-bottom: 8px;
+  opacity: 0.5;
+  border-top: 1px dashed #161f3c;
+  margin-top: 48px;
+}
+
+.signatureLabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: #9b9b9b;
+  text-transform: uppercase;
+}
+
+.signatureSub {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f0f0f;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
 .footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 44px;
-  background: var(--inv-bg-row);
-  border-top: 1px solid var(--inv-rule);
+  padding: 16px 44px;
+  background: #0f0f0f;
   gap: 24px;
 }
 
 .footerLeft {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.footerLogoRow {
-  display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .footerGymName {
   font-size: 12px;
   font-weight: 700;
-  color: var(--inv-ink-2);
+  color: #ffffff;
   letter-spacing: -0.1px;
 }
 
+.footerDot {
+  color: #444;
+  font-size: 14px;
+}
+
 .footerSub {
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--inv-ink-4);
+  color: #666;
   letter-spacing: 0.02em;
 }
 
 .footerRight {
-  font-family: var(--inv-mono);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--inv-ink-4);
+  color: #555;
   text-align: right;
   letter-spacing: 0.01em;
 }
 
-/* ── Print styles ─────────────────────────────────────────── */
+/* ── Print / PDF ─────────────────────────────────────────── */
 @media print {
-  .actionBar  { display: none !important; }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  .actionBar { display: none !important; }
 
   .invoice {
+    width: 210mm;
+    min-height: 297mm;
     border: none;
     box-shadow: none;
     border-radius: 0;
-    max-width: 100%;
+    margin: 0;
   }
 }
 
-/* ── Responsive ───────────────────────────────────────────── */
+/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 680px) {
-  .header     { flex-direction: column; padding: 28px 24px 20px; }
-  .headerRight { align-items: flex-start; }
-  .divider    { margin: 0 24px; }
-  .metaGrid   { flex-direction: column; gap: 20px; padding: 20px 24px; }
-  .thNo, .tdNo          { padding-left: 24px !important; }
-  .thAmt, .tdAmt        { padding-right: 24px !important; }
-  .summaryWrap          { padding: 20px 24px; }
-  .notesWrap            { margin: 0 24px 20px; }
-  .footer               { flex-direction: column; align-items: flex-start; padding: 16px 24px; }
-  .footerRight          { text-align: left; }
+  .header        { flex-direction: column; padding: 24px 24px 20px; }
+  .headerRight   { align-items: flex-start; }
+  .infoSection   { flex-direction: column; padding: 20px 24px; }
+  .infoDividerV  { display: none; }
+  .thNo, .tdNo   { padding-left: 24px !important; }
+  .thAmt, .tdAmt { padding-right: 24px !important; }
+  .summarySection { flex-direction: column; padding: 20px 24px; }
+  .summaryBox    { min-width: unset; width: 100%; }
+  .signatureSection { flex-direction: column; gap: 32px; padding: 0 24px 28px; }
+  .footer        { flex-direction: column; align-items: flex-start; padding: 16px 24px; }
+  .footerRight   { text-align: left; }
 }
