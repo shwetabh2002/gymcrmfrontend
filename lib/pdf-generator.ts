@@ -8,6 +8,12 @@ export interface InvoiceData {
   memberName: string;
   memberContact: string;
   memberInstagram?: string;
+  membershipPlan?: string;
+  duration?: string;
+  membershipFee?: number;
+  personalTrainingFee?: number;
+  otherCharges?: number;
+  paymentMode?: "CASH" | "UPI" | "CARD";
   items: Array<{
     description: string;
     amount: number;
@@ -21,6 +27,7 @@ export interface InvoiceData {
   gymAddress?: string;
   gymEmail?: string;
   gymPhone?: string;
+  gymGST?: string;
 }
 
 export const generateInvoicePDF = async (
@@ -40,12 +47,27 @@ export const generateInvoicePDF = async (
       (printButton as HTMLElement).style.display = "none";
     }
 
+    // Temporarily reset any scale transform so html2canvas captures full size
+    const originalTransform = element.style.transform;
+    const originalWidth = element.style.width;
+    element.style.transform = "none";
+    element.style.width = "100%";
+
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
+      // Capture exactly the element's bounding box
+      width: element.offsetWidth,
+      height: element.offsetHeight,
+      windowWidth: element.offsetWidth,
+      windowHeight: element.offsetHeight,
     });
+
+    // Restore transform and width
+    element.style.transform = originalTransform;
+    element.style.width = originalWidth;
 
     // Restore the print button
     if (printButton) {
@@ -62,32 +84,9 @@ export const generateInvoicePDF = async (
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Calculate image dimensions to fit the page
-    const imgWidth = pageWidth - 20; // 10mm margins
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // Stretch image to fill the full A4 page — no margins, no multi-page
+    pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
 
-    let yPosition = 10;
-
-    // Add image to PDF
-    pdf.addImage(imgData, "PNG", 10, yPosition, imgWidth, imgHeight);
-
-    // If the image is taller than one page, add additional pages
-    let remainingHeight = imgHeight - (pageHeight - yPosition - 10);
-    while (remainingHeight > 0) {
-      pdf.addPage();
-      yPosition = 10;
-      pdf.addImage(
-        imgData,
-        "PNG",
-        10,
-        yPosition - (imgHeight - remainingHeight),
-        imgWidth,
-        imgHeight
-      );
-      remainingHeight -= pageHeight - 20;
-    }
-
-    // Save the PDF
     pdf.save(`invoice-${invoiceData.invoiceNumber}.pdf`);
   } catch (error) {
     console.error("Error generating PDF:", error);
@@ -110,7 +109,6 @@ export const printInvoice = async (elementId: string = "invoice-template"): Prom
     printWindow.document.write(element.outerHTML);
     printWindow.document.close();
 
-    // Wait for content to load before printing
     printWindow.onload = () => {
       printWindow.print();
     };
