@@ -213,7 +213,37 @@ export default function ImportMembersModal({ open, onClose }: Props) {
 
               {/* Instructions */}
               <div className={styles.instructions}>
-                <h4 className={styles.instructionsTitle}>Required Format:</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                  <h4 className={styles.instructionsTitle} style={{ margin: 0 }}>Required Format:</h4>
+                  <a
+                    href="/sample-import.xlsx"
+                    download="sample-import.xlsx"
+                    style={{
+                      fontSize: '0.75rem',
+                      color: '#5ab870',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      padding: '4px 10px',
+                      border: '1px solid rgba(90,184,112,0.3)',
+                      borderRadius: '4px',
+                      background: 'rgba(90,184,112,0.08)',
+                      transition: 'all 0.15s',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(90,184,112,0.15)';
+                      e.currentTarget.style.borderColor = 'rgba(90,184,112,0.5)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(90,184,112,0.08)';
+                      e.currentTarget.style.borderColor = 'rgba(90,184,112,0.3)';
+                    }}
+                  >
+                    <span>📥</span> Download Sample
+                  </a>
+                </div>
                 <ul className={styles.instructionsList}>
                   <li>Excel file with columns: ID. NO, Date, Client Name, Phone Number, DOB, INSTAGRAM @, PACKAGE, AMOUNT, RECEIVED, BAL AMOUNT, MOP, SALES, TRAINING TYPE, Trainer assigned, MEMBER TYPE, STARTING DATE, EXPIRY DATE</li>
                   <li>Client Name and Phone Number are required fields</li>
