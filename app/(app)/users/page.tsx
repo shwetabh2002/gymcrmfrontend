@@ -280,7 +280,6 @@ export default function UsersPage() {
                   <th>Amount</th>
                   <th>Received</th>
                   <th>Pending</th>
-                  <th>MOP</th>
                   <th>Type</th>
                   <th>Expiry</th>
                   <th>Status</th>
@@ -289,7 +288,7 @@ export default function UsersPage() {
               </thead>
               <tbody>
                 {paginated.length === 0 && (
-                  <tr><td colSpan={14} style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-2)", fontSize: 13 }}>
+                  <tr><td colSpan={13} style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-2)", fontSize: 13 }}>
                     {members?.length === 0 ? "No members yet. Add one to get started." : "No members match your filters."}
                   </td></tr>
                 )}
@@ -337,7 +336,6 @@ export default function UsersPage() {
                         ? formatCurrency(getMembershipInfo(m).pendingAmount)
                         : <span style={{ color: "var(--text-3)" }}>Nil</span>}
                     </td>
-                    <td className={styles.cellMono} style={{ fontSize: 11 }}>{m.mop ?? "—"}</td>
                     <td>
                       <span className={`${styles.badge} ${memberTypeBadgeClass(m.memberType, styles)}`}>
                         {m.memberType ?? "Renewal"}

@@ -10,6 +10,8 @@ export interface DashboardCounts {
   membersNearExpiry: number;
   membersWithPendingPayments: number;
   newMembersThisMonth: number;
+  totalDiscountGiven?: number;
+  discountedMembersCount?: number;
 }
 
 export interface ActiveMember {

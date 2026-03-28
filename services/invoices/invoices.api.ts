@@ -8,8 +8,14 @@ export interface PaymentRecord {
     email: string;
     name: string;
     phone: string;
+    discount?: number;
+    discountApprovedBy?: string;
+    membershipPlan?: string;
+    membershipMonths?: number;
+    instagramHandle?: string;
+    amount?: number; // Original amount before discount
   };
-  amount: number;
+  amount: number; // Final amount (after discount)
   received: number;
   pending: number;
   mop: string;

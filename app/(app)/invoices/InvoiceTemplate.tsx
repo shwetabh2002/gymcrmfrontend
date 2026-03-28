@@ -15,7 +15,11 @@ export interface InvoiceTemplateProps {
   membershipFee?: number;
   personalTrainingFee?: number;
   otherCharges?: number;
+  discount?: number;
+  discountApprovedBy?: string;
   paymentMode?: "CASH" | "UPI" | "CARD";
+  amountReceived?: number;
+  amountPending?: number;
   items: Array<{ description: string; amount: number }>;
   subtotal: number;
   taxPercentage: number;
@@ -44,7 +48,11 @@ export default function InvoiceTemplate({
   membershipFee,
   personalTrainingFee,
   otherCharges,
+  discount,
+  discountApprovedBy,
   paymentMode,
+  amountReceived,
+  amountPending,
   items,
   subtotal,
   taxPercentage,
@@ -233,15 +241,44 @@ export default function InvoiceTemplate({
                     <td className={styles.tdAmt}>{formatCurrency(otherCharges)}</td>
                   </tr>
                 )})()}
+                {discount && discount > 0 && (() => { rowIdx++; return (
+                  <tr className={rowIdx % 2 === 0 ? styles.rowEven : styles.rowOdd}>
+                    <td className={styles.tdNo}>{String(rowIdx).padStart(2,"0")}</td>
+                    <td className={styles.tdDesc}>
+                      Discount ({discount}%)
+                      {discountApprovedBy && <span className={styles.tdSubtext}> · Approved by {discountApprovedBy}</span>}
+                    </td>
+                    <td className={styles.tdAmt} style={{ color: '#10b981' }}>
+                      -{formatCurrency(Math.round((subtotal * discount / 100) * 100) / 100)}
+                    </td>
+                  </tr>
+                )})()}
               </>
             ) : (
-              items.map((item, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? styles.rowEven : styles.rowOdd}>
-                  <td className={styles.tdNo}>{String(idx + 1).padStart(2, "0")}</td>
-                  <td className={styles.tdDesc}>{item.description}</td>
-                  <td className={styles.tdAmt}>{formatCurrency(item.amount)}</td>
-                </tr>
-              ))
+              <>
+                {items.map((item, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? styles.rowEven : styles.rowOdd}>
+                    <td className={styles.tdNo}>{String(idx + 1).padStart(2, "0")}</td>
+                    <td className={styles.tdDesc}>{item.description}</td>
+                    <td className={styles.tdAmt}>{formatCurrency(item.amount)}</td>
+                  </tr>
+                ))}
+                {discount && discount > 0 && (() => {
+                  const discountRow = items.length + 1;
+                  return (
+                    <tr className={discountRow % 2 === 0 ? styles.rowEven : styles.rowOdd}>
+                      <td className={styles.tdNo}>{String(discountRow).padStart(2, "0")}</td>
+                      <td className={styles.tdDesc}>
+                        Discount ({discount}%)
+                        {discountApprovedBy && <span className={styles.tdSubtext}> · Approved by {discountApprovedBy}</span>}
+                      </td>
+                      <td className={styles.tdAmt} style={{ color: '#10b981' }}>
+                        -{formatCurrency(Math.round((subtotal * discount / 100) * 100) / 100)}
+                      </td>
+                    </tr>
+                  );
+                })()}
+              </>
             )}
           </tbody>
         </table>
@@ -257,26 +294,60 @@ export default function InvoiceTemplate({
             )}
           </div>
           <div className={styles.summaryBox}>
-            {/* Inclusive GST: GST = total * 12/112, base = total - GST */}
+            {/* Inclusive GST: GST = total * 5/105, base = total - GST */}
             {(() => {
-              const inclusiveGSTRate = 12;
+              const inclusiveGSTRate = 5;
               const gstAmount = Math.round((totalAmount * inclusiveGSTRate) / (100 + inclusiveGSTRate) * 100) / 100;
               const baseAmount = Math.round((totalAmount - gstAmount) * 100) / 100;
+              const discountAmount = discount ? Math.round((subtotal * discount / 100) * 100) / 100 : 0;
+              const amountAfterDiscount = subtotal - discountAmount;
+
               return (
                 <>
+                  <div className={styles.summaryLine}>
+                    <span className={styles.summaryKey}>Subtotal</span>
+                    <span className={styles.summaryVal}>{formatCurrency(subtotal)}</span>
+                  </div>
+                  {discount && discount > 0 && (
+                    <div className={styles.summaryLine} style={{ color: '#10b981' }}>
+                      <span className={styles.summaryKey}>
+                        Discount ({discount}%)
+                        {discountApprovedBy && <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.25rem' }}>by {discountApprovedBy}</span>}
+                      </span>
+                      <span className={styles.summaryVal}>-{formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
+                  {discount && discount > 0 && (
+                    <div className={styles.summaryLine}>
+                      <span className={styles.summaryKey}>Amount After Discount</span>
+                      <span className={styles.summaryVal}>{formatCurrency(amountAfterDiscount)}</span>
+                    </div>
+                  )}
                   <div className={styles.summaryLine}>
                     <span className={styles.summaryKey}>Base Amount</span>
                     <span className={styles.summaryVal}>{formatCurrency(baseAmount)}</span>
                   </div>
                   <div className={styles.summaryLine}>
-                    <span className={styles.summaryKey}>GST @12% (inclusive)</span>
+                    <span className={styles.summaryKey}>GST @5% (inclusive)</span>
                     <span className={styles.summaryVal}>{formatCurrency(gstAmount)}</span>
                   </div>
                   <div className={styles.summaryDivider} />
-                  <div className={styles.totalLine}>
-                    <span className={styles.totalKey}>TOTAL AMOUNT</span>
-                    <span className={styles.totalVal}>{formatCurrency(totalAmount)}</span>
+                  <div className={styles.summaryLine}>
+                    <span className={styles.summaryKey}>Total Amount</span>
+                    <span className={styles.summaryVal}>{formatCurrency(totalAmount)}</span>
                   </div>
+                  {amountPending !== undefined && amountPending > 0 && (
+                    <div className={styles.summaryLine} style={{ color: '#dc2626' }}>
+                      <span className={styles.summaryKey}>Amount Pending</span>
+                      <span className={styles.summaryVal}>{formatCurrency(amountPending)}</span>
+                    </div>
+                  )}
+                  {amountReceived !== undefined && amountReceived > 0 && (
+                    <div className={styles.totalLine} style={{ marginTop: '8px', background: '#10b981', borderLeft: '3px solid #059669' }}>
+                      <span className={styles.totalKey}>AMOUNT RECEIVED</span>
+                      <span className={styles.totalVal}>{formatCurrency(amountReceived)}</span>
+                    </div>
+                  )}
                 </>
               );
             })()}

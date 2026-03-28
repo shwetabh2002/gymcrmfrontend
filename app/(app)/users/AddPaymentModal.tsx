@@ -152,6 +152,49 @@ export default function AddPaymentModal({ open, onClose, member }: Props) {
             {error && <p className={styles.errorMsg}>{error}</p>}
 
             <div className={styles.scrollBody}>
+              {member.discount && member.discount > 0 && (
+                <div style={{
+                  marginBottom: '1rem',
+                  padding: '12px 16px',
+                  backgroundColor: '#dcfce7',
+                  borderLeft: '3px solid #10b981',
+                  borderRadius: '4px',
+                  fontSize: '13px',
+                  color: '#065f46'
+                }}>
+                  <div style={{ fontWeight: 600, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    💰 Discount Applied
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+                    <div>
+                      <span style={{ color: '#6b7280' }}>Original Amount:</span>
+                      <span style={{ fontWeight: 600, marginLeft: '6px' }}>₹{member.amount?.toLocaleString() ?? 0}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: '#6b7280' }}>Discount:</span>
+                      <span style={{ fontWeight: 600, marginLeft: '6px', color: '#10b981' }}>{member.discount}%</span>
+                    </div>
+                    <div>
+                      <span style={{ color: '#6b7280' }}>Discount Amount:</span>
+                      <span style={{ fontWeight: 600, marginLeft: '6px', color: '#10b981' }}>
+                        -₹{(((member.amount ?? 0) * (member.discount ?? 0)) / 100).toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ color: '#6b7280' }}>Final Amount:</span>
+                      <span style={{ fontWeight: 600, marginLeft: '6px' }}>
+                        ₹{((member.amount ?? 0) - ((member.amount ?? 0) * (member.discount ?? 0)) / 100).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  {member.discountApprovedBy && (
+                    <div style={{ marginTop: '8px', fontSize: '11px', color: '#6b7280' }}>
+                      Approved by: <span style={{ fontWeight: 500, color: '#065f46' }}>{member.discountApprovedBy}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className={styles.sectionLabel}>Payment Details</div>
 
               <div className={styles.fields}>

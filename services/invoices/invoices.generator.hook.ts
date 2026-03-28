@@ -14,6 +14,13 @@ const GYM_DEFAULTS = {
 export function buildInvoiceFromPayment(payment: PaymentRecord): InvoiceGeneratorData {
   const member = payment.memberId;
   const contact = member?.phone || member?.email || "";
+  const discount = member?.discount ?? 0;
+
+  // Use original amount from member if available, otherwise use payment amount
+  // member.amount = original amount before discount
+  // payment.amount = final amount after discount
+  const originalAmount = member?.amount ?? payment.amount;
+  const finalAmount = payment.amount; // This is already discounted
 
   return {
     invoiceNumber: `INV-${payment._id.slice(-6).toUpperCase()}`,
@@ -21,6 +28,16 @@ export function buildInvoiceFromPayment(payment: PaymentRecord): InvoiceGenerato
     memberId: member?._id ?? "",
     memberName: member?.name ?? "Unknown Member",
     memberContact: contact,
+    memberInstagram: member?.instagramHandle,
+    membershipPlan: member?.membershipPlan ||
+      (member?.membershipMonths ? `${member.membershipMonths} Month${member.membershipMonths > 1 ? "s" : ""}` : undefined),
+    duration: member?.membershipMonths ? `${member.membershipMonths} Month${member.membershipMonths > 1 ? "s" : ""}` : undefined,
+    membershipFee: originalAmount,
+    discount: discount > 0 ? discount : undefined,
+    discountApprovedBy: member?.discountApprovedBy,
+    paymentMode: payment.mop as any,
+    amountReceived: payment.received,
+    amountPending: payment.pending,
     items: [
       {
         description: `Gym Payment — ${payment.mop.toUpperCase()}${
@@ -32,11 +49,14 @@ export function buildInvoiceFromPayment(payment: PaymentRecord): InvoiceGenerato
         ? [{ description: "Pending Balance", amount: payment.pending }]
         : []),
     ],
-    subtotal: payment.amount,
+    subtotal: originalAmount,
     taxPercentage: 0,
     taxAmount: 0,
-    totalAmount: payment.amount,
-    notes: payment.notes || undefined,
+    totalAmount: finalAmount,
+    notes: payment.notes ||
+      (discount > 0
+        ? `${discount}% discount applied${member?.discountApprovedBy ? ` by ${member.discountApprovedBy}` : ''}`
+        : undefined),
     ...GYM_DEFAULTS,
   };
 }
@@ -46,8 +66,11 @@ export function buildInvoiceFromMember(member: Member): InvoiceGeneratorData {
   const contact =
     member.phone || member.contactNumber || member.email || "";
   const amount = member.amount ?? member.membershipAmount ?? 0;
+  const discount = member.discount ?? 0;
+  const discountAmount = Math.round((amount * discount / 100) * 100) / 100;
+  const amountAfterDiscount = amount - discountAmount;
   const received = member.received ?? 0;
-  const pending = member.pending ?? Math.max(0, amount - received);
+  const pending = member.pending ?? Math.max(0, amountAfterDiscount - received);
 
   const items: InvoiceGeneratorData["items"] = [];
 
@@ -75,14 +98,25 @@ export function buildInvoiceFromMember(member: Member): InvoiceGeneratorData {
     memberName: member.name,
     memberContact: contact,
     memberInstagram: member.instagramHandle,
+    membershipPlan: member.membershipPlan ||
+      (member.membershipMonths ? `${member.membershipMonths} Month${(member.membershipMonths ?? 1) > 1 ? "s" : ""}` : undefined),
+    duration: member.membershipMonths ? `${member.membershipMonths} Month${(member.membershipMonths ?? 1) > 1 ? "s" : ""}` : undefined,
+    membershipFee: amount,
+    discount: member.discount,
+    discountApprovedBy: member.discountApprovedBy,
+    paymentMode: member.mop as any,
+    amountReceived: received,
+    amountPending: pending,
     items,
     subtotal: amount,
     taxPercentage: 0,
     taxAmount: 0,
-    totalAmount: amount,
+    totalAmount: amountAfterDiscount,
     notes: member.mop
-      ? `Payment via ${member.mop.toUpperCase()}`
-      : undefined,
+      ? `Payment via ${member.mop.toUpperCase()}${discount > 0 ? `. ${discount}% discount applied${member.discountApprovedBy ? ` by ${member.discountApprovedBy}` : ''}` : ''}`
+      : discount > 0
+        ? `${discount}% discount applied${member.discountApprovedBy ? ` by ${member.discountApprovedBy}` : ''}`
+        : undefined,
     ...GYM_DEFAULTS,
   };
 }

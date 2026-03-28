@@ -51,4 +51,12 @@ export const API_CONFIG = {
     EXPIRING_IN_7_DAYS: "/analytics/expiring-in-7-days",
     PAYMENT_UPDATES:   "/analytics/payment-updates",
   },
+
+  EMPLOYEES: {
+    BASE:        "/employees",
+    BY_ID:       (id: string) => `/employees/${id}`,
+    AUTH_UNLOCK: "/employees/auth/unlock",
+    AUTH_LOCK:   "/employees/auth/lock",
+    AUTH_STATUS: "/employees/auth/status",
+  },
 } as const;

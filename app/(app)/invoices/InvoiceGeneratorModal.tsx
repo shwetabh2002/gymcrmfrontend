@@ -22,7 +22,11 @@ export interface InvoiceGeneratorData {
   membershipFee?: number;
   personalTrainingFee?: number;
   otherCharges?: number;
+  discount?: number;
+  discountApprovedBy?: string;
   paymentMode?: "CASH" | "UPI" | "CARD";
+  amountReceived?: number;
+  amountPending?: number;
   items: Array<{ description: string; amount: number }>;
   subtotal: number;
   taxPercentage: number;
@@ -62,7 +66,11 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
         membershipFee: invoiceData.membershipFee,
         personalTrainingFee: invoiceData.personalTrainingFee,
         otherCharges: invoiceData.otherCharges,
+        discount: invoiceData.discount,
+        discountApprovedBy: invoiceData.discountApprovedBy,
         paymentMode: invoiceData.paymentMode,
+        amountReceived: invoiceData.amountReceived,
+        amountPending: invoiceData.amountPending,
         items: invoiceData.items,
         subtotal: invoiceData.subtotal,
         taxPercentage: invoiceData.taxPercentage,
@@ -145,7 +153,11 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                     membershipFee={invoiceData.membershipFee}
                     personalTrainingFee={invoiceData.personalTrainingFee}
                     otherCharges={invoiceData.otherCharges}
+                    discount={invoiceData.discount}
+                    discountApprovedBy={invoiceData.discountApprovedBy}
                     paymentMode={invoiceData.paymentMode}
+                    amountReceived={invoiceData.amountReceived}
+                    amountPending={invoiceData.amountPending}
                     items={invoiceData.items}
                     subtotal={invoiceData.subtotal}
                     taxPercentage={invoiceData.taxPercentage}
@@ -217,8 +229,31 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                         <div className={styles.configValue}>₹{invoiceData.otherCharges.toLocaleString()}</div>
                       </div>
                     )}
+                    {invoiceData.discount !== undefined && invoiceData.discount > 0 && (
+                      <>
+                        <div className={styles.configItem}>
+                          <label className={styles.configLabel}>Subtotal (Before Discount)</label>
+                          <div className={styles.configValue}>
+                            ₹{invoiceData.subtotal.toLocaleString()}
+                          </div>
+                        </div>
+                        <div className={styles.configItem}>
+                          <label className={styles.configLabel}>Discount ({invoiceData.discount}%)</label>
+                          <div className={styles.configValue} style={{ color: '#10b981' }}>
+                            -₹{((invoiceData.subtotal * invoiceData.discount) / 100).toLocaleString()}
+                            {invoiceData.discountApprovedBy && (
+                              <span style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '0.25rem', display: 'block' }}>
+                                Approved by {invoiceData.discountApprovedBy}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
                     <div className={`${styles.configItem} ${styles.span2}`}>
-                      <label className={styles.configLabel}>Total Amount</label>
+                      <label className={styles.configLabel}>
+                        {invoiceData.discount && invoiceData.discount > 0 ? 'Total (After Discount)' : 'Total Amount'}
+                      </label>
                       <div className={styles.configValueLarge}>
                         ₹{invoiceData.totalAmount.toLocaleString()}
                       </div>

@@ -7,6 +7,7 @@ import styles from "./Header.module.css";
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":     "Dashboard",
   "/users":         "Members",
+  "/employees":     "Employees",
   "/subscriptions": "Subscriptions",
   "/plans":         "Subscription Plans",
   "/payments":      "Payments",

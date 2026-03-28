@@ -13,14 +13,14 @@
   inset: 0;
   margin: auto;
   z-index: 101;
-  background: #111;
-  border: 1px solid #232323;
+  background: #f8f9fa;
+  border: 1px solid #d1d5db;
   border-radius: 12px;
   width: 680px;
   max-width: calc(100vw - 2rem);
   max-height: calc(100vh - 3rem);
   overflow: hidden;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
 }
@@ -31,21 +31,21 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 1.4rem 1.6rem 1.2rem;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
 
 .modalTitle {
   font-size: 1rem;
   font-weight: 700;
-  color: #fff;
+  color: #1e40af;
   margin: 0 0 3px;
   letter-spacing: -0.01em;
 }
 
 .modalSubtitle {
   font-size: 0.75rem;
-  color: #555;
+  color: #6b7280;
   margin: 0;
   font-family: var(--mono, monospace);
   letter-spacing: 0.02em;
@@ -57,17 +57,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: #e5e7eb;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  color: #555;
+  color: #6b7280;
   cursor: pointer;
   font-size: 0.8rem;
   flex-shrink: 0;
   transition: color 0.12s, background 0.12s;
   margin-top: 2px;
 }
-.modalClose:hover { color: #ccc; background: #222; }
+.modalClose:hover { color: #1e40af; background: #dbeafe; }
 
 /* Scrollable body */
 .scrollBody {
@@ -85,9 +85,9 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #444;
+  color: #1e40af;
   padding-bottom: 0.6rem;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid #d1d5db;
   margin-bottom: -0.5rem;
 }
 
@@ -118,17 +118,17 @@
 
 .label {
   font-size: 0.72rem;
-  color: #666;
+  color: #4b5563;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .input {
-  background: #161616;
-  border: 1px solid #242424;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
-  color: #e8e8e8;
+  color: #1f2937;
   font-size: 0.85rem;
   padding: 0.6rem 0.8rem;
   outline: none;
@@ -137,9 +137,9 @@
   font-family: inherit;
   box-sizing: border-box;
 }
-.input:focus { border-color: var(--red, #e63946); background: #181818; }
+.input:focus { border-color: #1e40af; background: #f9fafb; }
 .input:disabled { opacity: 0.45; cursor: not-allowed; }
-.input option { background: #1a1a1a; }
+.input option { background: #ffffff; }
 
 /* Error */
 .errorMsg {
@@ -159,13 +159,13 @@
   justify-content: flex-end;
   gap: 0.65rem;
   padding: 1rem 1.6rem;
-  border-top: 1px solid #1e1e1e;
+  border-top: 1px solid #e5e7eb;
   flex-shrink: 0;
-  background: #0e0e0e;
+  background: #f8f9fa;
 }
 
 .btnPrimary {
-  background: var(--red, #e63946);
+  background: #1e40af;
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -181,8 +181,8 @@
 
 .btnSecondary {
   background: transparent;
-  color: #888;
-  border: 1px solid #2a2a2a;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
   padding: 0.58rem 1.1rem;
   font-size: 0.85rem;
@@ -190,7 +190,7 @@
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
-.btnSecondary:hover { color: #ccc; border-color: #3a3a3a; }
+.btnSecondary:hover { color: #1f2937; border-color: #9ca3af; }
 
 .btnDanger {
   background: transparent;
@@ -209,11 +209,11 @@
 /* Delete message */
 .deleteMsg {
   font-size: 0.9rem;
-  color: #999;
+  color: #6b7280;
   line-height: 1.6;
   padding: 0 1.6rem;
 }
-.deleteMsg strong { color: #fff; }
+.deleteMsg strong { color: #1f2937; }
 
 @media (max-width: 640px) {
   .row, .row3 { grid-template-columns: 1fr; }

@@ -31,6 +31,17 @@ const NAV = [
     ),
   },
   {
+    href: "/employees",
+    label: "Employees",
+    icon: (
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="12" height="13" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
+        <circle cx="8" cy="6" r="1.8" stroke="currentColor" strokeWidth="1.4"/>
+        <path d="M5 12c0-1.657 1.343-2.5 3-2.5s3 .843 3 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
     href: "/invoices",
     label: "Invoices",
     icon: (
@@ -78,7 +89,7 @@ export default function Sidebar({ isOpen, isCollapsed, onClose, onToggleCollapse
         <div className={styles.brand}>
           <div className={styles.brandRow}>
             <div className={styles.brandIcon}>
-              <Image src="/small_logo.png" alt="Logo" width={48} height={48} />
+              <Image src="/small_logo.png" alt="Logo" width={48} height={48} style={{ width: "auto", height: "auto" }} />
             </div>
             {!isCollapsed && (
               <div>

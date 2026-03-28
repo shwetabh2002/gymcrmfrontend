@@ -117,6 +117,7 @@ export default function DashboardPage() {
     { title: "Active Subscriptions",   value: counts?.activeSubscriptions   ?? "—", sub: `of ${counts?.totalMembers ?? 0} members`,              badge: "active",  trend: "neutral" },
     { title: "Monthly Revenue",        value: counts?.monthlyRevenue != null ? `₹${counts.monthlyRevenue.toLocaleString()}` : "—", sub: "this month", badge: "revenue", trend: "up"  },
     { title: "Pending Payments",       value: counts?.membersWithPendingPayments ?? "—", sub: `₹${counts?.totalPendingAmount?.toLocaleString() ?? 0} total`, badge: "pending", trend: "down" },
+    { title: "Total Discount Given",   value: counts?.totalDiscountGiven != null ? `₹${Math.round(counts.totalDiscountGiven).toLocaleString()}` : "—", sub: `${counts?.discountedMembersCount ?? 0} members discounted`, badge: "discount", trend: "neutral" },
   ];
 
   const recentPayments = dashboard?.recentPayments ?? [];

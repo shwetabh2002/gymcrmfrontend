@@ -13,7 +13,11 @@ export interface InvoiceData {
   membershipFee?: number;
   personalTrainingFee?: number;
   otherCharges?: number;
+  discount?: number;
+  discountApprovedBy?: string;
   paymentMode?: "CASH" | "UPI" | "CARD";
+  amountReceived?: number;
+  amountPending?: number;
   items: Array<{
     description: string;
     amount: number;

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCreateMember, useUpdateMember } from "@/services/members/members.hook";
 import { Member, CreateMemberPayload, RegisterMemberPayload } from "@/services/members/members.api";
+import { useEmployees } from "@/services/employees/employees.hook";
 import styles from "./MemberModal.module.css";
 
 interface Props {
@@ -21,6 +22,7 @@ const EMPTY: CreateMemberPayload = {
   phone: "",
   email: "",
   dob: "",
+  anniversaryDate: "",
   instagramHandle: "",
   membershipPlan: "",
   membershipMonths: 1,
@@ -39,17 +41,62 @@ const EMPTY: CreateMemberPayload = {
   memberStatus: "ACTIVE",
   address: "",
   emergencyContact: "",
+  discount: 0,
+  discountApprovedBy: "",
 };
+
+const COUNTRY_CODES = [
+  { code: "+91", country: "India" },
+  { code: "+1", country: "USA/Canada" },
+  { code: "+44", country: "UK" },
+  { code: "+971", country: "UAE" },
+  { code: "+65", country: "Singapore" },
+  { code: "+61", country: "Australia" },
+];
+
+// Membership plan pricing (update these with actual website prices)
+const MEMBERSHIP_PLANS = [
+  { months: 1, label: "1 Month", price: 3000 },
+  { months: 3, label: "3 Months", price: 8000 },
+  { months: 6, label: "6 Months", price: 15000 },
+  { months: 12, label: "12 Months", price: 28000 },
+];
+
+// Fixed approvers for discount
+const APPROVERS = ["malik1", "malik2"];
 
 export default function MemberModal({ open, onClose, existing }: Props) {
   const isEdit = !!existing;
   const [form, setForm]   = useState<CreateMemberPayload>(EMPTY);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [countryCode, setCountryCode] = useState("+91");
+  const [hasDiscount, setHasDiscount] = useState(false);
 
   const { mutate: createMember, isPending: creating } = useCreateMember();
   const { mutate: updateMember, isPending: updating } = useUpdateMember();
+  // Only fetch employees if modal is open (and handle errors silently if section is locked)
+  const { data: employees, isError: employeesError } = useEmployees(open);
   const isPending = creating || updating;
+
+  // Filter employees by type (return empty array if error/locked)
+  const salesEmployees = (!employeesError && employees?.filter(emp => emp.employeeType === "SALES" && emp.status === "ACTIVE")) || [];
+  const trainerEmployees = (!employeesError && employees?.filter(emp => emp.employeeType === "TRAINER" && emp.status === "ACTIVE")) || [];
+
+  // Handle membership plan selection - auto-fill price
+  const handlePlanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const months = parseInt(e.target.value);
+    const selectedPlan = MEMBERSHIP_PLANS.find(p => p.months === months);
+    if (selectedPlan) {
+      setForm(prev => ({
+        ...prev,
+        membershipMonths: months,
+        membershipPlan: selectedPlan.label,
+        amount: selectedPlan.price,
+        membershipAmount: selectedPlan.price,
+      }));
+    }
+  };
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -79,7 +126,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         membershipAmount: totalAmount,
         received:         totalReceived,
         pending:          totalPending,
-        mop:              existing.mop ?? "",
+        mop:              existing.mop || "", // MOP not stored on user, only in payment records
         transactionId:    (existing as any).transactionId ?? "",
         salesPerson:      existing.salesPerson ?? "",
         trainingType:     existing.trainingType ?? "GT",
@@ -97,15 +144,47 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     setError("");
   }, [existing, open]);
 
+  // Auto-calculate pending amount whenever amount or received changes
+  useEffect(() => {
+    const totalAmount = form.amount ?? 0;
+    const receivedAmount = form.received ?? 0;
+    const calculatedPending = Math.max(0, totalAmount - receivedAmount);
+
+    if (form.pending !== calculatedPending) {
+      setForm(prev => ({
+        ...prev,
+        pending: calculatedPending,
+      }));
+    }
+  }, [form.amount, form.received]);
+
   // FIX: added "membershipMonths" and "membershipAmount" to the numeric fields list
   // so they are cast to Number instead of being sent as strings to the API.
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+
+    let processedValue: string | number | undefined = value;
+
+    // Process numeric fields
+    if (["amount", "received", "pending", "membershipMonths", "membershipAmount"].includes(name)) {
+      processedValue = value === "" ? undefined : Number(value);
+
+      // Validate received amount doesn't exceed total amount
+      if (name === "received" && processedValue !== undefined) {
+        const totalAmount = form.amount ?? 0;
+        if (processedValue > totalAmount) {
+          processedValue = totalAmount;
+        }
+        // Ensure received is not negative
+        if (processedValue < 0) {
+          processedValue = 0;
+        }
+      }
+    }
+
     setForm(prev => ({
       ...prev,
-      [name]: ["amount", "received", "pending", "membershipMonths", "membershipAmount"].includes(name)
-        ? value === "" ? undefined : Number(value)
-        : value,
+      [name]: processedValue,
     }));
   };
 
@@ -118,10 +197,11 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       date: form.date || new Date().toISOString().split('T')[0],
       name: form.name,
       contactNumber,
+      email: form.email || undefined,
       membershipMonths: form.membershipMonths ?? 1,
       amount,
       received,
-      mop: form.mop ?? "cash",
+      mop: form.mop || "cash",
       startingDate: form.startingDate || new Date().toISOString().split('T')[0],
       expiryDate: form.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       dob: form.dob || undefined,
@@ -133,52 +213,68 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       address: form.address || undefined,
       emergencyContact: form.emergencyContact || undefined,
       transactionId: form.transactionId || undefined,
+      discount: (form.discount && Number(form.discount) > 0) ? Number(form.discount) : undefined,
+      discountApprovedBy: (form.discount && Number(form.discount) > 0 && form.discountApprovedBy) ? form.discountApprovedBy : undefined,
     };
   };
 
   const getUpdatePayload = (): CreateMemberPayload => {
     const contactNumber = form.contactNumber || form.phone || "";
-    const amount = form.amount ?? form.membershipAmount ?? 0;
-    const received = form.received ?? 0;
-    const pending = form.pending ?? Math.max(0, amount - received);
 
+    // For edit mode, only send editable fields (exclude membership and payment details)
     return {
-      ...form,
+      name: form.name,
       contactNumber,
-      amount,
-      received,
-      pending,
+      email: form.email || undefined,
+      phone: form.phone || undefined,
+      dob: form.dob || undefined,
+      anniversaryDate: form.anniversaryDate || undefined,
+      instagramHandle: form.instagramHandle || undefined,
+      address: form.address || undefined,
+      emergencyContact: form.emergencyContact || undefined,
+      salesPerson: form.salesPerson || undefined,
+      trainer: form.trainer || undefined,
+      trainingType: form.trainingType ?? "GT",
+      memberType: form.memberType ?? "New",
+      memberStatus: form.memberStatus || "ACTIVE",
+      discount: (form.discount && Number(form.discount) > 0) ? Number(form.discount) : undefined,
+      discountApprovedBy: (form.discount && Number(form.discount) > 0 && form.discountApprovedBy) ? form.discountApprovedBy : undefined,
     };
   };
 
   const handleSubmit = () => {
+    // Basic validation (applies to both create and edit)
     if (!form.name || !(form.contactNumber || form.phone)) {
       setError("Name and contact number are required.");
       return;
     }
-    if (!form.membershipMonths || form.membershipMonths < 1) {
-      setError("Membership months must be at least 1.");
-      return;
-    }
-    if (form.amount === undefined || form.amount < 0) {
-      setError("Amount must be 0 or greater.");
-      return;
-    }
-    if (form.received === undefined || form.received < 0) {
-      setError("Received amount must be 0 or greater.");
-      return;
-    }
-    if (!form.mop) {
-      setError("Mode of payment is required.");
-      return;
-    }
-    if (!form.startingDate) {
-      setError("Starting date is required.");
-      return;
-    }
-    if (!form.expiryDate) {
-      setError("Expiry date is required.");
-      return;
+
+    // Membership/payment validation (only for create mode)
+    if (!isEdit) {
+      if (!form.membershipMonths || form.membershipMonths < 1) {
+        setError("Membership months must be at least 1.");
+        return;
+      }
+      if (form.amount === undefined || form.amount < 0) {
+        setError("Amount must be 0 or greater.");
+        return;
+      }
+      if (form.received === undefined || form.received < 0) {
+        setError("Received amount must be 0 or greater.");
+        return;
+      }
+      if (!form.mop) {
+        setError("Mode of payment is required.");
+        return;
+      }
+      if (!form.startingDate) {
+        setError("Starting date is required.");
+        return;
+      }
+      if (!form.expiryDate) {
+        setError("Expiry date is required.");
+        return;
+      }
     }
 
     if (isEdit && existing) {
@@ -226,17 +322,53 @@ export default function MemberModal({ open, onClose, existing }: Props) {
             {error && <p className={styles.errorMsg}>{error}</p>}
 
             <div className={styles.scrollBody}>
+              {/* Section: Sales & Staff Info - MOVED TO TOP */}
+              <div className={styles.sectionLabel}>Sales & Staff Assignment</div>
+              <div className={styles.fields}>
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Sales Person *</label>
+                    <select className={styles.input} name="salesPerson" value={form.salesPerson ?? ""} onChange={handleChange}>
+                      <option value="">Select Sales Person</option>
+                      {salesEmployees.map(emp => (
+                        <option key={emp._id} value={emp.name}>{emp.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Trainer</label>
+                    <select className={styles.input} name="trainer" value={form.trainer ?? ""} onChange={handleChange}>
+                      <option value="">Select Trainer</option>
+                      {trainerEmployees.map(emp => (
+                        <option key={emp._id} value={emp.name}>{emp.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               {/* Section: Personal Info */}
               <div className={styles.sectionLabel}>Personal Info</div>
               <div className={styles.fields}>
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>ID Number</label>
+                    <input className={styles.input} name="idNo" placeholder="Auto-generated" value={form.idNo ?? ""} onChange={handleChange} disabled={isEdit} />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Member Type</label>
+                    <input className={styles.input} name="memberType" placeholder="e.g. New, Old, Renewal" value={form.memberType ?? ""} onChange={handleChange} />
+                  </div>
+                </div>
+
                 <div className={styles.row}>
                   <div className={styles.field}>
                     <label className={styles.label}>Registration Date</label>
                     <input className={styles.input} name="date" type="date" value={form.date ?? ""} onChange={handleChange} />
                   </div>
                   <div className={styles.field}>
-                    <label className={styles.label}>Member Type</label>
-                    <input className={styles.input} name="memberType" placeholder="e.g. New, Old, Renewal" value={form.memberType ?? ""} onChange={handleChange} />
+                    <label className={styles.label}>Emergency Contact</label>
+                    <input className={styles.input} name="emergencyContact" placeholder="Emergency phone" value={form.emergencyContact ?? ""} onChange={handleChange} />
                   </div>
                 </div>
 
@@ -247,7 +379,26 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                   </div>
                   <div className={styles.field}>
                     <label className={styles.label}>Contact Number *</label>
-                    <input className={styles.input} name="contactNumber" placeholder="e.g. 9876543210" value={form.contactNumber} onChange={handleChange} />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <select
+                        className={styles.input}
+                        value={countryCode}
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        style={{ width: "120px" }}
+                      >
+                        {COUNTRY_CODES.map(cc => (
+                          <option key={cc.code} value={cc.code}>{cc.code} {cc.country}</option>
+                        ))}
+                      </select>
+                      <input
+                        className={styles.input}
+                        name="contactNumber"
+                        placeholder="9876543210"
+                        value={form.contactNumber}
+                        onChange={handleChange}
+                        style={{ flex: 1 }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -268,8 +419,18 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                     <input className={styles.input} name="dob" type="date" value={form.dob ?? ""} onChange={handleChange} />
                   </div>
                   <div className={styles.field}>
+                    <label className={styles.label}>Anniversary Date</label>
+                    <input className={styles.input} name="anniversaryDate" type="date" value={form.anniversaryDate ?? ""} onChange={handleChange} />
+                  </div>
+                </div>
+
+                <div className={styles.row}>
+                  <div className={styles.field}>
                     <label className={styles.label}>Instagram Handle</label>
                     <input className={styles.input} name="instagramHandle" placeholder="@handle" value={form.instagramHandle ?? ""} onChange={handleChange} />
+                  </div>
+                  <div className={styles.field}>
+                    {/* Empty field for layout */}
                   </div>
                 </div>
               </div>
@@ -294,75 +455,172 @@ export default function MemberModal({ open, onClose, existing }: Props) {
               <div className={styles.fields}>
                 <div className={styles.row}>
                   <div className={styles.field}>
-                    <label className={styles.label}>Membership Plan</label>
-                    <input className={styles.input} name="membershipPlan" placeholder="e.g. 1 month, Annual" value={form.membershipPlan ?? ""} onChange={handleChange} />
+                    <label className={styles.label}>Membership Plan *</label>
+                    <select className={styles.input} value={form.membershipMonths ?? ""} onChange={handlePlanChange} disabled={isEdit}>
+                      <option value="">Select Plan</option>
+                      {MEMBERSHIP_PLANS.map(plan => (
+                        <option key={plan.months} value={plan.months}>
+                          {plan.label} - ₹{plan.price.toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className={styles.field}>
-                    <label className={styles.label}>Mode of Payment</label>
-                    <input className={styles.input} name="mop" placeholder="e.g. Cash, UPI, Card" value={form.mop ?? ""} onChange={handleChange} />
+                    <label className={styles.label}>Duration (Months) *</label>
+                    <input
+                      className={styles.input}
+                      name="membershipMonths"
+                      type="number"
+                      min="1"
+                      placeholder="Enter number of months"
+                      value={form.membershipMonths ?? ""}
+                      onChange={handleChange}
+                      disabled={isEdit}
+                    />
                   </div>
                 </div>
 
-                <div className={styles.row2}>
+                <div className={styles.row}>
+                  {!isEdit && (
+                    <div className={styles.field}>
+                      <label className={styles.label}>Mode of Payment</label>
+                      <select className={styles.input} name="mop" value={form.mop ?? ""} onChange={handleChange}>
+                        <option value="cash">Cash</option>
+                        <option value="upi">UPI</option>
+                        <option value="card">Card</option>
+                        <option value="netbanking">Net Banking</option>
+                      </select>
+                    </div>
+                  )}
                   <div className={styles.field}>
-                    <label className={styles.label}>Membership Months</label>
-                    <input className={styles.input} name="membershipMonths" type="number" placeholder="0" value={form.membershipMonths ?? ""} onChange={handleChange} />
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Membership Amount (₹)</label>
-                    <input className={styles.input} name="membershipAmount" type="number" placeholder="0" value={form.membershipAmount ?? ""} onChange={handleChange} />
+                    {/* Empty field for layout */}
                   </div>
                 </div>
+
+                {/* Discount Section */}
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label className={styles.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <input
+                        type="checkbox"
+                        checked={hasDiscount}
+                        onChange={(e) => {
+                          setHasDiscount(e.target.checked);
+                          if (!e.target.checked) {
+                            setForm(prev => ({ ...prev, discount: 0, discountApprovedBy: "" }));
+                          }
+                        }}
+                      />
+                      Apply Discount
+                    </label>
+                  </div>
+                </div>
+
+                {hasDiscount && (
+                  <div className={styles.row}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Discount (%)</label>
+                      <input
+                        className={styles.input}
+                        name="discount"
+                        type="number"
+                        placeholder="0-100"
+                        min="0"
+                        max="100"
+                        value={form.discount ?? ""}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Approved By *</label>
+                      <select className={styles.input} name="discountApprovedBy" value={form.discountApprovedBy ?? ""} onChange={handleChange}>
+                        <option value="">Select Approver</option>
+                        {APPROVERS.map(approver => (
+                          <option key={approver} value={approver}>{approver}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 <div className={styles.row3}>
                   <div className={styles.field}>
                     <label className={styles.label}>Total Amount (₹)</label>
-                    <input className={styles.input} name="amount" type="number" placeholder="0" value={form.amount ?? ""} onChange={handleChange} />
+                    <select
+                      className={styles.input}
+                      name="amount"
+                      value={form.amount ?? ""}
+                      onChange={handleChange}
+                      disabled={isEdit || !form.membershipMonths}
+                    >
+                      <option value="">Select Amount</option>
+                      {MEMBERSHIP_PLANS
+                        .filter(plan => plan.months === form.membershipMonths)
+                        .map(plan => (
+                          <option key={plan.months} value={plan.price}>
+                            ₹{plan.price.toLocaleString()}
+                          </option>
+                        ))}
+                    </select>
                   </div>
                   <div className={styles.field}>
                     <label className={styles.label}>Received (₹)</label>
-                    <input className={styles.input} name="received" type="number" placeholder="0" value={form.received ?? ""} onChange={handleChange} />
+                    <input
+                      className={styles.input}
+                      name="received"
+                      type="number"
+                      placeholder="0"
+                      value={form.received ?? ""}
+                      onChange={handleChange}
+                      max={form.amount ?? 0}
+                      min={0}
+                      disabled={isEdit}
+                    />
                   </div>
                   <div className={styles.field}>
                     <label className={styles.label}>Pending (₹)</label>
-                    <input className={styles.input} name="pending" type="number" placeholder="0" value={form.pending ?? ""} onChange={handleChange} />
+                    <input
+                      className={styles.input}
+                      name="pending"
+                      type="number"
+                      placeholder="0"
+                      value={form.pending ?? ""}
+                      disabled
+                      readOnly
+                    />
                   </div>
                 </div>
 
                 <div className={styles.row}>
                   <div className={styles.field}>
                     <label className={styles.label}>Starting Date</label>
-                    <input className={styles.input} name="startingDate" type="date" value={form.startingDate ?? ""} onChange={handleChange} />
+                    <input className={styles.input} name="startingDate" type="date" value={form.startingDate ?? ""} onChange={handleChange} disabled={isEdit} />
                   </div>
                   <div className={styles.field}>
                     <label className={styles.label}>Expiry Date</label>
-                    <input className={styles.input} name="expiryDate" type="date" value={form.expiryDate ?? ""} onChange={handleChange} />
+                    <input className={styles.input} name="expiryDate" type="date" value={form.expiryDate ?? ""} onChange={handleChange} disabled={isEdit} />
                   </div>
                 </div>
               </div>
 
-              {/* Section: Training Details */}
-              <div className={styles.sectionLabel}>Training Details</div>
+              {/* Section: Training & Status */}
+              <div className={styles.sectionLabel}>Training & Status</div>
               <div className={styles.fields}>
                 <div className={styles.row}>
                   <div className={styles.field}>
                     <label className={styles.label}>Training Type</label>
-                    <input className={styles.input} name="trainingType" placeholder="e.g. PT, GT" value={form.trainingType ?? ""} onChange={handleChange} />
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Trainer</label>
-                    <input className={styles.input} name="trainer" placeholder="Trainer name" value={form.trainer ?? ""} onChange={handleChange} />
-                  </div>
-                </div>
-
-                <div className={styles.row}>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Sales Person</label>
-                    <input className={styles.input} name="salesPerson" placeholder="Sales person name" value={form.salesPerson ?? ""} onChange={handleChange} />
+                    <select className={styles.input} name="trainingType" value={form.trainingType ?? ""} onChange={handleChange}>
+                      <option value="GT">GT (Group Training)</option>
+                      <option value="PT">PT (Personal Training)</option>
+                    </select>
                   </div>
                   <div className={styles.field}>
                     <label className={styles.label}>Member Status</label>
-                    <input className={styles.input} name="memberStatus" placeholder="e.g. ACTIVE, INACTIVE, EXPIRED" value={form.memberStatus ?? ""} onChange={handleChange} />
+                    <select className={styles.input} name="memberStatus" value={form.memberStatus ?? ""} onChange={handleChange}>
+                      <option value="ACTIVE">ACTIVE</option>
+                      <option value="INACTIVE">INACTIVE</option>
+                      <option value="EXPIRED">EXPIRED</option>
+                    </select>
                   </div>
                 </div>
               </div>

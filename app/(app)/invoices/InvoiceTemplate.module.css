@@ -261,8 +261,8 @@
 .paymentBadge {
   display: inline-block;
   padding: 2px 10px;
-  background: #0f0f0f;
-  color: #161f3c;
+  background: #161f3c;
+  color: #ffffff;
   border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
@@ -277,7 +277,7 @@
 }
 
 .table thead tr {
-  background: #1a1a1a;
+  background: #f5f5f5;
 }
 
 .table thead th {
@@ -286,7 +286,7 @@
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.55);
+  color: #666666;
   padding: 13px 0;
 }
 

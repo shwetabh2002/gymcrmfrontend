@@ -5,6 +5,7 @@ import { setupInterceptors } from "./interceptor";
 const apiClient = axios.create({
   baseURL: config.apiBaseUrl,
   timeout: 10000,
+  withCredentials: true, // Enable cookies for session-based auth
   headers: {
     "Content-Type": "application/json",
   },

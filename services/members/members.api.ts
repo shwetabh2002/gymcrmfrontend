@@ -38,6 +38,7 @@ export interface Member {
   phone?: string;
   email?: string;
   dob?: string;
+  anniversaryDate?: string;
   instagramHandle?: string;
   membershipPlan?: string;
   membershipMonths?: number;
@@ -56,6 +57,8 @@ export interface Member {
   currentSubscriptionId?: string;
   address?: string;
   emergencyContact?: string;
+  discount?: number;
+  discountApprovedBy?: string;
   createdAt?: string;
   updatedAt?: string;
   paymentSummary?: PaymentSummary;
@@ -70,6 +73,7 @@ export interface CreateMemberPayload {
   phone?: string;
   email?: string;
   dob?: string;
+  anniversaryDate?: string;
   instagramHandle?: string;
   membershipPlan?: string;
   membershipMonths?: number;
@@ -88,6 +92,8 @@ export interface CreateMemberPayload {
   memberStatus?: "ACTIVE" | "INACTIVE" | "EXPIRED";
   address?: string;
   emergencyContact?: string;
+  discount?: number;
+  discountApprovedBy?: string;
   userType?: "MEMBER" | "TRAINER" | "ADMIN";
   role?: "USER" | "ADMIN";
 }
@@ -111,6 +117,7 @@ export interface RegisterMemberPayload {
   date: string;
   name: string;
   contactNumber: string;
+  email?: string;
   membershipMonths: number;
   amount: number;
   received: number;
@@ -119,7 +126,9 @@ export interface RegisterMemberPayload {
   expiryDate: string;
   idNo?: string;
   dob?: string;
+  anniversaryDate?: string;
   instagramHandle?: string;
+  membershipPlan?: string;
   pending?: number;
   transactionId?: string;
   salesPerson?: string;
@@ -129,6 +138,8 @@ export interface RegisterMemberPayload {
   memberStatus?: "ACTIVE" | "INACTIVE" | "EXPIRED";
   address?: string;
   emergencyContact?: string;
+  discount?: number;
+  discountApprovedBy?: string;
 }
 
 export const normalizeMember = (m: Partial<Member>): Member => {
