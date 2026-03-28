@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import styles from "./Employees.module.css";
 import {
   useEmployees,
-  useEmployeeUnlockStatus,
+  useIsEmployeeSectionUnlocked,
   useLockEmployeeSection,
 } from "@/services/employees/employees.hook";
 import { Employee } from "@/services/employees/employees.api";
@@ -37,15 +37,14 @@ function formatCurrency(amount?: number) {
 }
 
 export default function EmployeesPage() {
-  // Check unlock status
-  const { data: statusData, isLoading: statusLoading } = useEmployeeUnlockStatus();
-  const isUnlocked = statusData?.unlocked || false;
+  // Check unlock status (from localStorage)
+  const isUnlocked = useIsEmployeeSectionUnlocked();
 
   // Employee data (only fetch if unlocked)
-  const { data: employees, isLoading, isError } = useEmployees(isUnlocked);
+  const { data: employees, isLoading, isError } = useEmployees();
   const lockMutation = useLockEmployeeSection();
 
-  const [unlockModalOpen, setUnlockModalOpen] = useState(false);
+  const [unlockModalOpen, setUnlockModalOpen] = useState(!isUnlocked);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selected, setSelected] = useState<Employee | null>(null);
@@ -53,13 +52,6 @@ export default function EmployeesPage() {
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
-
-  // Show unlock modal if not unlocked
-  useEffect(() => {
-    if (!statusLoading && !isUnlocked) {
-      setUnlockModalOpen(true);
-    }
-  }, [statusLoading, isUnlocked]);
 
   const openCreate = () => {
     setSelected(null);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUnlockEmployeeSection } from "@/services/employees/employees.hook";
+import { useVerifyEmployeePassword } from "@/services/employees/employees.hook";
 
 interface UnlockModalProps {
   open: boolean;
@@ -11,14 +11,14 @@ interface UnlockModalProps {
 
 export default function UnlockModal({ open, onClose, onUnlock }: UnlockModalProps) {
   const [password, setPassword] = useState("");
-  const unlockMutation = useUnlockEmployeeSection();
+  const verifyMutation = useVerifyEmployeePassword();
 
   if (!open) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await unlockMutation.mutateAsync(password);
+      await verifyMutation.mutateAsync(password);
       setPassword("");
       onUnlock();
     } catch (error) {
@@ -120,7 +120,7 @@ export default function UnlockModal({ open, onClose, onUnlock }: UnlockModalProp
             </button>
             <button
               type="submit"
-              disabled={!password || unlockMutation.isPending}
+              disabled={!password || verifyMutation.isPending}
               style={{
                 flex: 1,
                 padding: "0.75rem",
@@ -131,10 +131,10 @@ export default function UnlockModal({ open, onClose, onUnlock }: UnlockModalProp
                 fontSize: "0.875rem",
                 fontWeight: 500,
                 cursor: password ? "pointer" : "not-allowed",
-                opacity: unlockMutation.isPending ? 0.6 : 1,
+                opacity: verifyMutation.isPending ? 0.6 : 1,
               }}
             >
-              {unlockMutation.isPending ? "Unlocking..." : "Unlock"}
+              {verifyMutation.isPending ? "Verifying..." : "Unlock"}
             </button>
           </div>
         </form>

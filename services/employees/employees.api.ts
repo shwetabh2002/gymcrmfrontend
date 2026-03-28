@@ -1,4 +1,3 @@
-import { requestService } from "../request/requestServcie";
 import apiClient from "../apiClient";
 
 export interface Employee {
@@ -28,41 +27,36 @@ export interface CreateEmployeePayload {
 
 export interface UpdateEmployeePayload extends Partial<CreateEmployeePayload> {}
 
-export interface UnlockResponse {
+export interface VerifyResponse {
   success: boolean;
   message: string;
 }
 
-export interface StatusResponse {
-  unlocked: boolean;
-}
-
 const BASE_URL = "/employees";
 
+// Helper to create headers with password
+const createHeaders = (password: string) => ({
+  "X-Employee-Password": password,
+});
+
 export const employeesApi = {
-  // Auth endpoints
-  unlock: (password: string) =>
-    apiClient.post<UnlockResponse>(`${BASE_URL}/auth/unlock`, { password }),
+  // Auth endpoint
+  verifyPassword: (password: string) =>
+    apiClient.post<VerifyResponse>(`${BASE_URL}/auth/verify`, { password }),
 
-  lock: () =>
-    apiClient.post<UnlockResponse>(`${BASE_URL}/auth/lock`),
+  // CRUD endpoints - these will receive password from caller
+  getEmployees: (password: string) =>
+    apiClient.get<Employee[]>(BASE_URL, { headers: createHeaders(password) }),
 
-  checkStatus: () =>
-    apiClient.get<StatusResponse>(`${BASE_URL}/auth/status`),
+  getEmployeeById: (id: string, password: string) =>
+    apiClient.get<Employee>(`${BASE_URL}/${id}`, { headers: createHeaders(password) }),
 
-  // CRUD endpoints
-  getEmployees: () =>
-    requestService.get<Employee[]>(BASE_URL),
+  createEmployee: (payload: CreateEmployeePayload, password: string) =>
+    apiClient.post<Employee>(BASE_URL, payload, { headers: createHeaders(password) }),
 
-  getEmployeeById: (id: string) =>
-    requestService.get<Employee>(`${BASE_URL}/${id}`),
+  updateEmployee: (id: string, payload: UpdateEmployeePayload, password: string) =>
+    apiClient.put<Employee>(`${BASE_URL}/${id}`, payload, { headers: createHeaders(password) }),
 
-  createEmployee: (payload: CreateEmployeePayload) =>
-    requestService.post<Employee, CreateEmployeePayload>(BASE_URL, payload),
-
-  updateEmployee: (id: string, payload: UpdateEmployeePayload) =>
-    requestService.put<Employee, UpdateEmployeePayload>(`${BASE_URL}/${id}`, payload),
-
-  deleteEmployee: (id: string) =>
-    requestService.delete<{ message: string }>(`${BASE_URL}/${id}`),
+  deleteEmployee: (id: string, password: string) =>
+    apiClient.delete<{ message: string }>(`${BASE_URL}/${id}`, { headers: createHeaders(password) }),
 };

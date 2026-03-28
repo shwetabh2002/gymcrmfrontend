@@ -3,54 +3,43 @@ import { employeesApi, CreateEmployeePayload, UpdateEmployeePayload } from "./em
 import { toast } from "react-hot-toast";
 
 const QUERY_KEY = "employees";
+const STORAGE_KEY = "employee_password";
 
-// Check unlock status
-export const useEmployeeUnlockStatus = () => {
-  return useQuery({
-    queryKey: [QUERY_KEY, "status"],
-    queryFn: async () => {
-      const response = await employeesApi.checkStatus();
-      return response.data;
-    },
-    retry: false,
-  });
+// Helper to get password from localStorage
+const getStoredPassword = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(STORAGE_KEY);
 };
 
-// Get all employees
-export const useEmployees = (enabled: boolean = true) => {
-  return useQuery({
-    queryKey: [QUERY_KEY],
-    queryFn: async () => {
-      const response = await employeesApi.getEmployees();
-      return response;
-    },
-    enabled,
-    retry: false, // Don't retry if locked (401 error)
-    throwOnError: false, // Don't throw errors, just return them in isError
-  });
+// Helper to store password in localStorage
+const storePassword = (password: string) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(STORAGE_KEY, password);
+  }
 };
 
-// Get employee by ID
-export const useEmployee = (id: string, enabled: boolean = true) => {
-  return useQuery({
-    queryKey: [QUERY_KEY, id],
-    queryFn: async () => {
-      const response = await employeesApi.getEmployeeById(id);
-      return response;
-    },
-    enabled: !!id && enabled,
-  });
+// Helper to clear password from localStorage
+const clearPassword = () => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(STORAGE_KEY);
+  }
 };
 
-// Unlock section
-export const useUnlockEmployeeSection = () => {
-  const queryClient = useQueryClient();
+// Check if password is stored
+export const useIsEmployeeSectionUnlocked = () => {
+  return !!getStoredPassword();
+};
 
+// Verify and store password
+export const useVerifyEmployeePassword = () => {
   return useMutation({
-    mutationFn: (password: string) => employeesApi.unlock(password),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "status"] });
-      toast.success("Employee section unlocked successfully");
+    mutationFn: async (password: string) => {
+      const response = await employeesApi.verifyPassword(password);
+      return { password, response };
+    },
+    onSuccess: ({ password }) => {
+      storePassword(password);
+      toast.success("Password verified successfully");
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Invalid password";
@@ -59,26 +48,64 @@ export const useUnlockEmployeeSection = () => {
   });
 };
 
-// Lock section
+// Lock section (clear password)
 export const useLockEmployeeSection = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => employeesApi.lock(),
+    mutationFn: async () => {
+      clearPassword();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "status"] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success("Employee section locked");
     },
   });
 };
 
+// Get all employees
+export const useEmployees = () => {
+  const password = getStoredPassword();
+
+  return useQuery({
+    queryKey: [QUERY_KEY],
+    queryFn: async () => {
+      if (!password) throw new Error("Password not found");
+      const response = await employeesApi.getEmployees(password);
+      return response.data;
+    },
+    enabled: !!password,
+    retry: false,
+    throwOnError: false,
+  });
+};
+
+// Get employee by ID
+export const useEmployee = (id: string) => {
+  const password = getStoredPassword();
+
+  return useQuery({
+    queryKey: [QUERY_KEY, id],
+    queryFn: async () => {
+      if (!password) throw new Error("Password not found");
+      const response = await employeesApi.getEmployeeById(id, password);
+      return response.data;
+    },
+    enabled: !!id && !!password,
+  });
+};
+
 // Create employee
 export const useCreateEmployee = () => {
   const queryClient = useQueryClient();
+  const password = getStoredPassword();
 
   return useMutation({
-    mutationFn: (payload: CreateEmployeePayload) => employeesApi.createEmployee(payload),
+    mutationFn: async (payload: CreateEmployeePayload) => {
+      if (!password) throw new Error("Password not found");
+      const response = await employeesApi.createEmployee(payload, password);
+      return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success("Employee created successfully");
@@ -93,10 +120,14 @@ export const useCreateEmployee = () => {
 // Update employee
 export const useUpdateEmployee = () => {
   const queryClient = useQueryClient();
+  const password = getStoredPassword();
 
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateEmployeePayload }) =>
-      employeesApi.updateEmployee(id, payload),
+    mutationFn: async ({ id, payload }: { id: string; payload: UpdateEmployeePayload }) => {
+      if (!password) throw new Error("Password not found");
+      const response = await employeesApi.updateEmployee(id, payload, password);
+      return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success("Employee updated successfully");
@@ -111,9 +142,14 @@ export const useUpdateEmployee = () => {
 // Delete employee
 export const useDeleteEmployee = () => {
   const queryClient = useQueryClient();
+  const password = getStoredPassword();
 
   return useMutation({
-    mutationFn: (id: string) => employeesApi.deleteEmployee(id),
+    mutationFn: async (id: string) => {
+      if (!password) throw new Error("Password not found");
+      const response = await employeesApi.deleteEmployee(id, password);
+      return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       toast.success("Employee deleted successfully");

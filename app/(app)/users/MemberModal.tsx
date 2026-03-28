@@ -76,7 +76,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
   const { mutate: createMember, isPending: creating } = useCreateMember();
   const { mutate: updateMember, isPending: updating } = useUpdateMember();
   // Only fetch employees if modal is open (and handle errors silently if section is locked)
-  const { data: employees, isError: employeesError } = useEmployees(open);
+  const { data: employees, isError: employeesError } = useEmployees();
   const isPending = creating || updating;
 
   // Filter employees by type (return empty array if error/locked)
