@@ -63,35 +63,28 @@ export const useLockEmployeeSection = () => {
   });
 };
 
-// Get all employees
+// Get all employees (no password required - read-only)
 export const useEmployees = () => {
-  const password = getStoredPassword();
-
   return useQuery({
     queryKey: [QUERY_KEY],
     queryFn: async () => {
-      if (!password) throw new Error("Password not found");
-      const response = await employeesApi.getEmployees(password);
+      const response = await employeesApi.getEmployees();
       return response.data;
     },
-    enabled: !!password,
     retry: false,
     throwOnError: false,
   });
 };
 
-// Get employee by ID
+// Get employee by ID (no password required - read-only)
 export const useEmployee = (id: string) => {
-  const password = getStoredPassword();
-
   return useQuery({
     queryKey: [QUERY_KEY, id],
     queryFn: async () => {
-      if (!password) throw new Error("Password not found");
-      const response = await employeesApi.getEmployeeById(id, password);
+      const response = await employeesApi.getEmployeeById(id);
       return response.data;
     },
-    enabled: !!id && !!password,
+    enabled: !!id,
   });
 };
 

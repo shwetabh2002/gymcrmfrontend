@@ -44,13 +44,14 @@ export const employeesApi = {
   verifyPassword: (password: string) =>
     apiClient.post<VerifyResponse>(`${BASE_URL}/auth/verify`, { password }),
 
-  // CRUD endpoints - these will receive password from caller
-  getEmployees: (password: string) =>
-    apiClient.get<Employee[]>(BASE_URL, { headers: createHeaders(password) }),
+  // Read endpoints - no password required (JWT auth only)
+  getEmployees: () =>
+    apiClient.get<Employee[]>(BASE_URL),
 
-  getEmployeeById: (id: string, password: string) =>
-    apiClient.get<Employee>(`${BASE_URL}/${id}`, { headers: createHeaders(password) }),
+  getEmployeeById: (id: string) =>
+    apiClient.get<Employee>(`${BASE_URL}/${id}`),
 
+  // Write endpoints - password required
   createEmployee: (payload: CreateEmployeePayload, password: string) =>
     apiClient.post<Employee>(BASE_URL, payload, { headers: createHeaders(password) }),
 
