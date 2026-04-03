@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useDashboard } from "@/services/analytics/analytics.hooks";
+import { changePassword } from "@/services/admin/admin.api";
 import styles from "./Profile.module.css";
 
 const fadeUp = {
@@ -31,15 +32,31 @@ export default function ProfilePage() {
   const [confirmPwd, setConfirmPwd]   = useState("");
   const [pwdError,   setPwdError]     = useState("");
   const [pwdSuccess, setPwdSuccess]   = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const handlePasswordUpdate = () => {
+  const handlePasswordUpdate = async () => {
     setPwdError(""); setPwdSuccess("");
+
     if (!currentPwd) { setPwdError("Current password is required."); return; }
-    if (newPwd.length < 8) { setPwdError("New password must be at least 8 characters."); return; }
+    if (newPwd.length < 6) { setPwdError("New password must be at least 6 characters."); return; }
     if (newPwd !== confirmPwd) { setPwdError("Passwords do not match."); return; }
-    // TODO: wire up to API when password change endpoint is available
-    setPwdSuccess("Password updated successfully.");
-    setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+
+    setIsChangingPassword(true);
+
+    try {
+      await changePassword({
+        currentPassword: currentPwd,
+        newPassword: newPwd,
+      });
+
+      setPwdSuccess("Password updated successfully.");
+      setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to update password.";
+      setPwdError(errorMessage);
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const counts = dashboard?.counts;
@@ -159,7 +176,13 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className={styles.formActions}>
-              <button className={styles.btnPrimary} onClick={handlePasswordUpdate}>Update Password</button>
+              <button
+                className={styles.btnPrimary}
+                onClick={handlePasswordUpdate}
+                disabled={isChangingPassword}
+              >
+                {isChangingPassword ? "Updating..." : "Update Password"}
+              </button>
             </div>
           </motion.div>
 

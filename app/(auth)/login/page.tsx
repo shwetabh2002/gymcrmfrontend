@@ -53,6 +53,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,17 +184,42 @@ export default function LoginPage() {
                 <label className={styles.fieldLabel} htmlFor="password">
                   Password
                 </label>
-                <div className={styles.inputWrap}>
+                <div className={styles.inputWrap} style={{ position: "relative" }}>
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className={styles.input}
                     autoComplete="current-password"
                     required
+                    style={{ paddingRight: "45px" }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: "absolute",
+                      right: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#666",
+                      fontSize: "1.2rem",
+                      padding: "4px 8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "color 0.2s",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = "#aaa"}
+                    onMouseLeave={(e) => e.currentTarget.style.color = "#666"}
+                  >
+                    {showPassword ? "👁️" : "👁️‍🗨️"}
+                  </button>
                 </div>
               </motion.div>
             </div>
