@@ -153,3 +153,29 @@ export const useDeleteEmployee = () => {
     },
   });
 };
+
+// Get upcoming birthdays (tomorrow)
+export const useUpcomingBirthdays = () => {
+  return useQuery({
+    queryKey: [QUERY_KEY, "upcoming-birthdays"],
+    queryFn: async () => {
+      const response = await employeesApi.getUpcomingBirthdays();
+      return response.data;
+    },
+    retry: false,
+    throwOnError: false,
+  });
+};
+
+// Get upcoming anniversaries (tomorrow)
+export const useUpcomingAnniversaries = () => {
+  return useQuery({
+    queryKey: [QUERY_KEY, "upcoming-anniversaries"],
+    queryFn: async () => {
+      const response = await employeesApi.getUpcomingAnniversaries();
+      return response.data;
+    },
+    retry: false,
+    throwOnError: false,
+  });
+};

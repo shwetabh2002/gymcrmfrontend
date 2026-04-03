@@ -17,12 +17,21 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
   const [formData, setFormData] = useState<CreateEmployeePayload>({
     name: "",
     age: 25,
+    dob: "",
+    gender: undefined,
     salary: 0,
     employeeType: "SALES",
     status: "ACTIVE",
     joiningDate: new Date().toISOString().split("T")[0],
     phone: "",
     email: "",
+    isMarried: false,
+    anniversaryDate: "",
+    address: "",
+    documentType: undefined,
+    documentNumber: "",
+    academicQualification: undefined,
+    trainerCertificateNumber: "",
   });
 
   useEffect(() => {
@@ -30,23 +39,41 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
       setFormData({
         name: existing.name,
         age: existing.age,
+        dob: existing.dob ? new Date(existing.dob).toISOString().split("T")[0] : "",
+        gender: existing.gender,
         salary: existing.salary,
         employeeType: existing.employeeType,
         status: existing.status,
         joiningDate: new Date(existing.joiningDate).toISOString().split("T")[0],
         phone: existing.phone,
         email: existing.email,
+        isMarried: existing.isMarried || false,
+        anniversaryDate: existing.anniversaryDate ? new Date(existing.anniversaryDate).toISOString().split("T")[0] : "",
+        address: existing.address || "",
+        documentType: existing.documentType,
+        documentNumber: existing.documentNumber || "",
+        academicQualification: existing.academicQualification,
+        trainerCertificateNumber: existing.trainerCertificateNumber || "",
       });
     } else {
       setFormData({
         name: "",
         age: 25,
+        dob: "",
+        gender: undefined,
         salary: 0,
         employeeType: "SALES",
         status: "ACTIVE",
         joiningDate: new Date().toISOString().split("T")[0],
         phone: "",
         email: "",
+        isMarried: false,
+        anniversaryDate: "",
+        address: "",
+        documentType: undefined,
+        documentNumber: "",
+        academicQualification: undefined,
+        trainerCertificateNumber: "",
       });
     }
   }, [existing, open]);
@@ -234,6 +261,7 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
               >
                 <option value="SALES">Sales</option>
                 <option value="TRAINER">Trainer</option>
+                <option value="HOUSEKEEPING">Housekeeping</option>
               </select>
             </div>
 
@@ -280,6 +308,204 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
               />
             </div>
           </div>
+
+          {/* NEW FIELDS */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                value={formData.dob}
+                onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  background: "#111",
+                  border: "1px solid #1e1e1e",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+                Gender
+              </label>
+              <select
+                value={formData.gender || ""}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value as any || undefined })}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  background: "#111",
+                  border: "1px solid #1e1e1e",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                }}
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "1rem", marginBottom: "1rem" }}>
+            <div>
+              <label style={{ display: "flex", alignItems: "center", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.isMarried}
+                  onChange={(e) => setFormData({ ...formData, isMarried: e.target.checked, ...((!e.target.checked) && { anniversaryDate: "" }) })}
+                  style={{ marginRight: "0.5rem" }}
+                />
+                Is Married
+              </label>
+            </div>
+
+            {formData.isMarried && (
+              <div>
+                <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+                  Anniversary Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.anniversaryDate}
+                  onChange={(e) => setFormData({ ...formData, anniversaryDate: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    background: "#111",
+                    border: "1px solid #1e1e1e",
+                    borderRadius: "6px",
+                    color: "#fff",
+                    fontSize: "0.875rem",
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+              Address
+            </label>
+            <textarea
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              rows={2}
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                background: "#111",
+                border: "1px solid #1e1e1e",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "0.875rem",
+                resize: "vertical",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+                Document Type
+              </label>
+              <select
+                value={formData.documentType || ""}
+                onChange={(e) => setFormData({ ...formData, documentType: e.target.value as any || undefined })}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  background: "#111",
+                  border: "1px solid #1e1e1e",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                }}
+              >
+                <option value="">Select Document</option>
+                <option value="PAN">PAN</option>
+                <option value="Aadhar">Aadhar</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+                Document Number
+              </label>
+              <input
+                type="text"
+                value={formData.documentNumber}
+                onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value })}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  background: "#111",
+                  border: "1px solid #1e1e1e",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+              Last Academic Qualification
+            </label>
+            <select
+              value={formData.academicQualification || ""}
+              onChange={(e) => setFormData({ ...formData, academicQualification: e.target.value as any || undefined })}
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                background: "#111",
+                border: "1px solid #1e1e1e",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "0.875rem",
+              }}
+            >
+              <option value="">Select Qualification</option>
+              <option value="10th">10th</option>
+              <option value="12th">12th</option>
+              <option value="Graduation">Graduation</option>
+              <option value="Post Graduation">Post Graduation</option>
+            </select>
+          </div>
+
+          {/* Trainer Certificate Number - Only for TRAINER type */}
+          {formData.employeeType === "TRAINER" && (
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+                Trainer Certificate Number
+              </label>
+              <input
+                type="text"
+                value={formData.trainerCertificateNumber || ""}
+                onChange={(e) => setFormData({ ...formData, trainerCertificateNumber: e.target.value })}
+                placeholder="Enter certificate number"
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  background: "#111",
+                  border: "1px solid #1e1e1e",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                }}
+              />
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
             <button

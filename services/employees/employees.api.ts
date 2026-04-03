@@ -2,14 +2,28 @@ import apiClient from "../apiClient";
 
 export interface Employee {
   _id: string;
+  employeeId: string; // Auto-generated
   name: string;
   age: number;
+  dob?: string;
+  gender?: "Male" | "Female" | "Other";
   salary: number;
-  employeeType: "SALES" | "TRAINER";
+  employeeType: "SALES" | "TRAINER" | "HOUSEKEEPING";
   status: "ACTIVE" | "INACTIVE";
   joiningDate: string;
   phone: string;
   email: string;
+  // Personal Details
+  isMarried?: boolean;
+  anniversaryDate?: string;
+  address?: string;
+  // Document Details
+  documentType?: "PAN" | "Aadhar";
+  documentNumber?: string;
+  // Academic Details
+  academicQualification?: "10th" | "12th" | "Graduation" | "Post Graduation";
+  // Trainer Certificate (only for TRAINER type)
+  trainerCertificateNumber?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -17,12 +31,25 @@ export interface Employee {
 export interface CreateEmployeePayload {
   name: string;
   age: number;
+  dob?: string;
+  gender?: "Male" | "Female" | "Other";
   salary: number;
-  employeeType: "SALES" | "TRAINER";
+  employeeType: "SALES" | "TRAINER" | "HOUSEKEEPING";
   status: "ACTIVE" | "INACTIVE";
   joiningDate: string;
   phone: string;
   email: string;
+  // Personal Details
+  isMarried?: boolean;
+  anniversaryDate?: string;
+  address?: string;
+  // Document Details
+  documentType?: "PAN" | "Aadhar";
+  documentNumber?: string;
+  // Academic Details
+  academicQualification?: "10th" | "12th" | "Graduation" | "Post Graduation";
+  // Trainer Certificate (only for TRAINER type)
+  trainerCertificateNumber?: string;
 }
 
 export interface UpdateEmployeePayload extends Partial<CreateEmployeePayload> {}
@@ -50,6 +77,13 @@ export const employeesApi = {
 
   getEmployeeById: (id: string) =>
     apiClient.get<Employee>(`${BASE_URL}/${id}`),
+
+  // Dashboard endpoints - upcoming birthdays and anniversaries
+  getUpcomingBirthdays: () =>
+    apiClient.get<Employee[]>(`${BASE_URL}/upcoming-birthdays`),
+
+  getUpcomingAnniversaries: () =>
+    apiClient.get<Employee[]>(`${BASE_URL}/upcoming-anniversaries`),
 
   // Write endpoints - password required
   createEmployee: (payload: CreateEmployeePayload, password: string) =>

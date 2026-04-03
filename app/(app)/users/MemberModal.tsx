@@ -63,7 +63,7 @@ const MEMBERSHIP_PLANS = [
 ];
 
 // Fixed approvers for discount
-const APPROVERS = ["malik1", "malik2"];
+const APPROVERS = ["Mannu Rawat", "Suman Upadhyaya"];
 
 export default function MemberModal({ open, onClose, existing }: Props) {
   const isEdit = !!existing;
@@ -144,11 +144,18 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     setError("");
   }, [existing, open]);
 
-  // Auto-calculate pending amount whenever amount or received changes
+  // Auto-calculate pending amount whenever amount, received, or discount changes
   useEffect(() => {
     const totalAmount = form.amount ?? 0;
     const receivedAmount = form.received ?? 0;
-    const calculatedPending = Math.max(0, totalAmount - receivedAmount);
+    const discountPercent = form.discount ?? 0;
+
+    // Calculate discount amount
+    const discountAmount = (totalAmount * discountPercent) / 100;
+
+    // Pending = (Total - Discount) - Received
+    const amountAfterDiscount = totalAmount - discountAmount;
+    const calculatedPending = Math.max(0, amountAfterDiscount - receivedAmount);
 
     if (form.pending !== calculatedPending) {
       setForm(prev => ({
@@ -156,7 +163,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         pending: calculatedPending,
       }));
     }
-  }, [form.amount, form.received]);
+  }, [form.amount, form.received, form.discount]);
 
   // FIX: added "membershipMonths" and "membershipAmount" to the numeric fields list
   // so they are cast to Number instead of being sent as strings to the API.

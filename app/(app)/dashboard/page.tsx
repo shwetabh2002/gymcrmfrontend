@@ -5,6 +5,7 @@ import { motion, Variants, Easing } from "framer-motion";
 import styles from "./Dashboard.module.css";
 import { useDashboard, usePaymentTrends, useExpiringIn7Days, usePaymentUpdates } from "@/services/analytics/analytics.hooks";
 import { DashboardFilters } from "@/services/analytics/analytics.api";
+import { useUpcomingBirthdays, useUpcomingAnniversaries } from "@/services/employees/employees.hook";
 
 const customEase: Easing = [0.16, 1, 0.3, 1] as any;
 
@@ -109,6 +110,8 @@ export default function DashboardPage() {
   const { data: trendsData } = usePaymentTrends();
   const { data: expiringData, isLoading: isLoadingExpiring } = useExpiringIn7Days();
   const { data: paymentUpdatesData, isLoading: isLoadingPaymentUpdates } = usePaymentUpdates();
+  const { data: upcomingBirthdays, isLoading: isLoadingBirthdays } = useUpcomingBirthdays();
+  const { data: upcomingAnniversaries, isLoading: isLoadingAnniversaries } = useUpcomingAnniversaries();
 
   const counts = dashboard?.counts;
 
@@ -230,6 +233,83 @@ export default function DashboardPage() {
             </div>
           </motion.div>
         ))}
+      </div>
+
+      {/* Birthday & Anniversary Cards */}
+      <div className={styles.lowerGrid} style={{ marginTop: "1.5rem" }}>
+
+        {/* Upcoming Birthdays */}
+        <motion.div className={styles.section} custom={5} variants={fadeUp} initial="hidden" animate="visible">
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.sectionTitleBar} style={{ background: "#4285f4" }} />
+              Upcoming Birthdays
+            </h2>
+            <span className={styles.sectionBadge} style={{ color: "#4285f4", borderColor: "rgba(66,133,244,0.3)", background: "rgba(66,133,244,0.08)" }}>
+              Tomorrow · {upcomingBirthdays?.length ?? 0}
+            </span>
+          </div>
+          {isLoadingBirthdays ? (
+            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>Loading…</p>
+          ) : upcomingBirthdays && upcomingBirthdays.length > 0 ? (
+            <ul className={styles.feedList}>
+              {upcomingBirthdays.map((emp, i) => (
+                <li key={emp._id} className={styles.feedItem}>
+                  <span className={styles.feedDot} style={{ background: "#4285f4" }} />
+                  <div className={styles.feedContent}>
+                    <div className={styles.feedAction}>{emp.name}</div>
+                    <div className={styles.feedDetail}>
+                      {emp.employeeType} · {emp.phone}
+                      {emp.dob && ` · ${new Date(emp.dob).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                    </div>
+                  </div>
+                  <span className={styles.feedTime} style={{ color: "#4285f4", fontWeight: 600 }}>
+                    🎂
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No birthdays tomorrow.</p>
+          )}
+        </motion.div>
+
+        {/* Upcoming Anniversaries */}
+        <motion.div className={styles.section} custom={6} variants={fadeUp} initial="hidden" animate="visible">
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.sectionTitleBar} style={{ background: "#e91e63" }} />
+              Upcoming Anniversaries
+            </h2>
+            <span className={styles.sectionBadge} style={{ color: "#e91e63", borderColor: "rgba(233,30,99,0.3)", background: "rgba(233,30,99,0.08)" }}>
+              Tomorrow · {upcomingAnniversaries?.length ?? 0}
+            </span>
+          </div>
+          {isLoadingAnniversaries ? (
+            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>Loading…</p>
+          ) : upcomingAnniversaries && upcomingAnniversaries.length > 0 ? (
+            <ul className={styles.feedList}>
+              {upcomingAnniversaries.map((emp, i) => (
+                <li key={emp._id} className={styles.feedItem}>
+                  <span className={styles.feedDot} style={{ background: "#e91e63" }} />
+                  <div className={styles.feedContent}>
+                    <div className={styles.feedAction}>{emp.name}</div>
+                    <div className={styles.feedDetail}>
+                      {emp.employeeType} · {emp.phone}
+                      {emp.anniversaryDate && ` · ${new Date(emp.anniversaryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                    </div>
+                  </div>
+                  <span className={styles.feedTime} style={{ color: "#e91e63", fontWeight: 600 }}>
+                    💑
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No anniversaries tomorrow.</p>
+          )}
+        </motion.div>
+
       </div>
 
       {/* Lower grid */}
