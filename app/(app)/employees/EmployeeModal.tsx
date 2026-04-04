@@ -83,10 +83,43 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Build clean payload - only include fields with actual values
+      const payload: any = {
+        name: formData.name,
+        age: formData.age,
+        salary: formData.salary,
+        employeeType: formData.employeeType,
+        status: formData.status,
+        joiningDate: formData.joiningDate,
+        phone: formData.phone,
+        email: formData.email,
+        isMarried: formData.isMarried,
+      };
+
+      // Only add optional fields if they have non-empty values
+      const addIfNotEmpty = (key: string, value: any) => {
+        if (value !== undefined && value !== null && value !== "") {
+          if (typeof value === "string" && value.trim() !== "") {
+            payload[key] = value;
+          } else if (typeof value !== "string") {
+            payload[key] = value;
+          }
+        }
+      };
+
+      addIfNotEmpty("dob", formData.dob);
+      addIfNotEmpty("gender", formData.gender);
+      addIfNotEmpty("anniversaryDate", formData.anniversaryDate);
+      addIfNotEmpty("address", formData.address);
+      addIfNotEmpty("documentType", formData.documentType);
+      addIfNotEmpty("documentNumber", formData.documentNumber);
+      addIfNotEmpty("academicQualification", formData.academicQualification);
+      addIfNotEmpty("trainerCertificateNumber", formData.trainerCertificateNumber);
+
       if (existing) {
-        await updateMutation.mutateAsync({ id: existing._id, payload: formData });
+        await updateMutation.mutateAsync({ id: existing._id, payload });
       } else {
-        await createMutation.mutateAsync(formData);
+        await createMutation.mutateAsync(payload);
       }
       onClose();
     } catch (error) {
