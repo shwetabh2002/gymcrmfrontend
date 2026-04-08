@@ -97,7 +97,8 @@ export default function EmployeesPage() {
           !q ||
           e.name.toLowerCase().includes(q) ||
           e.email.toLowerCase().includes(q) ||
-          e.phone.toLowerCase().includes(q);
+          e.phone.toLowerCase().includes(q) ||
+          (e.employeeId && e.employeeId.toLowerCase().includes(q));
         const matchType = typeFilter === "ALL" || e.employeeType === typeFilter;
         const matchStatus = statusFilter === "ALL" || e.status === statusFilter;
         return matchSearch && matchType && matchStatus;
@@ -219,7 +220,7 @@ export default function EmployeesPage() {
               <span className={styles.searchIcon}>⌕</span>
               <input
                 className={styles.searchInput}
-                placeholder="Search name, email, phone…"
+                placeholder="Search ID, name, email, phone…"
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
               />
@@ -255,6 +256,7 @@ export default function EmployeesPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
+                  <th>Employee ID</th>
                   <th>Name</th>
                   <th>Age</th>
                   <th>Phone</th>
@@ -269,7 +271,7 @@ export default function EmployeesPage() {
               <tbody>
                 {paginated.length === 0 && (
                   <tr>
-                    <td colSpan={9} style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-2)", fontSize: 13 }}>
+                    <td colSpan={10} style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-2)", fontSize: 13 }}>
                       {employees?.length === 0
                         ? "No employees yet. Add one to get started."
                         : "No employees match your filters."}
@@ -278,6 +280,7 @@ export default function EmployeesPage() {
                 )}
                 {paginated.map((e) => (
                   <tr key={e._id}>
+                    <td className={styles.cellMono}>{e.employeeId ?? "—"}</td>
                     <td style={{ color: "#fff", fontWeight: 500 }}>{e.name}</td>
                     <td className={styles.cellMono}>{e.age}</td>
                     <td className={styles.cellMono}>{e.phone}</td>

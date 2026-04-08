@@ -78,7 +78,7 @@ export const employeesApi = {
   getEmployeeById: (id: string) =>
     apiClient.get<Employee>(`${BASE_URL}/${id}`),
 
-  // Dashboard endpoints - upcoming birthdays and anniversaries
+  // Dashboard: birthdays / anniversaries falling on today or tomorrow (server local date)
   getUpcomingBirthdays: () =>
     apiClient.get<Employee[]>(`${BASE_URL}/upcoming-birthdays`),
 

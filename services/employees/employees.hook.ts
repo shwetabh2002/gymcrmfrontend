@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { employeesApi, CreateEmployeePayload, UpdateEmployeePayload } from "./employees.api";
+import { employeesApi, CreateEmployeePayload, UpdateEmployeePayload, Employee } from "./employees.api";
+import { membersApi, Member } from "../members/members.api";
 import { toast } from "react-hot-toast";
 
 const QUERY_KEY = "employees";
@@ -154,26 +155,68 @@ export const useDeleteEmployee = () => {
   });
 };
 
-// Get upcoming birthdays (tomorrow)
+/** Employees + members for dashboard birthday / anniversary cards */
+export type UpcomingCelebrationRow = Employee | Member;
+
+function celebrationRoleLabel(row: UpcomingCelebrationRow): string {
+  return "employeeType" in row && row.employeeType ? row.employeeType : "Member";
+}
+
+function celebrationPhone(row: UpcomingCelebrationRow): string {
+  const p = row.phone ?? ("contactNumber" in row ? row.contactNumber : undefined);
+  return p ?? "—";
+}
+
+export { celebrationRoleLabel, celebrationPhone };
+
+/** "Today" / "Tomorrow" from month–day vs browser local date (keep in sync with backend TZ when possible). */
+export function celebrationWhenLabel(
+  row: UpcomingCelebrationRow,
+  field: "dob" | "anniversaryDate"
+): "Today" | "Tomorrow" | "" {
+  const raw = field === "dob" ? row.dob : row.anniversaryDate;
+  if (!raw) return "";
+  const d = new Date(raw);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  const now = new Date();
+  const tM = now.getMonth() + 1;
+  const tD = now.getDate();
+  const tom = new Date(now);
+  tom.setDate(tom.getDate() + 1);
+  const tmM = tom.getMonth() + 1;
+  const tmD = tom.getDate();
+  if (m === tM && day === tD) return "Today";
+  if (m === tmM && day === tmD) return "Tomorrow";
+  return "";
+}
+
+// Get upcoming birthdays (today & tomorrow) — staff + active members
 export const useUpcomingBirthdays = () => {
   return useQuery({
-    queryKey: [QUERY_KEY, "upcoming-birthdays"],
+    queryKey: [QUERY_KEY, "upcoming-birthdays", "today-tomorrow"],
     queryFn: async () => {
-      const response = await employeesApi.getUpcomingBirthdays();
-      return response.data;
+      const [empRes, memRes] = await Promise.all([
+        employeesApi.getUpcomingBirthdays(),
+        membersApi.getUpcomingBirthdays(),
+      ]);
+      return [...empRes.data, ...memRes.data] as UpcomingCelebrationRow[];
     },
     retry: false,
     throwOnError: false,
   });
 };
 
-// Get upcoming anniversaries (tomorrow)
+// Get upcoming anniversaries (today & tomorrow) — married staff + members with anniversary set
 export const useUpcomingAnniversaries = () => {
   return useQuery({
-    queryKey: [QUERY_KEY, "upcoming-anniversaries"],
+    queryKey: [QUERY_KEY, "upcoming-anniversaries", "today-tomorrow"],
     queryFn: async () => {
-      const response = await employeesApi.getUpcomingAnniversaries();
-      return response.data;
+      const [empRes, memRes] = await Promise.all([
+        employeesApi.getUpcomingAnniversaries(),
+        membersApi.getUpcomingAnniversaries(),
+      ]);
+      return [...empRes.data, ...memRes.data] as UpcomingCelebrationRow[];
     },
     retry: false,
     throwOnError: false,

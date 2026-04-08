@@ -14,6 +14,8 @@ export const API_CONFIG = {
     BY_ID:    (id: string) => `/members/${id}`,
     PAYMENTS: "/members/payments",
     IMPORT:   "/members/import",
+    UPCOMING_BIRTHDAYS:    "/members/upcoming-birthdays",
+    UPCOMING_ANNIVERSARIES: "/members/upcoming-anniversaries",
   },
 
   PLANS: {

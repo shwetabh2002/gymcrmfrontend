@@ -5,7 +5,24 @@ import { motion, Variants, Easing } from "framer-motion";
 import styles from "./Dashboard.module.css";
 import { useDashboard, usePaymentTrends, useExpiringIn7Days, usePaymentUpdates } from "@/services/analytics/analytics.hooks";
 import { DashboardFilters } from "@/services/analytics/analytics.api";
-import { useUpcomingBirthdays, useUpcomingAnniversaries } from "@/services/employees/employees.hook";
+import {
+  useUpcomingBirthdays,
+  useUpcomingAnniversaries,
+  celebrationRoleLabel,
+  celebrationPhone,
+  celebrationWhenLabel,
+  type UpcomingCelebrationRow,
+} from "@/services/employees/employees.hook";
+
+function birthdayBadge(row: UpcomingCelebrationRow) {
+  const when = celebrationWhenLabel(row, "dob");
+  return when ? `${when} 🎂` : "🎂";
+}
+
+function anniversaryBadge(row: UpcomingCelebrationRow) {
+  const when = celebrationWhenLabel(row, "anniversaryDate");
+  return when ? `${when} 💑` : "💑";
+}
 
 const customEase: Easing = [0.16, 1, 0.3, 1] as any;
 
@@ -246,7 +263,7 @@ export default function DashboardPage() {
               Upcoming Birthdays
             </h2>
             <span className={styles.sectionBadge} style={{ color: "#4285f4", borderColor: "rgba(66,133,244,0.3)", background: "rgba(66,133,244,0.08)" }}>
-              Tomorrow · {upcomingBirthdays?.length ?? 0}
+              Today & tomorrow · {upcomingBirthdays?.length ?? 0}
             </span>
           </div>
           {isLoadingBirthdays ? (
@@ -259,18 +276,18 @@ export default function DashboardPage() {
                   <div className={styles.feedContent}>
                     <div className={styles.feedAction}>{emp.name}</div>
                     <div className={styles.feedDetail}>
-                      {emp.employeeType} · {emp.phone}
+                      {celebrationRoleLabel(emp)} · {celebrationPhone(emp)}
                       {emp.dob && ` · ${new Date(emp.dob).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                     </div>
                   </div>
                   <span className={styles.feedTime} style={{ color: "#4285f4", fontWeight: 600 }}>
-                    🎂
+                    {birthdayBadge(emp)}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No birthdays tomorrow.</p>
+            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No birthdays today or tomorrow.</p>
           )}
         </motion.div>
 
@@ -282,7 +299,7 @@ export default function DashboardPage() {
               Upcoming Anniversaries
             </h2>
             <span className={styles.sectionBadge} style={{ color: "#e91e63", borderColor: "rgba(233,30,99,0.3)", background: "rgba(233,30,99,0.08)" }}>
-              Tomorrow · {upcomingAnniversaries?.length ?? 0}
+              Today & tomorrow · {upcomingAnniversaries?.length ?? 0}
             </span>
           </div>
           {isLoadingAnniversaries ? (
@@ -295,18 +312,18 @@ export default function DashboardPage() {
                   <div className={styles.feedContent}>
                     <div className={styles.feedAction}>{emp.name}</div>
                     <div className={styles.feedDetail}>
-                      {emp.employeeType} · {emp.phone}
+                      {celebrationRoleLabel(emp)} · {celebrationPhone(emp)}
                       {emp.anniversaryDate && ` · ${new Date(emp.anniversaryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                     </div>
                   </div>
                   <span className={styles.feedTime} style={{ color: "#e91e63", fontWeight: 600 }}>
-                    💑
+                    {anniversaryBadge(emp)}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No anniversaries tomorrow.</p>
+            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No anniversaries today or tomorrow.</p>
           )}
         </motion.div>
 
