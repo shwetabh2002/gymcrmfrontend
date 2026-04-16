@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { employeesApi, CreateEmployeePayload, UpdateEmployeePayload, Employee } from "./employees.api";
-import { membersApi, Member } from "../members/members.api";
+import { analyticsApi, UpcomingCelebrationRow as AnalyticsCelebrationRow } from "../analytics/analytics.api";
 import { toast } from "react-hot-toast";
 
 const QUERY_KEY = "employees";
@@ -156,7 +156,7 @@ export const useDeleteEmployee = () => {
 };
 
 /** Employees + members for dashboard birthday / anniversary cards */
-export type UpcomingCelebrationRow = Employee | Member;
+export type UpcomingCelebrationRow = AnalyticsCelebrationRow;
 
 function celebrationRoleLabel(row: UpcomingCelebrationRow): string {
   return "employeeType" in row && row.employeeType ? row.employeeType : "Member";
@@ -191,33 +191,21 @@ export function celebrationWhenLabel(
   return "";
 }
 
-// Get upcoming birthdays (today & tomorrow) — staff + active members
+// Get upcoming birthdays (today & tomorrow) — single GET /analytics/upcoming-birthdays
 export const useUpcomingBirthdays = () => {
   return useQuery({
-    queryKey: [QUERY_KEY, "upcoming-birthdays", "today-tomorrow"],
-    queryFn: async () => {
-      const [empRes, memRes] = await Promise.all([
-        employeesApi.getUpcomingBirthdays(),
-        membersApi.getUpcomingBirthdays(),
-      ]);
-      return [...empRes.data, ...memRes.data] as UpcomingCelebrationRow[];
-    },
+    queryKey: ["analytics", "upcoming-birthdays"],
+    queryFn: () => analyticsApi.getUpcomingBirthdays(),
     retry: false,
     throwOnError: false,
   });
 };
 
-// Get upcoming anniversaries (today & tomorrow) — married staff + members with anniversary set
+// Get upcoming anniversaries — single GET /analytics/upcoming-anniversaries
 export const useUpcomingAnniversaries = () => {
   return useQuery({
-    queryKey: [QUERY_KEY, "upcoming-anniversaries", "today-tomorrow"],
-    queryFn: async () => {
-      const [empRes, memRes] = await Promise.all([
-        employeesApi.getUpcomingAnniversaries(),
-        membersApi.getUpcomingAnniversaries(),
-      ]);
-      return [...empRes.data, ...memRes.data] as UpcomingCelebrationRow[];
-    },
+    queryKey: ["analytics", "upcoming-anniversaries"],
+    queryFn: () => analyticsApi.getUpcomingAnniversaries(),
     retry: false,
     throwOnError: false,
   });

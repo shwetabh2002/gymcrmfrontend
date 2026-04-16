@@ -1,5 +1,10 @@
 import { requestService } from "../request/requestServcie";
 import { API_CONFIG } from "@/config/config";
+import type { Employee } from "../employees/employees.api";
+import type { Member } from "../members/members.api";
+
+/** Row returned by dashboard celebration endpoints (staff or member). */
+export type UpcomingCelebrationRow = Employee | Member;
 
 export interface DashboardCounts {
   totalMembers: number;
@@ -179,4 +184,14 @@ export const analyticsApi = {
 
   getPaymentUpdates: () =>
     requestService.get<PaymentUpdatesData>(API_CONFIG.ANALYTICS.PAYMENT_UPDATES),
+
+  getUpcomingBirthdays: () =>
+    requestService.get<UpcomingCelebrationRow[]>(
+      API_CONFIG.ANALYTICS.UPCOMING_BIRTHDAYS,
+    ),
+
+  getUpcomingAnniversaries: () =>
+    requestService.get<UpcomingCelebrationRow[]>(
+      API_CONFIG.ANALYTICS.UPCOMING_ANNIVERSARIES,
+    ),
 };

@@ -78,13 +78,6 @@ export const employeesApi = {
   getEmployeeById: (id: string) =>
     apiClient.get<Employee>(`${BASE_URL}/${id}`),
 
-  // Dashboard: birthdays / anniversaries (two-segment paths avoid :id collision on some servers)
-  getUpcomingBirthdays: () =>
-    apiClient.get<Employee[]>(`${BASE_URL}/upcoming/birthdays`),
-
-  getUpcomingAnniversaries: () =>
-    apiClient.get<Employee[]>(`${BASE_URL}/upcoming/anniversaries`),
-
   // Write endpoints - password required
   createEmployee: (payload: CreateEmployeePayload, password: string) =>
     apiClient.post<Employee>(BASE_URL, payload, { headers: createHeaders(password) }),

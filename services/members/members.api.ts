@@ -227,10 +227,4 @@ export const membersApi = {
     );
     return data;
   },
-
-  getUpcomingBirthdays: () =>
-    apiClient.get<Member[]>(API_CONFIG.MEMBERS.UPCOMING_BIRTHDAYS),
-
-  getUpcomingAnniversaries: () =>
-    apiClient.get<Member[]>(API_CONFIG.MEMBERS.UPCOMING_ANNIVERSARIES),
 };
