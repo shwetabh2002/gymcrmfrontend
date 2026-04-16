@@ -41,7 +41,7 @@ const EMPTY: CreateMemberPayload = {
   memberStatus: "ACTIVE",
   address: "",
   emergencyContact: "",
-  discount: 0,
+  discountAmount: 0,
   discountApprovedBy: "",
 };
 
@@ -111,12 +111,20 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       const startDate = activeMembership?.startDate ?? existing.startingDate;
       const expiryDate = activeMembership?.expiryDate ?? existing.expiryDate;
 
+      const rupeesDiscount =
+        existing.discountAmount != null && existing.discountAmount > 0
+          ? existing.discountAmount
+          : existing.discount && existing.discount > 0 && totalAmount
+            ? Math.round(((totalAmount * existing.discount) / 100) * 100) / 100
+            : 0;
+
       setForm({
         idNo:             existing.idNo ?? "",
         date:             existing.date ? existing.date.slice(0, 10) : "",
         name:             existing.name,
-        contactNumber:    existing.contactNumber,
+        contactNumber:    existing.contactNumber ?? existing.phone ?? "",
         dob:              existing.dob ? existing.dob.slice(0, 10) : "",
+        anniversaryDate:  existing.anniversaryDate ? existing.anniversaryDate.slice(0, 10) : "",
         instagramHandle:  existing.instagramHandle ?? "",
         email:            existing.email ?? "",
         phone:            existing.phone ?? existing.contactNumber ?? "",
@@ -137,24 +145,24 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         memberStatus:     existing.memberStatus ?? "ACTIVE",
         address:          existing.address ?? "",
         emergencyContact: existing.emergencyContact ?? "",
+        discountAmount:   rupeesDiscount,
+        discountApprovedBy: existing.discountApprovedBy ?? "",
       });
+      setHasDiscount(rupeesDiscount > 0);
     } else {
       setForm(EMPTY);
+      setHasDiscount(false);
     }
     setError("");
   }, [existing, open]);
 
-  // Auto-calculate pending amount whenever amount, received, or discount changes
+  // Auto-calculate pending amount whenever amount, received, or discount (₹) changes
   useEffect(() => {
     const totalAmount = form.amount ?? 0;
     const receivedAmount = form.received ?? 0;
-    const discountPercent = form.discount ?? 0;
+    const rupeesOff = Math.min(form.discountAmount ?? 0, totalAmount);
 
-    // Calculate discount amount
-    const discountAmount = (totalAmount * discountPercent) / 100;
-
-    // Pending = (Total - Discount) - Received
-    const amountAfterDiscount = totalAmount - discountAmount;
+    const amountAfterDiscount = totalAmount - rupeesOff;
     const calculatedPending = Math.max(0, amountAfterDiscount - receivedAmount);
 
     if (form.pending !== calculatedPending) {
@@ -163,7 +171,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         pending: calculatedPending,
       }));
     }
-  }, [form.amount, form.received, form.discount]);
+  }, [form.amount, form.received, form.discountAmount]);
 
   // FIX: added "membershipMonths" and "membershipAmount" to the numeric fields list
   // so they are cast to Number instead of being sent as strings to the API.
@@ -173,7 +181,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     let processedValue: string | number | undefined = value;
 
     // Process numeric fields
-    if (["amount", "received", "pending", "membershipMonths", "membershipAmount"].includes(name)) {
+    if (["amount", "received", "pending", "membershipMonths", "membershipAmount", "discountAmount"].includes(name)) {
       processedValue = value === "" ? undefined : Number(value);
 
       // Validate received amount doesn't exceed total amount
@@ -189,10 +197,13 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       }
     }
 
-    setForm(prev => ({
-      ...prev,
-      [name]: processedValue,
-    }));
+    setForm(prev => {
+      const next = { ...prev, [name]: processedValue } as CreateMemberPayload;
+      if (name === "contactNumber" && typeof processedValue === "string") {
+        next.phone = processedValue;
+      }
+      return next;
+    });
   };
 
   const getRegisterPayload = (): RegisterMemberPayload => {
@@ -220,20 +231,41 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       address: form.address || undefined,
       emergencyContact: form.emergencyContact || undefined,
       transactionId: form.transactionId || undefined,
-      discount: (form.discount && Number(form.discount) > 0) ? Number(form.discount) : undefined,
-      discountApprovedBy: (form.discount && Number(form.discount) > 0 && form.discountApprovedBy) ? form.discountApprovedBy : undefined,
+      discountAmount:
+        form.discountAmount && Number(form.discountAmount) > 0
+          ? Number(form.discountAmount)
+          : undefined,
+      discountApprovedBy:
+        form.discountAmount && Number(form.discountAmount) > 0 && form.discountApprovedBy
+          ? form.discountApprovedBy
+          : undefined,
     };
   };
 
   const getUpdatePayload = (): CreateMemberPayload => {
     const contactNumber = form.contactNumber || form.phone || "";
 
+    const discountPatch = !hasDiscount
+      ? { discountAmount: 0, discount: 0, discountApprovedBy: "" }
+      : {
+          discountAmount:
+            form.discountAmount && Number(form.discountAmount) > 0
+              ? Number(form.discountAmount)
+              : undefined,
+          discount:
+            form.discountAmount && Number(form.discountAmount) > 0 ? 0 : undefined,
+          discountApprovedBy:
+            form.discountAmount && Number(form.discountAmount) > 0 && form.discountApprovedBy
+              ? form.discountApprovedBy
+              : undefined,
+        };
+
     // For edit mode, only send editable fields (exclude membership and payment details)
     return {
       name: form.name,
       contactNumber,
       email: form.email || undefined,
-      phone: form.phone || undefined,
+      phone: contactNumber,
       dob: form.dob || undefined,
       anniversaryDate: form.anniversaryDate || undefined,
       instagramHandle: form.instagramHandle || undefined,
@@ -244,15 +276,14 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       trainingType: form.trainingType ?? "GT",
       memberType: form.memberType ?? "New",
       memberStatus: form.memberStatus || "ACTIVE",
-      discount: (form.discount && Number(form.discount) > 0) ? Number(form.discount) : undefined,
-      discountApprovedBy: (form.discount && Number(form.discount) > 0 && form.discountApprovedBy) ? form.discountApprovedBy : undefined,
+      ...discountPatch,
     };
   };
 
   const handleSubmit = () => {
     // Basic validation (applies to both create and edit)
     if (!form.name || !(form.contactNumber || form.phone)) {
-      setError("Name and contact number are required.");
+      setError("Name and phone number are required.");
       return;
     }
 
@@ -385,7 +416,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                     <input className={styles.input} name="name" placeholder="e.g. Daksh Sharma" value={form.name} onChange={handleChange} />
                   </div>
                   <div className={styles.field}>
-                    <label className={styles.label}>Contact Number *</label>
+                    <label className={styles.label}>Phone number *</label>
                     <div style={{ display: "flex", gap: "8px" }}>
                       <select
                         className={styles.input}
@@ -514,7 +545,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                         onChange={(e) => {
                           setHasDiscount(e.target.checked);
                           if (!e.target.checked) {
-                            setForm(prev => ({ ...prev, discount: 0, discountApprovedBy: "" }));
+                            setForm(prev => ({ ...prev, discountAmount: 0, discountApprovedBy: "" }));
                           }
                         }}
                       />
@@ -526,15 +557,14 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                 {hasDiscount && (
                   <div className={styles.row}>
                     <div className={styles.field}>
-                      <label className={styles.label}>Discount (%)</label>
+                      <label className={styles.label}>Discount (₹)</label>
                       <input
                         className={styles.input}
-                        name="discount"
+                        name="discountAmount"
                         type="number"
-                        placeholder="0-100"
+                        placeholder="0"
                         min="0"
-                        max="100"
-                        value={form.discount ?? ""}
+                        value={form.discountAmount ?? ""}
                         onChange={handleChange}
                       />
                     </div>

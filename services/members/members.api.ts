@@ -57,7 +57,10 @@ export interface Member {
   currentSubscriptionId?: string;
   address?: string;
   emergencyContact?: string;
+  /** Legacy % off list price; ignored when discountAmount is set */
   discount?: number;
+  /** ₹ off list price (preferred) */
+  discountAmount?: number | null;
   discountApprovedBy?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -93,6 +96,7 @@ export interface CreateMemberPayload {
   address?: string;
   emergencyContact?: string;
   discount?: number;
+  discountAmount?: number;
   discountApprovedBy?: string;
   userType?: "MEMBER" | "TRAINER" | "ADMIN";
   role?: "USER" | "ADMIN";
@@ -139,6 +143,7 @@ export interface RegisterMemberPayload {
   address?: string;
   emergencyContact?: string;
   discount?: number;
+  discountAmount?: number;
   discountApprovedBy?: string;
 }
 
