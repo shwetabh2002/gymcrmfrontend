@@ -32,6 +32,7 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
     documentNumber: "",
     academicQualification: undefined,
     trainerCertificateNumber: "",
+    deviceUserId: "",
   });
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
         documentNumber: existing.documentNumber || "",
         academicQualification: existing.academicQualification,
         trainerCertificateNumber: existing.trainerCertificateNumber || "",
+        deviceUserId: existing.deviceUserId || "",
       });
     } else {
       setFormData({
@@ -74,6 +76,7 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
         documentNumber: "",
         academicQualification: undefined,
         trainerCertificateNumber: "",
+        deviceUserId: "",
       });
     }
   }, [existing, open]);
@@ -115,6 +118,7 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
       addIfNotEmpty("documentNumber", formData.documentNumber);
       addIfNotEmpty("academicQualification", formData.academicQualification);
       addIfNotEmpty("trainerCertificateNumber", formData.trainerCertificateNumber);
+      addIfNotEmpty("deviceUserId", formData.deviceUserId);
 
       if (existing) {
         await updateMutation.mutateAsync({ id: existing._id, payload });
@@ -514,6 +518,30 @@ export default function EmployeeModal({ open, onClose, existing }: EmployeeModal
               <option value="Graduation">Graduation</option>
               <option value="Post Graduation">Post Graduation</option>
             </select>
+          </div>
+
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={{ display: "block", fontSize: "0.875rem", color: "#aaa", marginBottom: "0.5rem" }}>
+              Biometric device user ID
+            </label>
+            <input
+              type="text"
+              value={formData.deviceUserId || ""}
+              onChange={(e) => setFormData({ ...formData, deviceUserId: e.target.value })}
+              placeholder="Same number as on eSSL / fingerprint device (e.g. 1, 12)"
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                background: "#111",
+                border: "1px solid #1e1e1e",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "0.875rem",
+              }}
+            />
+            <p style={{ marginTop: "0.35rem", fontSize: "0.75rem", color: "#666" }}>
+              Required for attendance: must match the user ID in GetTransactionsLog / device punches.
+            </p>
           </div>
 
           {/* Trainer Certificate Number - Only for TRAINER type */}

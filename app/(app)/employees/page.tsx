@@ -261,6 +261,7 @@ export default function EmployeesPage() {
                   <th>Age</th>
                   <th>Phone</th>
                   <th>Email</th>
+                  <th>Device ID</th>
                   <th>Type</th>
                   <th>Salary</th>
                   <th>Joining Date</th>
@@ -271,7 +272,7 @@ export default function EmployeesPage() {
               <tbody>
                 {paginated.length === 0 && (
                   <tr>
-                    <td colSpan={10} style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-2)", fontSize: 13 }}>
+                    <td colSpan={11} style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-2)", fontSize: 13 }}>
                       {employees?.length === 0
                         ? "No employees yet. Add one to get started."
                         : "No employees match your filters."}
@@ -285,6 +286,7 @@ export default function EmployeesPage() {
                     <td className={styles.cellMono}>{e.age}</td>
                     <td className={styles.cellMono}>{e.phone}</td>
                     <td className={styles.cellMono}>{e.email}</td>
+                    <td className={styles.cellMono}>{e.deviceUserId?.trim() ? e.deviceUserId : "—"}</td>
                     <td>
                       <span
                         className={`${styles.badge} ${

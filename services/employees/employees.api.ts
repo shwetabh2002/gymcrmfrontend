@@ -24,6 +24,8 @@ export interface Employee {
   academicQualification?: "10th" | "12th" | "Graduation" | "Post Graduation";
   // Trainer Certificate (only for TRAINER type)
   trainerCertificateNumber?: string;
+  /** Matches user number on eSSL / biometric device (e.g. "1", "12") for attendance sync */
+  deviceUserId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -50,6 +52,7 @@ export interface CreateEmployeePayload {
   academicQualification?: "10th" | "12th" | "Graduation" | "Post Graduation";
   // Trainer Certificate (only for TRAINER type)
   trainerCertificateNumber?: string;
+  deviceUserId?: string;
 }
 
 export interface UpdateEmployeePayload extends Partial<CreateEmployeePayload> {}

@@ -61,4 +61,14 @@ export const API_CONFIG = {
     AUTH_LOCK:   "/employees/auth/lock",
     AUTH_STATUS: "/employees/auth/status",
   },
+
+  ATTENDANCE: {
+    BASE:         "/attendance",
+    TODAY:        "/attendance/today",
+    STATISTICS:   "/attendance/statistics",
+    ESSL_STATUS:  "/attendance/essl-status",
+    SYNC_ESSL:    "/attendance/sync-essl",
+    DIAGNOSTICS:  "/attendance/diagnostics",
+    ESSL_PROBE:   "/attendance/essl-probe",
+  },
 } as const;

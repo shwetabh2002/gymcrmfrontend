@@ -42,6 +42,16 @@ const NAV = [
     ),
   },
   {
+    href: "/attendance",
+    label: "Attendance",
+    icon: (
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4"/>
+        <path d="M8 4.5v4l2.5 1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
+  {
     href: "/invoices",
     label: "Invoices",
     icon: (
