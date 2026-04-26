@@ -405,7 +405,7 @@ export default function DashboardPage() {
                   <tbody>
                     {expiringData.members.map((m, i) => (
                       <tr key={i} style={{ borderBottom: "1px solid #161616" }}>
-                        <td style={{ padding: "0.65rem 1rem", color: "#fff" }}>{m.memberName}</td>
+                        <td style={{ padding: "0.65rem 1rem", color: "#1a1a1a", fontWeight: 500 }}>{m.memberName}</td>
                         <td style={{ padding: "0.65rem 1rem", color: "#666" }}>{m.phone}</td>
                         <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{m.planName}</td>
                         <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{new Date(m.expiryDate).toLocaleDateString()}</td>
@@ -494,7 +494,7 @@ export default function DashboardPage() {
               <tbody>
                 {nearExpiry.map((m, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid #161616" }}>
-                    <td style={{ padding: "0.65rem 1rem", color: "#fff" }}>{m.memberName}</td>
+                    <td style={{ padding: "0.65rem 1rem", color: "#1a1a1a", fontWeight: 500 }}>{m.memberName}</td>
                     <td style={{ padding: "0.65rem 1rem", color: "#666" }}>{m.phone}</td>
                     <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{m.planName}</td>
                     <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{new Date(m.expiryDate).toLocaleDateString()}</td>
