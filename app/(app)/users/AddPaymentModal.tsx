@@ -19,6 +19,7 @@ export default function AddPaymentModal({ open, onClose, member }: Props) {
     received: 0,
     mop: "cash",
     paymentDate: new Date().toISOString().split('T')[0],
+    pendingDueDate: "",
     transactionId: "",
     notes: "",
     clearPending: false, // Flag to indicate if this is clearing old pending
@@ -35,12 +36,16 @@ export default function AddPaymentModal({ open, onClose, member }: Props) {
       // Get active membership's pending amount
       const activeMembership = member.memberships?.find(m => m.status === "ACTIVE");
       const pendingAmount = activeMembership?.pendingAmount ?? member.paymentSummary?.totalPending ?? 0;
+      const pendingDueDate = (activeMembership as { pendingDueDate?: string | null } | undefined)?.pendingDueDate
+        ?? member.pendingDueDate
+        ?? "";
 
       setForm({
         amount: pendingAmount > 0 ? 0 : 0, // Set to 0 for pending clearance
         received: pendingAmount,
         mop: "cash",
         paymentDate: new Date().toISOString().split('T')[0],
+        pendingDueDate: pendingDueDate ? pendingDueDate.slice(0, 10) : "",
         transactionId: "",
         notes: pendingAmount > 0 ? "Pending balance payment" : "Additional payment",
         clearPending: pendingAmount > 0, // Mark as clearing pending
@@ -96,6 +101,7 @@ export default function AddPaymentModal({ open, onClose, member }: Props) {
         paymentDate: form.paymentDate,
         transactionId: form.transactionId || undefined,
         notes: form.notes || undefined,
+        pendingDueDate: pending > 0 ? form.pendingDueDate || undefined : undefined,
       },
       {
         onSuccess: () => {
@@ -258,6 +264,18 @@ export default function AddPaymentModal({ open, onClose, member }: Props) {
                       style={{ backgroundColor: '#f9fafb', color: '#6b7280' }}
                     />
                   </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>Pending Due Date</label>
+                  <input
+                    className={styles.input}
+                    name="pendingDueDate"
+                    type="date"
+                    value={form.pendingDueDate}
+                    onChange={handleChange}
+                    disabled={pending <= 0}
+                  />
                 </div>
 
                 <div className={styles.field}>

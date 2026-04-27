@@ -43,6 +43,7 @@ const EMPTY: CreateMemberPayload = {
   emergencyContact: "",
   discountAmount: 0,
   discountApprovedBy: "",
+  pendingDueDate: "",
 };
 
 const COUNTRY_CODES = [
@@ -64,6 +65,15 @@ const MEMBERSHIP_PLANS = [
 
 // Fixed approvers for discount
 const APPROVERS = ["Mannu Rawat", "Suman Upadhyaya"];
+
+function addMonthsToYmd(startYmd: string, months: number): string {
+  if (!startYmd || !months || months < 1) return startYmd;
+  const [y, m, d] = startYmd.split("-").map((x) => parseInt(x, 10));
+  if (!y || !m || !d) return startYmd;
+  const dt = new Date(y, m - 1, d);
+  dt.setMonth(dt.getMonth() + months);
+  return dt.toISOString().split("T")[0];
+}
 
 export default function MemberModal({ open, onClose, existing }: Props) {
   const isEdit = !!existing;
@@ -94,6 +104,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         membershipPlan: selectedPlan.label,
         amount: selectedPlan.price,
         membershipAmount: selectedPlan.price,
+        expiryDate: addMonthsToYmd(prev.startingDate || new Date().toISOString().split("T")[0], months),
       }));
     }
   };
@@ -110,6 +121,10 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       const months = activeMembership?.months ?? existing.membershipMonths;
       const startDate = activeMembership?.startDate ?? existing.startingDate;
       const expiryDate = activeMembership?.expiryDate ?? existing.expiryDate;
+      const pendingDueDate =
+        (activeMembership as { pendingDueDate?: string | null } | undefined)?.pendingDueDate ??
+        existing.pendingDueDate ??
+        "";
 
       const rupeesDiscount =
         existing.discountAmount != null && existing.discountAmount > 0
@@ -134,6 +149,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         membershipAmount: totalAmount,
         received:         totalReceived,
         pending:          totalPending,
+        pendingDueDate:   pendingDueDate ? pendingDueDate.slice(0, 10) : "",
         mop:              existing.mop || "", // MOP not stored on user, only in payment records
         transactionId:    (existing as any).transactionId ?? "",
         salesPerson:      existing.salesPerson ?? "",
@@ -202,6 +218,27 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       if (name === "contactNumber" && typeof processedValue === "string") {
         next.phone = processedValue;
       }
+      if (name === "membershipMonths") {
+        const months = Number(processedValue ?? 0);
+        if (months >= 1) {
+          const selectedPlan = MEMBERSHIP_PLANS.find((p) => p.months === months);
+          if (selectedPlan) {
+            next.membershipPlan = selectedPlan.label;
+            next.amount = selectedPlan.price;
+            next.membershipAmount = selectedPlan.price;
+          }
+          next.expiryDate = addMonthsToYmd(
+            next.startingDate || new Date().toISOString().split("T")[0],
+            months,
+          );
+        }
+      }
+      if (name === "startingDate" && typeof processedValue === "string") {
+        const months = Number(next.membershipMonths ?? 0);
+        if (months >= 1 && processedValue) {
+          next.expiryDate = addMonthsToYmd(processedValue, months);
+        }
+      }
       return next;
     });
   };
@@ -219,6 +256,11 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       membershipMonths: form.membershipMonths ?? 1,
       amount,
       received,
+      pending: form.pending ?? Math.max(0, amount - received),
+      pendingDueDate:
+        (form.pending ?? Math.max(0, amount - received)) > 0 && form.pendingDueDate
+          ? form.pendingDueDate
+          : undefined,
       mop: form.mop || "cash",
       startingDate: form.startingDate || new Date().toISOString().split('T')[0],
       expiryDate: form.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -276,6 +318,10 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       trainingType: form.trainingType ?? "GT",
       memberType: form.memberType ?? "New",
       memberStatus: form.memberStatus || "ACTIVE",
+      pendingDueDate:
+        (form.pending ?? 0) > 0 && form.pendingDueDate
+          ? form.pendingDueDate
+          : undefined,
       ...discountPatch,
     };
   };
@@ -340,7 +386,6 @@ export default function MemberModal({ open, onClose, existing }: Props) {
           <motion.div
             className={styles.backdrop}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
           />
           <motion.div
             className={styles.modal}
@@ -625,6 +670,23 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                       disabled
                       readOnly
                     />
+                  </div>
+                </div>
+
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Pending Due Date</label>
+                    <input
+                      className={styles.input}
+                      name="pendingDueDate"
+                      type="date"
+                      value={form.pendingDueDate ?? ""}
+                      onChange={handleChange}
+                      disabled={(form.pending ?? 0) <= 0}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    {/* Empty field for layout */}
                   </div>
                 </div>
 

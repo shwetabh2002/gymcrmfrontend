@@ -19,6 +19,7 @@ export interface Membership {
   totalAmount: number;
   amountPaid: number;
   pendingAmount: number;
+  pendingDueDate?: string | null;
   status: "ACTIVE" | "EXPIRED" | "CANCELLED";
   package?: string;
   trainingType?: string;
@@ -46,6 +47,7 @@ export interface Member {
   membershipAmount?: number;
   received?: number;
   pending?: number;
+  pendingDueDate?: string | null;
   mop?: string;
   salesPerson?: string;
   trainingType?: "GT" | "PT" | "OTHER";
@@ -84,6 +86,7 @@ export interface CreateMemberPayload {
   membershipAmount?: number;
   received?: number;
   pending?: number;
+  pendingDueDate?: string;
   mop?: string;
   transactionId?: string;
   salesPerson?: string;
@@ -109,12 +112,19 @@ export interface AddPaymentPayload {
   amount: number;
   received: number;
   pending?: number;
+  pendingDueDate?: string;
   mop: string;
   paymentDate: string;
   transactionId?: string;
   notes?: string;
   renewalMonths?: number;
   newExpiryDate?: string;
+  renewalStartDate?: string;
+  packageName?: string;
+  trainingType?: string;
+  trainer?: string;
+  salesPerson?: string;
+  memberType?: string;
 }
 
 export interface RegisterMemberPayload {
@@ -134,6 +144,7 @@ export interface RegisterMemberPayload {
   instagramHandle?: string;
   membershipPlan?: string;
   pending?: number;
+  pendingDueDate?: string;
   transactionId?: string;
   salesPerson?: string;
   trainingType?: "GT" | "PT" | "OTHER";
@@ -145,6 +156,22 @@ export interface RegisterMemberPayload {
   discount?: number;
   discountAmount?: number;
   discountApprovedBy?: string;
+}
+
+export interface MemberRecordedPayment {
+  _id: string;
+  memberId: string;
+  membershipId?: string | null;
+  amount: number;
+  received: number;
+  pending: number;
+  pendingDueDate?: string | null;
+  mop: string;
+  paymentDate: string;
+  transactionId?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const normalizeMember = (m: Partial<Member>): Member => {
@@ -194,6 +221,9 @@ export const membersApi = {
 
   getMemberById: (id: string) =>
     requestService.get<Member>(API_CONFIG.MEMBERS.BY_ID(id)),
+
+  getMemberPayments: (id: string) =>
+    requestService.get<MemberRecordedPayment[]>(`${API_CONFIG.MEMBERS.BY_ID(id)}/payments`),
 
   createMember: (payload: CreateMemberPayload) =>
     requestService.post<Member, CreateMemberPayload>(API_CONFIG.MEMBERS.BASE, payload),

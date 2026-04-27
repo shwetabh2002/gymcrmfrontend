@@ -10,6 +10,8 @@ import DeleteMemberDialog from "./DeleteMemberDialog";
 import ImportMembersModal from "./ImportMembersModal";
 import ExportMembersButton from "./ExportMembersButton";
 import AddPaymentModal from "./AddPaymentModal";
+import MemberHistoryModal from "./MemberHistoryModal";
+import RenewalModal from "./RenewalModal";
 
 const PAGE_SIZE = 10;
 
@@ -88,6 +90,11 @@ function getMembershipInfo(member: Member) {
   };
 }
 
+function getPendingDueDate(member: Member): string | null {
+  const activeMembership = getActiveMembership(member) as { pendingDueDate?: string | null } | null;
+  return activeMembership?.pendingDueDate ?? member.pendingDueDate ?? null;
+}
+
 export default function UsersPage() {
   const { data: members, isLoading, isError } = useMembers();
 
@@ -95,18 +102,23 @@ export default function UsersPage() {
   const [deleteOpen,   setDeleteOpen]   = useState(false);
   const [importOpen,   setImportOpen]   = useState(false);
   const [paymentOpen,  setPaymentOpen]  = useState(false);
+  const [renewalOpen,  setRenewalOpen]  = useState(false);
+  const [historyOpen,  setHistoryOpen]  = useState(false);
   const [selected,     setSelected]     = useState<Member | null>(null);
   const [search,       setSearch]       = useState("");
   const [statusFilter,  setStatusFilter]  = useState("ALL");
   const [typeFilter,    setTypeFilter]    = useState("ALL");
   const [trainFilter,   setTrainFilter]   = useState("ALL");
   const [pendingFilter, setPendingFilter] = useState("ALL");
+  const [pendingByDate, setPendingByDate] = useState("");
   const [page,          setPage]          = useState(1);
 
   const openCreate  = () => { setSelected(null); setModalOpen(true); };
   const openEdit    = (m: Member) => { setSelected(m); setModalOpen(true); };
   const openDelete  = (m: Member) => { setSelected(m); setDeleteOpen(true); };
   const openPayment = (m: Member) => { setSelected(m); setPaymentOpen(true); };
+  const openRenewal = (m: Member) => { setSelected(m); setRenewalOpen(true); };
+  const openHistory = (m: Member) => { setSelected(m); setHistoryOpen(true); };
 
   // Reset to page 1 whenever filters/search change
   const handleSearch  = (val: string) => { setSearch(val); setPage(1); };
@@ -114,6 +126,8 @@ export default function UsersPage() {
   const handleType    = (val: string) => { setTypeFilter(val); setPage(1); };
   const handleTrain   = (val: string) => { setTrainFilter(val); setPage(1); };
   const handlePending = (val: string) => { setPendingFilter(val); setPage(1); };
+  const handlePendingByDate = (val: string) => { setPendingByDate(val); setPage(1); };
+  const resetPendingByDate = () => { setPendingByDate(""); setPage(1); };
 
   const filtered = useMemo(() => {
     if (!members) return [];
@@ -134,11 +148,19 @@ export default function UsersPage() {
         // Check pending using memberships array first, then fallback
         const membershipInfo = getMembershipInfo(m);
         const hasPending = membershipInfo.pendingAmount > 0;
+        const dueDate = getPendingDueDate(m);
 
         const matchPending = pendingFilter === "ALL" ||
           (pendingFilter === "HAS_PENDING" && hasPending) ||
           (pendingFilter === "FULLY_PAID" && !hasPending);
-        return matchSearch && matchStatus && matchType && matchTrain && matchPending;
+        const matchPendingByDate =
+          !pendingByDate ||
+          (
+            hasPending &&
+            !!dueDate &&
+            new Date(dueDate).getTime() <= new Date(pendingByDate).getTime()
+          );
+        return matchSearch && matchStatus && matchType && matchTrain && matchPending && matchPendingByDate;
       })
       .sort((a, b) => {
         // Sort by createdAt descending (newest first)
@@ -146,7 +168,7 @@ export default function UsersPage() {
         const dateB = new Date(b.createdAt || 0).getTime();
         return dateB - dateA;
       });
-  }, [members, search, statusFilter, typeFilter, trainFilter, pendingFilter]);
+  }, [members, search, statusFilter, typeFilter, trainFilter, pendingFilter, pendingByDate]);
 
   // Pagination slice
   const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -176,6 +198,8 @@ export default function UsersPage() {
       <DeleteMemberDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} member={selected} />
       <ImportMembersModal open={importOpen} onClose={() => setImportOpen(false)} />
       <AddPaymentModal open={paymentOpen} onClose={() => setPaymentOpen(false)} member={selected} />
+      <RenewalModal open={renewalOpen} onClose={() => setRenewalOpen(false)} member={selected} />
+      <MemberHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} member={selected} />
 
       {/* Header */}
       <motion.div
@@ -260,6 +284,16 @@ export default function UsersPage() {
               <option value="HAS_PENDING">⚠ Has Pending</option>
               <option value="FULLY_PAID">✓ Fully Paid</option>
             </select>
+            <input
+              className={styles.filterSelect}
+              type="date"
+              value={pendingByDate}
+              onChange={e => handlePendingByDate(e.target.value)}
+              title="Show pending members due by date"
+            />
+            <button className={styles.btnSecondary} onClick={resetPendingByDate}>
+              Reset
+            </button>
           </div>
         </div>
 
@@ -293,7 +327,7 @@ export default function UsersPage() {
                   </td></tr>
                 )}
                 {paginated.map((m) => (
-                  <tr key={m._id}>
+                  <tr key={m._id} className={styles.clickableRow} onClick={() => openHistory(m)}>
                     <td className={styles.cellMono} style={{ color: "var(--text-3)", fontSize: 11 }}>{m.idNo ?? "—"}</td>
                     <td>
                       <div className={styles.avatarCell}>
@@ -349,9 +383,11 @@ export default function UsersPage() {
                     </td>
                     <td>
                       <div className={styles.rowActions}>
-                        <button className={styles.iconBtn} onClick={() => openPayment(m)} title="Add Payment" style={{ fontSize: '14px' }}>₹</button>
-                        <button className={styles.iconBtn} onClick={() => openEdit(m)} title="Edit">✎</button>
-                        <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={() => openDelete(m)} title="Delete">✕</button>
+                        <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); openHistory(m); }} title="View History">◷</button>
+                        <button className={styles.renewBtn} onClick={(e) => { e.stopPropagation(); openRenewal(m); }} title="Renewal">Renew</button>
+                        <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); openPayment(m); }} title="Add Payment" style={{ fontSize: '14px' }}>₹</button>
+                        <button className={styles.iconBtn} onClick={(e) => { e.stopPropagation(); openEdit(m); }} title="Edit">✎</button>
+                        <button className={`${styles.iconBtn} ${styles.iconBtnDanger}`} onClick={(e) => { e.stopPropagation(); openDelete(m); }} title="Delete">✕</button>
                       </div>
                     </td>
                   </tr>
