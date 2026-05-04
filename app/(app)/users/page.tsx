@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Users.module.css";
-import { useMembers } from "@/services/members/members.hook";
+import { useMembersList } from "@/services/members/members.hook";
 import { Member } from "@/services/members/members.api";
 import MemberModal from "./MemberModal";
 import DeleteMemberDialog from "./DeleteMemberDialog";
@@ -90,14 +90,7 @@ function getMembershipInfo(member: Member) {
   };
 }
 
-function getPendingDueDate(member: Member): string | null {
-  const activeMembership = getActiveMembership(member) as { pendingDueDate?: string | null } | null;
-  return activeMembership?.pendingDueDate ?? member.pendingDueDate ?? null;
-}
-
 export default function UsersPage() {
-  const { data: members, isLoading, isError } = useMembers();
-
   const [modalOpen,    setModalOpen]    = useState(false);
   const [deleteOpen,   setDeleteOpen]   = useState(false);
   const [importOpen,   setImportOpen]   = useState(false);
@@ -106,12 +99,26 @@ export default function UsersPage() {
   const [historyOpen,  setHistoryOpen]  = useState(false);
   const [selected,     setSelected]     = useState<Member | null>(null);
   const [search,       setSearch]       = useState("");
-  const [statusFilter,  setStatusFilter]  = useState("ALL");
-  const [typeFilter,    setTypeFilter]    = useState("ALL");
-  const [trainFilter,   setTrainFilter]   = useState("ALL");
-  const [pendingFilter, setPendingFilter] = useState("ALL");
+  const [statusFilter,  setStatusFilter]  = useState<"ALL" | "ACTIVE" | "INACTIVE" | "EXPIRED">("ALL");
+  const [typeFilter,    setTypeFilter]    = useState<"ALL" | "New" | "Old" | "Renewal">("ALL");
+  const [trainFilter,   setTrainFilter]   = useState<"ALL" | "PT" | "GT" | "OTHER">("ALL");
+  const [pendingFilter, setPendingFilter] = useState<"ALL" | "HAS_PENDING" | "FULLY_PAID">("ALL");
   const [pendingByDate, setPendingByDate] = useState("");
   const [page,          setPage]          = useState(1);
+
+  const { data: listResp, isLoading, isError } = useMembersList({
+    page,
+    limit: PAGE_SIZE,
+    search,
+    status: statusFilter,
+    type: typeFilter,
+    training: trainFilter,
+    pending: pendingFilter,
+    pendingByDate,
+  });
+  const members = listResp?.data ?? [];
+  const summary = listResp?.summary;
+  const pagination = listResp?.pagination;
 
   const openCreate  = () => { setSelected(null); setModalOpen(true); };
   const openEdit    = (m: Member) => { setSelected(m); setModalOpen(true); };
@@ -122,61 +129,15 @@ export default function UsersPage() {
 
   // Reset to page 1 whenever filters/search change
   const handleSearch  = (val: string) => { setSearch(val); setPage(1); };
-  const handleStatus  = (val: string) => { setStatusFilter(val); setPage(1); };
-  const handleType    = (val: string) => { setTypeFilter(val); setPage(1); };
-  const handleTrain   = (val: string) => { setTrainFilter(val); setPage(1); };
-  const handlePending = (val: string) => { setPendingFilter(val); setPage(1); };
+  const handleStatus  = (val: "ALL" | "ACTIVE" | "INACTIVE" | "EXPIRED") => { setStatusFilter(val); setPage(1); };
+  const handleType    = (val: "ALL" | "New" | "Old" | "Renewal") => { setTypeFilter(val); setPage(1); };
+  const handleTrain   = (val: "ALL" | "PT" | "GT" | "OTHER") => { setTrainFilter(val); setPage(1); };
+  const handlePending = (val: "ALL" | "HAS_PENDING" | "FULLY_PAID") => { setPendingFilter(val); setPage(1); };
   const handlePendingByDate = (val: string) => { setPendingByDate(val); setPage(1); };
   const resetPendingByDate = () => { setPendingByDate(""); setPage(1); };
 
-  const filtered = useMemo(() => {
-    if (!members) return [];
-    return members
-      .filter(m => {
-        const q = search.toLowerCase();
-        const contactValue = (m.contactNumber || m.phone || "").toLowerCase();
-        const matchSearch = !q ||
-          m.name.toLowerCase().includes(q) ||
-          contactValue.includes(q) ||
-          (m.email ?? "").toLowerCase().includes(q) ||
-          (m.idNo ?? "").toLowerCase().includes(q) ||
-          (m.trainer ?? "").toLowerCase().includes(q) ||
-          (m.salesPerson ?? "").toLowerCase().includes(q);
-        const matchStatus = statusFilter === "ALL" || m.memberStatus === statusFilter;
-        const matchType   = typeFilter   === "ALL" || m.memberType   === typeFilter;
-        const matchTrain  = trainFilter  === "ALL" || m.trainingType === trainFilter;
-        // Check pending using memberships array first, then fallback
-        const membershipInfo = getMembershipInfo(m);
-        const hasPending = membershipInfo.pendingAmount > 0;
-        const dueDate = getPendingDueDate(m);
-
-        const matchPending = pendingFilter === "ALL" ||
-          (pendingFilter === "HAS_PENDING" && hasPending) ||
-          (pendingFilter === "FULLY_PAID" && !hasPending);
-        const matchPendingByDate =
-          !pendingByDate ||
-          (
-            hasPending &&
-            !!dueDate &&
-            new Date(dueDate).getTime() <= new Date(pendingByDate).getTime()
-          );
-        return matchSearch && matchStatus && matchType && matchTrain && matchPending && matchPendingByDate;
-      })
-      .sort((a, b) => {
-        // Sort by createdAt descending (newest first)
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
-        return dateB - dateA;
-      });
-  }, [members, search, statusFilter, typeFilter, trainFilter, pendingFilter, pendingByDate]);
-
-  // Pagination slice
-  const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated   = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  // Calculate totals using membership info
-  const totalPending  = filtered.reduce((s, m) => s + getMembershipInfo(m).pendingAmount, 0);
-  const totalReceived = filtered.reduce((s, m) => s + getMembershipInfo(m).amountPaid, 0);
+  const totalPages = pagination?.totalPages ?? 1;
+  const totalItems = pagination?.total ?? 0;
 
   // Build page number buttons — show at most 5 around current page
   const pageNumbers = () => {
@@ -227,27 +188,27 @@ export default function UsersPage() {
       <motion.div className={styles.statStrip} custom={0} variants={fadeUp} initial="hidden" animate="visible">
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />Total Members</span>
-          <span className={styles.statVal}>{members?.length ?? "—"}</span>
+          <span className={styles.statVal}>{summary?.totalMembers ?? "—"}</span>
         </div>
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />Active</span>
-          <span className={styles.statVal}>{members?.filter(m => m.memberStatus === "ACTIVE").length ?? "—"}</span>
+          <span className={styles.statVal}>{summary?.activeMembers ?? "—"}</span>
         </div>
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />Total Received</span>
-          <span className={`${styles.statVal} ${styles.statValGreen}`}>{formatCurrency(totalReceived)}</span>
+          <span className={`${styles.statVal} ${styles.statValGreen}`}>{formatCurrency(summary?.totalReceived)}</span>
         </div>
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />Total Pending</span>
-          <span className={`${styles.statVal} ${styles.statValRed}`}>{formatCurrency(totalPending)}</span>
+          <span className={`${styles.statVal} ${styles.statValRed}`}>{formatCurrency(summary?.totalPending)}</span>
         </div>
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />PT Members</span>
-          <span className={styles.statVal}>{members?.filter(m => m.trainingType === "PT").length ?? "—"}</span>
+          <span className={styles.statVal}>{summary?.ptMembers ?? "—"}</span>
         </div>
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />GT Members</span>
-          <span className={styles.statVal}>{members?.filter(m => m.trainingType === "GT").length ?? "—"}</span>
+          <span className={styles.statVal}>{summary?.gtMembers ?? "—"}</span>
         </div>
       </motion.div>
 
@@ -261,25 +222,25 @@ export default function UsersPage() {
               <input className={styles.searchInput} placeholder="Search name, ID, phone, trainer…"
                 value={search} onChange={e => handleSearch(e.target.value)} />
             </div>
-            <select className={styles.filterSelect} value={statusFilter} onChange={e => handleStatus(e.target.value)}>
+            <select className={styles.filterSelect} value={statusFilter} onChange={e => handleStatus(e.target.value as "ALL" | "ACTIVE" | "INACTIVE" | "EXPIRED")}>
               <option value="ALL">All Status</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
               <option value="EXPIRED">Expired</option>
             </select>
-            <select className={styles.filterSelect} value={typeFilter} onChange={e => handleType(e.target.value)}>
+            <select className={styles.filterSelect} value={typeFilter} onChange={e => handleType(e.target.value as "ALL" | "New" | "Old" | "Renewal")}>
               <option value="ALL">All Types</option>
               <option value="New">New</option>
               <option value="Old">Old</option>
               <option value="Renewal">Renewal</option>
             </select>
-            <select className={styles.filterSelect} value={trainFilter} onChange={e => handleTrain(e.target.value)}>
+            <select className={styles.filterSelect} value={trainFilter} onChange={e => handleTrain(e.target.value as "ALL" | "PT" | "GT" | "OTHER")}>
               <option value="ALL">All Training</option>
               <option value="PT">PT</option>
               <option value="GT">GT</option>
               <option value="OTHER">Other</option>
             </select>
-            <select className={styles.filterSelect} value={pendingFilter} onChange={e => handlePending(e.target.value)}>
+            <select className={styles.filterSelect} value={pendingFilter} onChange={e => handlePending(e.target.value as "ALL" | "HAS_PENDING" | "FULLY_PAID")}>
               <option value="ALL">All Payments</option>
               <option value="HAS_PENDING">⚠ Has Pending</option>
               <option value="FULLY_PAID">✓ Fully Paid</option>
@@ -321,12 +282,12 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginated.length === 0 && (
+                {members.length === 0 && (
                   <tr><td colSpan={13} style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-2)", fontSize: 13 }}>
-                    {members?.length === 0 ? "No members yet. Add one to get started." : "No members match your filters."}
+                    {totalItems === 0 ? "No members match your filters." : "No members found on this page."}
                   </td></tr>
                 )}
-                {paginated.map((m) => (
+                {members.map((m) => (
                   <tr key={m._id} className={styles.clickableRow} onClick={() => openHistory(m)}>
                     <td className={styles.cellMono} style={{ color: "var(--text-3)", fontSize: 11 }}>{m.idNo ?? "—"}</td>
                     <td>
@@ -400,9 +361,7 @@ export default function UsersPage() {
         {/* Pagination */}
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
-            {filtered.length !== members?.length
-              ? `Showing ${Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–${Math.min(page * PAGE_SIZE, filtered.length)} of ${filtered.length} filtered (${members?.length ?? 0} total)`
-              : `Showing ${Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–${Math.min(page * PAGE_SIZE, filtered.length)} of ${members?.length ?? 0} members`}
+            {`Showing ${totalItems === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, totalItems)} of ${totalItems} members`}
           </span>
           <div className={styles.paginationBtns}>
             <button

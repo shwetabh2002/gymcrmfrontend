@@ -174,6 +174,37 @@ export interface MemberRecordedPayment {
   updatedAt?: string;
 }
 
+export interface MembersListQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: "ALL" | "ACTIVE" | "INACTIVE" | "EXPIRED";
+  type?: "ALL" | "New" | "Old" | "Renewal";
+  training?: "ALL" | "PT" | "GT" | "OTHER";
+  pending?: "ALL" | "HAS_PENDING" | "FULLY_PAID";
+  pendingByDate?: string;
+}
+
+export interface MembersListResponse {
+  data: Member[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+  summary: {
+    totalMembers: number;
+    activeMembers: number;
+    totalReceived: number;
+    totalPending: number;
+    ptMembers: number;
+    gtMembers: number;
+  };
+}
+
 export const normalizeMember = (m: Partial<Member>): Member => {
   const contactNumber = m.contactNumber || m.phone || "";
   const amount = m.amount ?? m.membershipAmount ?? 0;
@@ -218,6 +249,20 @@ export interface ImportResult {
 export const membersApi = {
   getMembers: () =>
     requestService.get<Member[]>(API_CONFIG.MEMBERS.BASE),
+
+  getMembersList: (query: MembersListQuery) => {
+    const params = new URLSearchParams();
+    if (query.page) params.set("page", String(query.page));
+    if (query.limit) params.set("limit", String(query.limit));
+    if (query.search) params.set("search", query.search);
+    if (query.status) params.set("status", query.status);
+    if (query.type) params.set("type", query.type);
+    if (query.training) params.set("training", query.training);
+    if (query.pending) params.set("pending", query.pending);
+    if (query.pendingByDate) params.set("pendingByDate", query.pendingByDate);
+    const qs = params.toString();
+    return requestService.get<MembersListResponse>(`${API_CONFIG.MEMBERS.BASE}/list${qs ? `?${qs}` : ""}`);
+  },
 
   getMemberById: (id: string) =>
     requestService.get<Member>(API_CONFIG.MEMBERS.BY_ID(id)),

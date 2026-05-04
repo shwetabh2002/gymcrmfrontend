@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { membersApi, normalizeMember, CreateMemberPayload, UpdateMemberPayload, RegisterMemberPayload } from "./members.api";
+import {
+  membersApi,
+  normalizeMember,
+  CreateMemberPayload,
+  UpdateMemberPayload,
+  RegisterMemberPayload,
+  MembersListQuery,
+} from "./members.api";
 
 // 🔹 Fetch All
 export const useMembers = () => {
@@ -7,6 +14,17 @@ export const useMembers = () => {
     queryKey: ["members"],
     queryFn: membersApi.getMembers,
     select: (data) => data.map(normalizeMember),
+  });
+};
+
+export const useMembersList = (query: MembersListQuery) => {
+  return useQuery({
+    queryKey: ["members", "list", query],
+    queryFn: () => membersApi.getMembersList(query),
+    select: (res) => ({
+      ...res,
+      data: res.data.map(normalizeMember),
+    }),
   });
 };
 

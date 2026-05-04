@@ -29,6 +29,12 @@ export interface PaymentRecord {
 
 export interface PaymentsResponse {
   data: PaymentRecord[];
+  summary?: {
+    totalPayments: number;
+    totalAmount: number;
+    totalReceived: number;
+    totalPending: number;
+  };
   pagination: {
     total: number;
     page: number;

@@ -53,6 +53,7 @@ export default function InvoicesPage() {
   });
 
   const payments   = response?.data ?? [];
+  const summary    = response?.summary;
   const pagination = response?.pagination;
 
   const totalPages  = pagination?.totalPages ?? 1;
@@ -60,16 +61,16 @@ export default function InvoicesPage() {
   const hasNext     = pagination?.hasNextPage ?? false;
   const hasPrev     = pagination?.hasPrevPage ?? false;
 
-  // Stats are across ALL payments — sum from current page only as fallback
-  const totalAmount   = payments.reduce((s, p) => s + (p.amount   || 0), 0);
-  const totalReceived = payments.reduce((s, p) => s + (p.received || 0), 0);
-  const totalPending  = payments.reduce((s, p) => s + (p.pending  || 0), 0);
+  // Stats are across ALL filtered payments (backend summary)
+  const totalAmount   = summary?.totalAmount   ?? payments.reduce((s, p) => s + (p.amount   || 0), 0);
+  const totalReceived = summary?.totalReceived ?? payments.reduce((s, p) => s + (p.received || 0), 0);
+  const totalPending  = summary?.totalPending  ?? payments.reduce((s, p) => s + (p.pending  || 0), 0);
 
   const STATS = [
-    { label: "Total Payments", val: String(totalCount),                   sub: "all time"    },
-    { label: "Total Amount",   val: `₹${totalAmount.toLocaleString()}`,   sub: "this page"   },
-    { label: "Total Received", val: `₹${totalReceived.toLocaleString()}`, sub: "this page"   },
-    { label: "Total Pending",  val: `₹${totalPending.toLocaleString()}`,  sub: "this page"   },
+    { label: "Total Payments", val: String(summary?.totalPayments ?? totalCount), sub: "all filtered" },
+    { label: "Total Amount",   val: `₹${totalAmount.toLocaleString()}`,            sub: "all filtered" },
+    { label: "Total Received", val: `₹${totalReceived.toLocaleString()}`,          sub: "all filtered" },
+    { label: "Total Pending",  val: `₹${totalPending.toLocaleString()}`,           sub: "all filtered" },
   ];
 
   // Build page number buttons — show at most 5 around current page
