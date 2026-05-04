@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Users.module.css";
 import { useMembersList } from "@/services/members/members.hook";
-import { Member } from "@/services/members/members.api";
+import { Member, membersApi, normalizeMember } from "@/services/members/members.api";
 import MemberModal from "./MemberModal";
 import DeleteMemberDialog from "./DeleteMemberDialog";
 import ImportMembersModal from "./ImportMembersModal";
@@ -135,6 +135,37 @@ export default function UsersPage() {
   const handlePending = (val: "ALL" | "HAS_PENDING" | "FULLY_PAID") => { setPendingFilter(val); setPage(1); };
   const handlePendingByDate = (val: string) => { setPendingByDate(val); setPage(1); };
   const resetPendingByDate = () => { setPendingByDate(""); setPage(1); };
+  const exportAllFilteredMembers = async (): Promise<Member[]> => {
+    const first = await membersApi.getMembersList({
+      page: 1,
+      limit: 100,
+      search,
+      status: statusFilter,
+      type: typeFilter,
+      training: trainFilter,
+      pending: pendingFilter,
+      pendingByDate,
+    });
+
+    const totalPagesForExport = first.pagination?.totalPages ?? 1;
+    const all = [...first.data];
+
+    for (let p = 2; p <= totalPagesForExport; p += 1) {
+      const next = await membersApi.getMembersList({
+        page: p,
+        limit: 100,
+        search,
+        status: statusFilter,
+        type: typeFilter,
+        training: trainFilter,
+        pending: pendingFilter,
+        pendingByDate,
+      });
+      all.push(...next.data);
+    }
+
+    return all.map(normalizeMember);
+  };
 
   const totalPages = pagination?.totalPages ?? 1;
   const totalItems = pagination?.total ?? 0;
@@ -174,7 +205,11 @@ export default function UsersPage() {
           <p className={styles.pageSubtitle}>Manage gym members and their subscriptions</p>
         </div>
         <div className={styles.headerActions}>
-          <ExportMembersButton members={members || []} buttonClassName={styles.btnSecondary} />
+          <ExportMembersButton
+            members={members || []}
+            resolveMembersForExport={exportAllFilteredMembers}
+            buttonClassName={styles.btnSecondary}
+          />
           <button className={styles.btnSecondary} onClick={() => setImportOpen(true)}>
             ⬆ Import Excel
           </button>

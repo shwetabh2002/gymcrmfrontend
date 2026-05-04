@@ -26,6 +26,13 @@ function getMember(payment: PaymentRecord) {
   return null;
 }
 
+function getDisplayTransactionId(payment: PaymentRecord) {
+  if (payment.transactionId && payment.transactionId.trim().length > 0) {
+    return payment.transactionId;
+  }
+  return `INV-${payment._id.slice(-6).toUpperCase()}`;
+}
+
 export default function InvoicesPage() {
   const [page, setPage]             = useState(1);
   const [search, setSearch]         = useState("");
@@ -157,7 +164,7 @@ export default function InvoicesPage() {
                   const member = getMember(payment);
                   return (
                     <tr key={payment._id}>
-                      <td className={styles.cellId}>{payment.transactionId ?? "—"}</td>
+                      <td className={styles.cellId}>{getDisplayTransactionId(payment)}</td>
                       <td>
                         <div className={styles.cellName}>{member?.name ?? "—"}</div>
                         <div className={styles.cellEmail}>{member?.phone ?? "—"}</div>

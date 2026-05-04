@@ -5,11 +5,16 @@ import { generateExcelFile } from "@/services/members/members.excel-handler";
 import { Member } from "@/services/members/members.api";
 
 interface Props {
-  members: Member[];
+  members?: Member[];
+  resolveMembersForExport?: () => Promise<Member[]>;
   buttonClassName?: string;
 }
 
-export default function ExportMembersButton({ members, buttonClassName = "" }: Props) {
+export default function ExportMembersButton({
+  members = [],
+  resolveMembersForExport,
+  buttonClassName = "",
+}: Props) {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,18 +26,22 @@ export default function ExportMembersButton({ members, buttonClassName = "" }: P
   }, [error]);
 
   const handleExport = async () => {
-    if (members.length === 0) {
-      setError("No members to export");
-      return;
-    }
-
     setIsExporting(true);
     setError("");
 
     try {
+      const exportRows = resolveMembersForExport
+        ? await resolveMembersForExport()
+        : members;
+
+      if (exportRows.length === 0) {
+        setError("No members to export");
+        return;
+      }
+
       const timestamp = new Date().toISOString().slice(0, 10);
       const filename = `gym_members_${timestamp}.xlsx`;
-      await generateExcelFile(members, filename);
+      await generateExcelFile(exportRows, filename);
     } catch (err: any) {
       setError(err.message || "Export failed");
     } finally {
@@ -45,8 +54,8 @@ export default function ExportMembersButton({ members, buttonClassName = "" }: P
       <button
         className={buttonClassName}
         onClick={handleExport}
-        disabled={isExporting || members.length === 0}
-        title={members.length === 0 ? "No members to export" : "Export members to Excel"}
+        disabled={isExporting}
+        title="Export members to Excel"
       >
         {isExporting ? "Exporting…" : "⬇ Export Excel"}
       </button>
