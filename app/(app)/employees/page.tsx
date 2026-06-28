@@ -12,6 +12,10 @@ import { Employee } from "@/services/employees/employees.api";
 import EmployeeModal from "./EmployeeModal";
 import DeleteEmployeeDialog from "./DeleteEmployeeDialog";
 import UnlockModal from "./UnlockModal";
+import ExportExcelBar from "../components/export/ExportExcelBar";
+import { useExportPeriod } from "@/lib/export/use-export-period";
+import { isDateInRange, ExportPeriodPreset } from "@/lib/export/date-period";
+import { employeesToExportRows } from "@/lib/export/export-mappers";
 
 const PAGE_SIZE = 10;
 
@@ -52,6 +56,15 @@ export default function EmployeesPage() {
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [page, setPage] = useState(1);
+  const {
+    period: exportPeriod,
+    setPeriod: setExportPeriod,
+    customFrom,
+    setCustomFrom,
+    customTo,
+    setCustomTo,
+    range: exportRange,
+  } = useExportPeriod("all");
 
   const openCreate = () => {
     setSelected(null);
@@ -101,14 +114,18 @@ export default function EmployeesPage() {
           (e.employeeId && e.employeeId.toLowerCase().includes(q));
         const matchType = typeFilter === "ALL" || e.employeeType === typeFilter;
         const matchStatus = statusFilter === "ALL" || e.status === statusFilter;
-        return matchSearch && matchType && matchStatus;
+        const matchDate = isDateInRange(
+          e.joiningDate || e.createdAt,
+          exportRange,
+        );
+        return matchSearch && matchType && matchStatus && matchDate;
       })
       .sort((a, b) => {
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
         return dateB - dateA;
       });
-  }, [employees, search, typeFilter, statusFilter]);
+  }, [employees, search, typeFilter, statusFilter, exportRange]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -151,6 +168,23 @@ export default function EmployeesPage() {
           <p className={styles.pageSubtitle}>Manage gym employees and staff</p>
         </div>
         <div className={styles.headerActions}>
+          <ExportExcelBar
+            moduleName="employees"
+            buttonClassName={styles.btnSecondary}
+            selectClassName={styles.filterSelect}
+            period={exportPeriod}
+            customFrom={customFrom}
+            customTo={customTo}
+            onPeriodChange={(v: ExportPeriodPreset) => {
+              setExportPeriod(v);
+              setPage(1);
+            }}
+            onCustomFromChange={(v) => { setCustomFrom(v); setPage(1); }}
+            onCustomToChange={(v) => { setCustomTo(v); setPage(1); }}
+            resolveRowsForExport={async () => employeesToExportRows(filtered)}
+            sheetName="Employees"
+            hidePeriodControls
+          />
           <button className={styles.btnSecondary} onClick={handleLock}>
             🔒 Lock Section
           </button>
@@ -239,6 +273,37 @@ export default function EmployeesPage() {
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
             </select>
+            <select
+              className={styles.filterSelect}
+              value={exportPeriod}
+              onChange={(e) => {
+                setExportPeriod(e.target.value as ExportPeriodPreset);
+                setPage(1);
+              }}
+            >
+              <option value="all">All time</option>
+              <option value="this_week">This week</option>
+              <option value="last_week">Last week</option>
+              <option value="this_month">This month</option>
+              <option value="last_month">Last month</option>
+              <option value="custom">Custom range</option>
+            </select>
+            {exportPeriod === "custom" && (
+              <>
+                <input
+                  className={styles.filterSelect}
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                />
+                <input
+                  className={styles.filterSelect}
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                />
+              </>
+            )}
           </div>
         </div>
 

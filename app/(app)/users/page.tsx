@@ -8,8 +8,15 @@ import { Member, membersApi, normalizeMember } from "@/services/members/members.
 import MemberModal from "./MemberModal";
 import DeleteMemberDialog from "./DeleteMemberDialog";
 import ImportMembersModal from "./ImportMembersModal";
-import ExportMembersButton from "./ExportMembersButton";
+import ExportExcelBar from "../components/export/ExportExcelBar";
 import AddPaymentModal from "./AddPaymentModal";
+import { useExportPeriod } from "@/lib/export/use-export-period";
+import { fetchAllPaginated } from "@/lib/export/excel";
+import {
+  membersToExportRows,
+  MEMBER_EXPORT_COLUMNS,
+} from "@/lib/export/export-mappers";
+import { ExportPeriodPreset } from "@/lib/export/date-period";
 import MemberHistoryModal from "./MemberHistoryModal";
 import RenewalModal from "./RenewalModal";
 
@@ -105,6 +112,15 @@ export default function UsersPage() {
   const [pendingFilter, setPendingFilter] = useState<"ALL" | "HAS_PENDING" | "FULLY_PAID">("ALL");
   const [pendingByDate, setPendingByDate] = useState("");
   const [page,          setPage]          = useState(1);
+  const {
+    period: exportPeriod,
+    setPeriod: setExportPeriod,
+    customFrom,
+    setCustomFrom,
+    customTo,
+    setCustomTo,
+    range: exportRange,
+  } = useExportPeriod("all");
 
   const { data: listResp, isLoading, isError } = useMembersList({
     page,
@@ -115,6 +131,8 @@ export default function UsersPage() {
     training: trainFilter,
     pending: pendingFilter,
     pendingByDate,
+    dateFrom: exportRange.dateFrom,
+    dateTo: exportRange.dateTo,
   });
   const members = listResp?.data ?? [];
   const summary = listResp?.summary;
@@ -135,36 +153,29 @@ export default function UsersPage() {
   const handlePending = (val: "ALL" | "HAS_PENDING" | "FULLY_PAID") => { setPendingFilter(val); setPage(1); };
   const handlePendingByDate = (val: string) => { setPendingByDate(val); setPage(1); };
   const resetPendingByDate = () => { setPendingByDate(""); setPage(1); };
-  const exportAllFilteredMembers = async (): Promise<Member[]> => {
-    const first = await membersApi.getMembersList({
-      page: 1,
-      limit: 100,
-      search,
-      status: statusFilter,
-      type: typeFilter,
-      training: trainFilter,
-      pending: pendingFilter,
-      pendingByDate,
-    });
+  const handleExportPeriod = (val: ExportPeriodPreset) => {
+    setExportPeriod(val);
+    setPage(1);
+  };
 
-    const totalPagesForExport = first.pagination?.totalPages ?? 1;
-    const all = [...first.data];
-
-    for (let p = 2; p <= totalPagesForExport; p += 1) {
-      const next = await membersApi.getMembersList({
-        page: p,
-        limit: 100,
-        search,
-        status: statusFilter,
-        type: typeFilter,
-        training: trainFilter,
-        pending: pendingFilter,
-        pendingByDate,
-      });
-      all.push(...next.data);
-    }
-
-    return all.map(normalizeMember);
+  const exportAllFilteredMembers = async (): Promise<Record<string, unknown>[]> => {
+    const all = await fetchAllPaginated(
+      (params) =>
+        membersApi.getMembersList({
+          search,
+          status: statusFilter,
+          type: typeFilter,
+          training: trainFilter,
+          pending: pendingFilter,
+          pendingByDate,
+          dateFrom: exportRange.dateFrom,
+          dateTo: exportRange.dateTo,
+          ...params,
+        }),
+      {},
+      100,
+    );
+    return membersToExportRows(all.map(normalizeMember));
   };
 
   const totalPages = pagination?.totalPages ?? 1;
@@ -205,10 +216,20 @@ export default function UsersPage() {
           <p className={styles.pageSubtitle}>Manage gym members and their subscriptions</p>
         </div>
         <div className={styles.headerActions}>
-          <ExportMembersButton
-            members={members || []}
-            resolveMembersForExport={exportAllFilteredMembers}
+          <ExportExcelBar
+            moduleName="members"
             buttonClassName={styles.btnSecondary}
+            selectClassName={styles.filterSelect}
+            period={exportPeriod}
+            customFrom={customFrom}
+            customTo={customTo}
+            onPeriodChange={handleExportPeriod}
+            onCustomFromChange={(v) => { setCustomFrom(v); setPage(1); }}
+            onCustomToChange={(v) => { setCustomTo(v); setPage(1); }}
+            resolveRowsForExport={exportAllFilteredMembers}
+            columns={MEMBER_EXPORT_COLUMNS}
+            sheetName="Members"
+            hidePeriodControls
           />
           <button className={styles.btnSecondary} onClick={() => setImportOpen(true)}>
             ⬆ Import Excel
@@ -290,6 +311,35 @@ export default function UsersPage() {
             <button className={styles.btnSecondary} onClick={resetPendingByDate}>
               Reset
             </button>
+            <select
+              className={styles.filterSelect}
+              value={exportPeriod}
+              onChange={(e) => handleExportPeriod(e.target.value as ExportPeriodPreset)}
+              title="Filter & export period"
+            >
+              <option value="all">All time</option>
+              <option value="this_week">This week</option>
+              <option value="last_week">Last week</option>
+              <option value="this_month">This month</option>
+              <option value="last_month">Last month</option>
+              <option value="custom">Custom range</option>
+            </select>
+            {exportPeriod === "custom" && (
+              <>
+                <input
+                  className={styles.filterSelect}
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                />
+                <input
+                  className={styles.filterSelect}
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                />
+              </>
+            )}
           </div>
         </div>
 

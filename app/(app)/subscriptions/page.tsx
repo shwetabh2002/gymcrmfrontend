@@ -7,6 +7,10 @@ import { MemberSubscription } from "@/services/subscriptions/subscriptions.api";
 import { CreateSubscriptionModal, DeleteSubDialog, getMember, getPlan } from "./SubscriptionModals";
 import PaymentModal from "./PaymentModal";
 import styles from "./subscriptions.module.css";
+import ExportExcelBar from "../components/export/ExportExcelBar";
+import { useExportPeriod } from "@/lib/export/use-export-period";
+import { isDateInRange, ExportPeriodPreset } from "@/lib/export/date-period";
+import { subscriptionsToExportRows } from "@/lib/export/export-mappers";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -75,6 +79,15 @@ export default function SubscriptionsPage() {
   const [search,        setSearch]        = useState("");
   const [statusFilter,  setStatusFilter]  = useState("ALL");
   const [payFilter,     setPayFilter]     = useState("ALL");
+  const {
+    period: exportPeriod,
+    setPeriod: setExportPeriod,
+    customFrom,
+    setCustomFrom,
+    customTo,
+    setCustomTo,
+    range: exportRange,
+  } = useExportPeriod("all");
 
   const total     = subs?.length ?? 0;
   const active    = subs?.filter(s => s.subscriptionStatus === "ACTIVE").length ?? 0;
@@ -93,9 +106,10 @@ export default function SubscriptionsPage() {
         plan?.name.toLowerCase().includes(q);
       const matchStatus = statusFilter === "ALL" || sub.subscriptionStatus === statusFilter;
       const matchPay    = payFilter    === "ALL" || sub.paymentStatus === payFilter;
-      return matchSearch && matchStatus && matchPay;
+      const matchDate   = isDateInRange(sub.startDate || sub.createdAt, exportRange);
+      return matchSearch && matchStatus && matchPay && matchDate;
     });
-  }, [subs, search, statusFilter, payFilter]);
+  }, [subs, search, statusFilter, payFilter, exportRange]);
 
   const handleCancel = (id: string) => {
     updateSub(
@@ -122,9 +136,25 @@ export default function SubscriptionsPage() {
           <h1 className={styles.headerTitle}>Subscriptions</h1>
           <p className={styles.headerSub}>Manage member subscriptions and payment status.</p>
         </div>
-        <button className={styles.assignBtn} onClick={() => setCreateOpen(true)}>
-          + Assign Subscription
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <ExportExcelBar
+            moduleName="subscriptions"
+            buttonClassName={styles.btnSecondary}
+            selectClassName={styles.filterSelect}
+            period={exportPeriod}
+            customFrom={customFrom}
+            customTo={customTo}
+            onPeriodChange={(v: ExportPeriodPreset) => setExportPeriod(v)}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+            resolveRowsForExport={async () => subscriptionsToExportRows(filtered)}
+            sheetName="Subscriptions"
+            hidePeriodControls
+          />
+          <button className={styles.assignBtn} onClick={() => setCreateOpen(true)}>
+            + Assign Subscription
+          </button>
+        </div>
       </motion.div>
 
       {/* Stats */}
@@ -164,6 +194,24 @@ export default function SubscriptionsPage() {
               <option value="PARTIALLY_PAID">Partial</option>
               <option value="UNPAID">Unpaid</option>
             </select>
+            <select
+              className={styles.filterSelect}
+              value={exportPeriod}
+              onChange={(e) => setExportPeriod(e.target.value as ExportPeriodPreset)}
+            >
+              <option value="all">All time</option>
+              <option value="this_week">This week</option>
+              <option value="last_week">Last week</option>
+              <option value="this_month">This month</option>
+              <option value="last_month">Last month</option>
+              <option value="custom">Custom range</option>
+            </select>
+            {exportPeriod === "custom" && (
+              <>
+                <input className={styles.filterSelect} type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+                <input className={styles.filterSelect} type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+              </>
+            )}
           </div>
         </div>
 

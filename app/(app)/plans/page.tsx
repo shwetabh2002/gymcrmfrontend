@@ -7,6 +7,10 @@ import { usePlans } from "@/services/plans/plans.hook";
 import { Plan } from "@/services/plans/plans.api";
 import PlanModal from "./PlanModal";
 import DeletePlanDialog from "./DeletePlanDialog";
+import ExportExcelBar from "../components/export/ExportExcelBar";
+import { useExportPeriod } from "@/lib/export/use-export-period";
+import { isDateInRange, ExportPeriodPreset } from "@/lib/export/date-period";
+import { plansToExportRows } from "@/lib/export/export-mappers";
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -32,6 +36,19 @@ export default function PlansPage() {
   const [modalOpen,  setModalOpen]  = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selected,   setSelected]   = useState<Plan | null>(null);
+  const {
+    period: exportPeriod,
+    setPeriod: setExportPeriod,
+    customFrom,
+    setCustomFrom,
+    customTo,
+    setCustomTo,
+    range: exportRange,
+  } = useExportPeriod("all");
+
+  const filteredPlans = (plans ?? []).filter((p) =>
+    isDateInRange(p.createdAt, exportRange),
+  );
 
   const openCreate = () => { setSelected(null); setModalOpen(true); };
   const openEdit   = (p: Plan) => { setSelected(p); setModalOpen(true); };
@@ -65,7 +82,20 @@ export default function PlansPage() {
           <p className={styles.pageDesc}>Manage plans, pricing and member subscriptions.</p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.btnSecondary}>⬇ Export</button>
+          <ExportExcelBar
+            moduleName="plans"
+            buttonClassName={styles.btnSecondary}
+            selectClassName={styles.filterSelect}
+            period={exportPeriod}
+            customFrom={customFrom}
+            customTo={customTo}
+            onPeriodChange={(v: ExportPeriodPreset) => setExportPeriod(v)}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+            resolveRowsForExport={async () => plansToExportRows(filteredPlans)}
+            sheetName="Plans"
+            hidePeriodControls={false}
+          />
           <button className={styles.btnPrimary} onClick={openCreate}>+ New Plan</button>
         </div>
       </motion.div>
@@ -77,19 +107,19 @@ export default function PlansPage() {
       >
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />Total Plans</span>
-          <span className={styles.statVal}>{plans?.length ?? "—"}</span>
+          <span className={styles.statVal}>{filteredPlans.length ?? "—"}</span>
         </div>
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />Active</span>
-          <span className={styles.statVal}>{plans?.filter((p) => p.status === "ACTIVE").length ?? "—"}</span>
+          <span className={styles.statVal}>{filteredPlans.filter((p) => p.status === "ACTIVE").length ?? "—"}</span>
         </div>
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />Inactive</span>
-          <span className={styles.statVal}>{plans?.filter((p) => p.status === "INACTIVE").length ?? "—"}</span>
+          <span className={styles.statVal}>{filteredPlans.filter((p) => p.status === "INACTIVE").length ?? "—"}</span>
         </div>
         <div className={styles.statCell}>
           <span className={styles.statLabel}><span className={styles.statLabelDot} />Archived</span>
-          <span className={styles.statVal}>{plans?.filter((p) => p.status === "ARCHIVED").length ?? "—"}</span>
+          <span className={styles.statVal}>{filteredPlans.filter((p) => p.status === "ARCHIVED").length ?? "—"}</span>
         </div>
       </motion.div>
 
@@ -101,7 +131,7 @@ export default function PlansPage() {
         {isLoading && <p style={{ padding: "1rem" }}>Loading plans…</p>}
         {isError   && <p style={{ padding: "1rem", color: "red" }}>Failed to load plans.</p>}
 
-        {!isLoading && !isError && plans?.map((plan) => (
+        {!isLoading && !isError && filteredPlans.map((plan) => (
           <div key={plan._id} className={styles.planCard}>
             <div
               className={styles.planAccent}

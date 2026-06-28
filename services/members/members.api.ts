@@ -183,6 +183,8 @@ export interface MembersListQuery {
   training?: "ALL" | "PT" | "GT" | "OTHER";
   pending?: "ALL" | "HAS_PENDING" | "FULLY_PAID";
   pendingByDate?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface MembersListResponse {
@@ -260,6 +262,8 @@ export const membersApi = {
     if (query.training) params.set("training", query.training);
     if (query.pending) params.set("pending", query.pending);
     if (query.pendingByDate) params.set("pendingByDate", query.pendingByDate);
+    if (query.dateFrom) params.set("dateFrom", query.dateFrom);
+    if (query.dateTo) params.set("dateTo", query.dateTo);
     const qs = params.toString();
     return requestService.get<MembersListResponse>(`${API_CONFIG.MEMBERS.BASE}/list${qs ? `?${qs}` : ""}`);
   },

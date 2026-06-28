@@ -9,8 +9,16 @@ import { PaymentRecord } from "@/services/invoices/invoices.api";
 import InvoiceGeneratorModal from "./InvoiceGeneratorModal";
 import { useInvoiceGenerator } from "@/services/invoices/invoices.generator.hook";
 import { FaEye } from "react-icons/fa";
-
 import { IoMdDocument } from "react-icons/io";
+import ExportExcelBar from "../components/export/ExportExcelBar";
+import { useExportPeriod } from "@/lib/export/use-export-period";
+import { fetchAllPaginated } from "@/lib/export/excel";
+import {
+  paymentRecordsToExportRows,
+  INVOICE_EXPORT_COLUMNS,
+} from "@/lib/export/export-mappers";
+import { invoicesApi } from "@/services/invoices/invoices.api";
+import { ExportPeriodPreset } from "@/lib/export/date-period";
 const PAGE_SIZE = 10;
 
 const fadeUp = {
@@ -39,6 +47,15 @@ export default function InvoicesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
   const [mounted, setMounted]       = useState(false);
+  const {
+    period: exportPeriod,
+    setPeriod: setExportPeriod,
+    customFrom,
+    setCustomFrom,
+    customTo,
+    setCustomTo,
+    range: exportRange,
+  } = useExportPeriod("all");
 
   const { isOpen, invoiceData, openFromPayment, close } = useInvoiceGenerator();
 
@@ -57,6 +74,8 @@ export default function InvoicesPage() {
     page,
     limit: PAGE_SIZE,
     search: debouncedSearch || undefined,
+    dateFrom: exportRange.dateFrom,
+    dateTo: exportRange.dateTo,
   });
 
   const payments   = response?.data ?? [];
@@ -94,6 +113,26 @@ export default function InvoicesPage() {
     return range;
   };
 
+  const handleExportPeriod = (val: ExportPeriodPreset) => {
+    setExportPeriod(val);
+    setPage(1);
+  };
+
+  const exportAllFilteredPayments = async (): Promise<Record<string, unknown>[]> => {
+    const all = await fetchAllPaginated(
+      (params) =>
+        invoicesApi.getAllPayments({
+          search: debouncedSearch || undefined,
+          dateFrom: exportRange.dateFrom,
+          dateTo: exportRange.dateTo,
+          ...params,
+        }),
+      {},
+      100,
+    );
+    return paymentRecordsToExportRows(all);
+  };
+
   return (
     <div className={styles.page}>
 
@@ -106,6 +145,20 @@ export default function InvoicesPage() {
           <h1 className={styles.pageTitle}>Payments</h1>
           <p className={styles.pageDesc}>Track all member payments and outstanding balances.</p>
         </div>
+        <ExportExcelBar
+          moduleName="invoices"
+          buttonClassName={styles.btnSecondary}
+          period={exportPeriod}
+          customFrom={customFrom}
+          customTo={customTo}
+          onPeriodChange={handleExportPeriod}
+          onCustomFromChange={(v) => { setCustomFrom(v); setPage(1); }}
+          onCustomToChange={(v) => { setCustomTo(v); setPage(1); }}
+          resolveRowsForExport={exportAllFilteredPayments}
+          columns={INVOICE_EXPORT_COLUMNS}
+          sheetName="Payments"
+          hidePeriodControls
+        />
       </motion.div>
 
       <motion.div className={styles.statStrip} custom={0} variants={fadeUp} initial="hidden" animate="visible">
@@ -131,6 +184,35 @@ export default function InvoicesPage() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            <select
+              className={styles.filterSelect}
+              value={exportPeriod}
+              onChange={(e) => handleExportPeriod(e.target.value as ExportPeriodPreset)}
+              title="Filter & export period"
+            >
+              <option value="all">All time</option>
+              <option value="this_week">This week</option>
+              <option value="last_week">Last week</option>
+              <option value="this_month">This month</option>
+              <option value="last_month">Last month</option>
+              <option value="custom">Custom range</option>
+            </select>
+            {exportPeriod === "custom" && (
+              <>
+                <input
+                  className={styles.filterSelect}
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                />
+                <input
+                  className={styles.filterSelect}
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                />
+              </>
+            )}
           </div>
         </div>
 

@@ -64,6 +64,8 @@ export interface GetPaymentsParams {
   page?: number;
   limit?: number;
   search?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export const invoicesApi = {
@@ -72,6 +74,8 @@ export const invoicesApi = {
     if (params?.page)   query.set("page",   String(params.page));
     if (params?.limit)  query.set("limit",  String(params.limit));
     if (params?.search) query.set("search", params.search);
+    if (params?.dateFrom) query.set("dateFrom", params.dateFrom);
+    if (params?.dateTo) query.set("dateTo", params.dateTo);
     const qs = query.toString();
     return requestService.get<PaymentsResponse>(
       `${API_CONFIG.MEMBERS.BASE}/payments${qs ? `?${qs}` : ""}`

@@ -7,6 +7,10 @@ import { usePayments } from "@/services/payments/payments.hooks";
 import { useRevenueAnalytics } from "@/services/analytics/analytics.hooks";
 import { Payment } from "@/services/payments/payments.api";
 import { RecordPaymentModal } from "./PaymentModals";
+import ExportExcelBar from "../components/export/ExportExcelBar";
+import { useExportPeriod } from "@/lib/export/use-export-period";
+import { isDateInRange, ExportPeriodPreset } from "@/lib/export/date-period";
+import { legacyPaymentsToExportRows } from "@/lib/export/export-mappers";
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -34,6 +38,15 @@ export default function PaymentsPage() {
   const [modalOpen,  setModalOpen]  = useState(false);
   const [search,     setSearch]     = useState("");
   const [modeFilter, setModeFilter] = useState("ALL");
+  const {
+    period: exportPeriod,
+    setPeriod: setExportPeriod,
+    customFrom,
+    setCustomFrom,
+    customTo,
+    setCustomTo,
+    range: exportRange,
+  } = useExportPeriod("all");
 
   const filtered = useMemo(() => {
     if (!payments) return [];
@@ -44,9 +57,10 @@ export default function PaymentsPage() {
         member?.name.toLowerCase().includes(q) ||
         (member?.phone ?? "").includes(q);
       const matchMode = modeFilter === "ALL" || p.paymentMode === modeFilter;
-      return matchSearch && matchMode;
+      const matchDate = isDateInRange(p.paymentDate, exportRange);
+      return matchSearch && matchMode && matchDate;
     });
-  }, [payments, search, modeFilter]);
+  }, [payments, search, modeFilter, exportRange]);
 
   const STATS = [
     { label: "Total Collected", val: revenue ? `₹${revenue.totalRevenue.toLocaleString("en-IN")}`         : "—", sub: "all time" },
@@ -71,6 +85,20 @@ export default function PaymentsPage() {
           <p className={styles.pageDesc}>Track all transactions and payment history.</p>
         </div>
         <div className={styles.headerActions}>
+          <ExportExcelBar
+            moduleName="payments"
+            buttonClassName={styles.btnSecondary}
+            selectClassName={styles.filterSelect}
+            period={exportPeriod}
+            customFrom={customFrom}
+            customTo={customTo}
+            onPeriodChange={(v: ExportPeriodPreset) => setExportPeriod(v)}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+            resolveRowsForExport={async () => legacyPaymentsToExportRows(filtered)}
+            sheetName="Payments"
+            hidePeriodControls
+          />
           <button className={styles.btnPrimary} onClick={() => setModalOpen(true)}>+ Record Payment</button>
         </div>
       </motion.div>
@@ -100,6 +128,24 @@ export default function PaymentsPage() {
                 <option key={m} value={m}>{m.replace("_", " ")}</option>
               ))}
             </select>
+            <select
+              className={styles.filterSelect}
+              value={exportPeriod}
+              onChange={(e) => setExportPeriod(e.target.value as ExportPeriodPreset)}
+            >
+              <option value="all">All time</option>
+              <option value="this_week">This week</option>
+              <option value="last_week">Last week</option>
+              <option value="this_month">This month</option>
+              <option value="last_month">Last month</option>
+              <option value="custom">Custom range</option>
+            </select>
+            {exportPeriod === "custom" && (
+              <>
+                <input className={styles.filterSelect} type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+                <input className={styles.filterSelect} type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+              </>
+            )}
           </div>
         </div>
 

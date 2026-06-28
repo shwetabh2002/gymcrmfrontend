@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import styles from "../employees/Employees.module.css";
 import {
@@ -8,6 +8,10 @@ import {
   useAttendanceToday,
 } from "@/services/attendance/attendance.hook";
 import type { AttendanceRecord } from "@/services/attendance/attendance.api";
+import ExportExcelBar from "../components/export/ExportExcelBar";
+import { useExportPeriod } from "@/lib/export/use-export-period";
+import { attendanceToExportRows } from "@/lib/export/export-mappers";
+import { ExportPeriodPreset } from "@/lib/export/date-period";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -44,8 +48,45 @@ function empName(row: AttendanceRecord) {
 export default function AttendancePage() {
   const [month, setMonth] = useState(currentMonthValueIst);
   const [liveToday, setLiveToday] = useState(true);
+  const {
+    period: exportPeriod,
+    setPeriod: setExportPeriod,
+    customFrom,
+    setCustomFrom,
+    customTo,
+    setCustomTo,
+    range: exportRange,
+  } = useExportPeriod("this_month");
 
-  const { data: rows, isLoading, isError, refetch } = useAttendanceList({ month });
+  const listParams = useMemo(() => {
+    if (exportPeriod === "all") {
+      return { month };
+    }
+    if (exportRange.dateFrom && exportRange.dateTo) {
+      if (
+        exportPeriod === "this_month" ||
+        exportPeriod === "last_month"
+      ) {
+        return { month: exportRange.dateFrom.slice(0, 7) };
+      }
+      return {
+        startDate: exportRange.dateFrom,
+        endDate: exportRange.dateTo,
+      };
+    }
+    return { month };
+  }, [exportPeriod, exportRange, month]);
+
+  useEffect(() => {
+    if (
+      (exportPeriod === "this_month" || exportPeriod === "last_month") &&
+      exportRange.dateFrom
+    ) {
+      setMonth(exportRange.dateFrom.slice(0, 7));
+    }
+  }, [exportPeriod, exportRange.dateFrom]);
+
+  const { data: rows, isLoading, isError, refetch } = useAttendanceList(listParams);
   const {
     data: todayRows,
     isLoading: todayLoading,
@@ -56,6 +97,10 @@ export default function AttendancePage() {
     const list = rows ?? [];
     return [...list].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
   }, [rows]);
+
+  const exportAttendanceRows = async (): Promise<Record<string, unknown>[]> => {
+    return attendanceToExportRows(sorted);
+  };
 
   return (
     <div className={styles.page}>
@@ -70,6 +115,20 @@ export default function AttendancePage() {
             Attendance
           </h1>
         </div>
+        <ExportExcelBar
+          moduleName="attendance"
+          buttonClassName={styles.btnSecondary}
+          selectClassName={styles.filterSelect}
+          period={exportPeriod}
+          customFrom={customFrom}
+          customTo={customTo}
+          onPeriodChange={(v: ExportPeriodPreset) => setExportPeriod(v)}
+          onCustomFromChange={setCustomFrom}
+          onCustomToChange={setCustomTo}
+          resolveRowsForExport={exportAttendanceRows}
+          sheetName="Attendance"
+          hidePeriodControls
+        />
       </motion.div>
 
       <motion.div
@@ -148,16 +207,51 @@ export default function AttendancePage() {
             Records (by month)
           </h2>
           <div className={styles.toolbar}>
-            <label style={{ fontSize: 12, color: "#888", display: "flex", gap: 8, alignItems: "center" }}>
-              Month
-              <input
-                type="month"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className={styles.searchInput}
-                style={{ width: "auto" }}
-              />
-            </label>
+            <select
+              className={styles.filterSelect}
+              value={exportPeriod}
+              onChange={(e) =>
+                setExportPeriod(e.target.value as ExportPeriodPreset)
+              }
+              title="Filter & export period"
+            >
+              <option value="all">All (by month picker)</option>
+              <option value="this_week">This week</option>
+              <option value="last_week">Last week</option>
+              <option value="this_month">This month</option>
+              <option value="last_month">Last month</option>
+              <option value="custom">Custom range</option>
+            </select>
+            {exportPeriod === "custom" && (
+              <>
+                <input
+                  className={styles.filterSelect}
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                />
+                <input
+                  className={styles.filterSelect}
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                />
+              </>
+            )}
+            {(exportPeriod === "all" ||
+              exportPeriod === "this_month" ||
+              exportPeriod === "last_month") && (
+              <label style={{ fontSize: 12, color: "#888", display: "flex", gap: 8, alignItems: "center" }}>
+                Month
+                <input
+                  type="month"
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className={styles.searchInput}
+                  style={{ width: "auto" }}
+                />
+              </label>
+            )}
             <button type="button" className={styles.btnSecondary} onClick={() => refetch()}>
               Refresh
             </button>
