@@ -1,8 +1,12 @@
 import apiClient from "@/services/apiClient";
 
 export const requestService = {
-  get: async <T>(url: string, params?: object): Promise<T> => {
-    const { data } = await apiClient.get<T>(url, { params });
+  get: async <T>(
+    url: string,
+    params?: object,
+    config?: { timeout?: number },
+  ): Promise<T> => {
+    const { data } = await apiClient.get<T>(url, { params, ...config });
     return data;
   },
 
