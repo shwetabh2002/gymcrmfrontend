@@ -470,7 +470,7 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* Already Expired Members */}
+      {/* Expired = latest subscription end date already passed */}
       <motion.div className={styles.section} custom={8} variants={fadeUp} initial="hidden" animate="visible"
         style={{ marginTop: "1.5rem" }}
       >
@@ -485,6 +485,9 @@ export default function DashboardPage() {
               ` · showing ${expiredData.showing}`}
           </span>
         </div>
+        <p style={{ margin: "0 0 0.75rem", padding: "0 0.25rem", fontSize: "0.8rem", color: "#777" }}>
+          Latest subscription khatam ho chuki hai — expiry date nikal gayi, abhi renew nahi hua.
+        </p>
         {isLoadingExpired
           ? <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>Loading…</p>
           : (expiredData?.members && expiredData.members.length > 0 ? (
@@ -518,7 +521,7 @@ export default function DashboardPage() {
               </table>
             </div>
           ) : (
-            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No expired memberships right now.</p>
+            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>Koi expired membership nahi.</p>
           ))
         }
       </motion.div>
