@@ -126,6 +126,24 @@ export interface ExpiringIn7DaysData {
   members: MemberExpiringIn7Days[];
 }
 
+export interface ExpiredMember {
+  memberName: string;
+  email: string;
+  phone: string;
+  planName: string;
+  expiryDate: string;
+  daysOverdue: number;
+  pendingAmount: number;
+  paymentStatus: string;
+  flow: string;
+}
+
+export interface ExpiredMembersData {
+  count: number;
+  members: ExpiredMember[];
+  showing?: number;
+}
+
 export interface PaymentUpdate {
   memberName: string;
   email: string;
@@ -181,6 +199,9 @@ export const analyticsApi = {
 
   getExpiringIn7Days: () =>
     requestService.get<ExpiringIn7DaysData>(API_CONFIG.ANALYTICS.EXPIRING_IN_7_DAYS),
+
+  getExpiredMembers: () =>
+    requestService.get<ExpiredMembersData>(API_CONFIG.ANALYTICS.EXPIRED_MEMBERS),
 
   getPaymentUpdates: () =>
     requestService.get<PaymentUpdatesData>(API_CONFIG.ANALYTICS.PAYMENT_UPDATES),

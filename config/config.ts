@@ -49,6 +49,7 @@ export const API_CONFIG = {
     SUBSCRIPTIONS:        "/analytics/subscriptions",
     PAYMENT_TRENDS:       "/analytics/payment-trends",
     EXPIRING_IN_7_DAYS:   "/analytics/expiring-in-7-days",
+    EXPIRED_MEMBERS:      "/analytics/expired-members",
     PAYMENT_UPDATES:      "/analytics/payment-updates",
     UPCOMING_BIRTHDAYS:   "/analytics/upcoming-birthdays",
     UPCOMING_ANNIVERSARIES: "/analytics/upcoming-anniversaries",

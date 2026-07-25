@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion, Variants, Easing } from "framer-motion";
 import styles from "./Dashboard.module.css";
-import { useDashboard, usePaymentTrends, useExpiringIn7Days, usePaymentUpdates } from "@/services/analytics/analytics.hooks";
+import { useDashboard, usePaymentTrends, useExpiringIn7Days, useExpiredMembers, usePaymentUpdates } from "@/services/analytics/analytics.hooks";
 import { DashboardFilters } from "@/services/analytics/analytics.api";
 import {
   useUpcomingBirthdays,
@@ -126,6 +126,7 @@ export default function DashboardPage() {
   const { data: dashboard, isLoading } = useDashboard(filters);
   const { data: trendsData } = usePaymentTrends();
   const { data: expiringData, isLoading: isLoadingExpiring } = useExpiringIn7Days();
+  const { data: expiredData, isLoading: isLoadingExpired } = useExpiredMembers();
   const { data: paymentUpdatesData, isLoading: isLoadingPaymentUpdates } = usePaymentUpdates();
   const { data: upcomingBirthdays, isLoading: isLoadingBirthdays } = useUpcomingBirthdays();
   const { data: upcomingAnniversaries, isLoading: isLoadingAnniversaries } = useUpcomingAnniversaries();
@@ -468,6 +469,59 @@ export default function DashboardPage() {
         </motion.div>
 
       </div>
+
+      {/* Already Expired Members */}
+      <motion.div className={styles.section} custom={8} variants={fadeUp} initial="hidden" animate="visible"
+        style={{ marginTop: "1.5rem" }}
+      >
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>
+            <span className={styles.sectionTitleBar} />Expired Members
+          </h2>
+          <span className={styles.sectionBadge} style={{ color: "#e63946", borderColor: "rgba(230,57,70,0.3)", background: "rgba(230,57,70,0.08)" }}>
+            {expiredData?.count ?? 0} members
+            {expiredData?.showing != null &&
+              expiredData.count > expiredData.showing &&
+              ` · showing ${expiredData.showing}`}
+          </span>
+        </div>
+        {isLoadingExpired
+          ? <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>Loading…</p>
+          : (expiredData?.members && expiredData.members.length > 0 ? (
+            <div style={{ overflowX: "auto", maxHeight: 420, overflowY: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #1e1e1e" }}>
+                    {["Member","Contact","Plan","Expired On","Overdue","Pending"].map(h => (
+                      <th key={h} style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#555", fontWeight: 500, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.04em", position: "sticky", top: 0, background: "#fff" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {expiredData.members.map((m, i) => (
+                    <tr key={i} style={{ borderBottom: "1px solid #161616" }}>
+                      <td style={{ padding: "0.65rem 1rem", color: "#1a1a1a", fontWeight: 500 }}>{m.memberName}</td>
+                      <td style={{ padding: "0.65rem 1rem", color: "#666" }}>{m.phone}</td>
+                      <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{m.planName}</td>
+                      <td style={{ padding: "0.65rem 1rem", color: "#aaa" }}>{new Date(m.expiryDate).toLocaleDateString()}</td>
+                      <td style={{ padding: "0.65rem 1rem" }}>
+                        <span style={{ color: "#e63946", fontWeight: 600 }}>
+                          {m.daysOverdue}d overdue
+                        </span>
+                      </td>
+                      <td style={{ padding: "0.65rem 1rem", color: m.pendingAmount > 0 ? "#f0a44b" : "#3ec95a" }}>
+                        {m.pendingAmount > 0 ? `₹${m.pendingAmount}` : "Paid"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p style={{ color: "#555", padding: "1rem", fontSize: "0.85rem" }}>No expired memberships right now.</p>
+          ))
+        }
+      </motion.div>
 
       {/* Expiring soon (old section from dashboard overview - keeping it for now) */}
       {(nearExpiry.length > 0 || isLoading) && (

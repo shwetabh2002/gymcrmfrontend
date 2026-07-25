@@ -39,6 +39,13 @@ export const useExpiringIn7Days = () =>
     refetchInterval: 300_000, // auto-refresh every 5 minutes
   });
 
+export const useExpiredMembers = () =>
+  useQuery({
+    queryKey: ["analytics", "expired-members"],
+    queryFn: analyticsApi.getExpiredMembers,
+    refetchInterval: 300_000,
+  });
+
 export const usePaymentUpdates = () =>
   useQuery({
     queryKey: ["analytics", "payment-updates"],
