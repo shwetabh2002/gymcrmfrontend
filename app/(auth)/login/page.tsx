@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/context/AuthContext";
 import { adminLogin } from "@/services/admin/admin.api";
 import { motion, AnimatePresence, Variants, Easing } from "framer-motion";
+import { getDefaultRoute } from "@/lib/rbac";
 import styles from "./LoginPage.module.css";
 
 /* ─── Framer Motion variants ──────────────────────────────── */
@@ -65,7 +66,13 @@ export default function LoginPage() {
       if (!accessToken) throw new Error("Access token missing");
 
       login(data.tokens.accessToken, data.tokens.refreshToken, data.user);
-      router.replace("/dashboard");
+      router.replace(
+        getDefaultRoute(
+          data.user.role,
+          data.user.permissions,
+          data.user.companyId,
+        ),
+      );
     } catch (err: any) {
       setError(
         err.response?.data?.message ||

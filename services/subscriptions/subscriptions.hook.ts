@@ -42,8 +42,9 @@ export const useCreateMemberSubscription = () => {
     onSuccess: (_, { memberId }) => {
       queryClient.invalidateQueries({ queryKey: ["member-subscriptions"] });
       queryClient.invalidateQueries({ queryKey: ["member-subscriptions", "member", memberId] });
-      // Invalidate members so currentSubscriptionId refreshes
       queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
   });
 };

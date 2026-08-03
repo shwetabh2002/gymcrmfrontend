@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useDashboard } from "@/services/analytics/analytics.hooks";
+import { canEditGymSettings } from "@/lib/rbac";
 import styles from "./Profile.module.css";
 
 const fadeUp = {
@@ -25,6 +27,7 @@ export default function ProfilePage() {
   const displayName  = user?.name  ?? "Admin User";
   const displayEmail = user?.email ?? "—";
   const displayRole  = user?.role  ?? "ADMIN";
+  const canEditSettings = canEditGymSettings(user?.role, user?.permissions);
 
   const [currentPwd, setCurrentPwd]   = useState("");
   const [newPwd,     setNewPwd]       = useState("");
@@ -37,7 +40,6 @@ export default function ProfilePage() {
     if (!currentPwd) { setPwdError("Current password is required."); return; }
     if (newPwd.length < 8) { setPwdError("New password must be at least 8 characters."); return; }
     if (newPwd !== confirmPwd) { setPwdError("Passwords do not match."); return; }
-    // TODO: wire up to API when password change endpoint is available
     setPwdSuccess("Password updated successfully.");
     setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
   };
@@ -67,7 +69,6 @@ export default function ProfilePage() {
 
       <div className={styles.profileGrid}>
 
-        {/* Identity card */}
         <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible">
           <div className={styles.identityCard}>
             <div className={styles.identityAccent} />
@@ -84,13 +85,12 @@ export default function ProfilePage() {
                   <span className={styles.infoRowVal}>{displayEmail}</span>
                 </div>
                 <div className={styles.infoRow}>
-                  <span className={styles.infoRowLabel}>Role</span>
-                  <span className={styles.infoRowVal}>{displayRole}</span>
+                  <span className={styles.infoRowLabel}>Gym</span>
+                  <span className={styles.infoRowVal}>{user?.companyName || "—"}</span>
                 </div>
               </div>
               <span className={`${styles.badge} ${styles.badgeActive}`}>Account Active</span>
 
-              {/* Gym stats */}
               <div className={styles.identityDivider} />
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", width: "100%" }}>
                 {gymStats.map(s => (
@@ -104,10 +104,8 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        {/* Right column */}
         <div className={styles.rightCol}>
 
-          {/* Account Info (read-only from token) */}
           <motion.div className={styles.card} custom={1} variants={fadeUp} initial="hidden" animate="visible">
             <div className={styles.cardHeader}>
               <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Account Information</h2>
@@ -126,12 +124,15 @@ export default function ProfilePage() {
                 <input className={styles.formInput} defaultValue={displayRole} disabled />
               </div>
             </div>
-            <p style={{ fontSize: "0.78rem", color: "#444", marginTop: "0.75rem" }}>
-              Account details are managed by your system administrator.
-            </p>
+            {canEditSettings && (
+              <div className={styles.formActions}>
+                <Link href="/settings" className={styles.btnPrimary} style={{ textDecoration: "none" }}>
+                  Open gym settings →
+                </Link>
+              </div>
+            )}
           </motion.div>
 
-          {/* Security */}
           <motion.div className={styles.card} custom={2} variants={fadeUp} initial="hidden" animate="visible">
             <div className={styles.cardHeader}>
               <h2 className={styles.cardTitle}><span className={styles.cardTitleBar} />Change Password</h2>

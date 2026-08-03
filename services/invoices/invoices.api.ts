@@ -9,18 +9,36 @@ export interface InvoiceItem {
 export interface Invoice {
   _id: string;
   invoiceNumber: string;
+  /** Branch this invoice belongs to — populated when available */
+  locationId?:
+    | string
+    | {
+        _id: string;
+        name: string;
+        code?: string;
+        address?: string | null;
+        city?: string | null;
+        phone?: string | null;
+        invoiceLayout?: string | null;
+        invoiceShowLogo?: boolean | null;
+        invoiceShowStamp?: boolean | null;
+        invoiceShowGstin?: boolean | null;
+        invoiceShowAddress?: boolean | null;
+        invoiceShowContact?: boolean | null;
+      };
   memberId: string | { _id: string; name: string; email: string; phone: string };
   subscriptionId: string | { _id: string; planPrice: number; paymentStatus: string };
   items: InvoiceItem[];
   subtotal: number;
   taxPercentage: number;
-  taxAmount: number;
+  taxAmount?: number;
   totalAmount: number;
   invoiceDate: string;
   dueDate?: string;
   paymentId?: string | { _id: string; amount: number; paymentMode: string };
   generatedBy?: string | { _id: string; name: string; email: string };
   notes?: string;
+  taxMode?: "included" | "excluded" | string;
   createdAt: string;
   updatedAt: string;
 }

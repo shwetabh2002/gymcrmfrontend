@@ -8,6 +8,13 @@ export interface AdminUser {
   email: string;
   name: string;
   role: string;
+  userType?: string;
+  permissions?: string[];
+  customPermissions?: string[] | null;
+  companyId?: string | null;
+  companyName?: string | null;
+  locationId?: string | null;
+  locationName?: string | null;
 }
 
 export interface AdminLoginResponse {

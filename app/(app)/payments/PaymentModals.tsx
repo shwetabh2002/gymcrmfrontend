@@ -3,11 +3,16 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
-import { useCreatePayment } from "@/services/payments/payments.hooks";
+import { useCreatePayment, useUploadPaymentProof } from "@/services/payments/payments.hooks";
 import { useMemberSubscriptions } from "@/services/subscriptions/subscriptions.hook";
 import { useMembers } from "@/services/members/members.hook";
 import { PaymentMode, CreatePaymentPayload } from "@/services/payments/payments.api";
 import { Member } from "@/services/members/members.api";
+import {
+  UPLOAD_ACCEPT,
+  resolveUploadLimits,
+  validateImageFile,
+} from "@/lib/upload";
 import styles from "./Payments.module.css";
 
 /* ─── Member Combobox ─────────────────────────────────────────── */
@@ -17,15 +22,16 @@ interface MemberComboboxProps {
   onChange: (id: string) => void;
 }
 
-function highlight(text: string, query: string) {
-  if (!query.trim()) return <>{text}</>;
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return <>{text}</>;
+function highlight(text: string | undefined | null, query: string) {
+  const safe = text ?? "";
+  if (!query.trim()) return <>{safe}</>;
+  const idx = safe.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return <>{safe}</>;
   return (
     <>
-      {text.slice(0, idx)}
-      <span className={styles.comboboxHighlight}>{text.slice(idx, idx + query.length)}</span>
-      {text.slice(idx + query.length)}
+      {safe.slice(0, idx)}
+      <span className={styles.comboboxHighlight}>{safe.slice(idx, idx + query.length)}</span>
+      {safe.slice(idx + query.length)}
     </>
   );
 }
@@ -187,7 +193,10 @@ function ModalFooter({ onClose, onConfirm, isPending, confirmLabel, pendingLabel
 export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
   const { data: members } = useMembers();
   const { data: subs }    = useMemberSubscriptions();
-  const { mutate: create, isPending } = useCreatePayment();
+  const { mutateAsync: create, isPending } = useCreatePayment();
+  const { mutateAsync: uploadProof, isPending: uploadingProof } =
+    useUploadPaymentProof();
+  const uploadLimits = resolveUploadLimits();
 
   const [form, setForm] = useState<Partial<CreatePaymentPayload>>({
     paymentMode: "CASH",
@@ -197,8 +206,11 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
     subscriptionId: "",
   });
   const [error, setError] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
 
   const activeMembers = members ?? [];
+  const busy = isPending || uploadingProof;
 
   const memberSubs = useMemo(() => {
     if (!subs || !form.memberId) return [];
@@ -209,10 +221,23 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
     });
   }, [subs, form.memberId]);
 
-  // Selected sub's pending amount for validation
   const selectedSub = memberSubs.find(s => s._id === form.subscriptionId);
 
-  const handleSubmit = () => {
+  const onProofPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const errMsg = validateImageFile(file, uploadLimits);
+    if (errMsg) {
+      setError(errMsg);
+      return;
+    }
+    setError("");
+    setProofFile(file);
+    setProofPreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async () => {
     if (!form.memberId)       { setError("Select a member."); return; }
     if (!form.subscriptionId) { setError("Select a subscription."); return; }
     if (!form.amount || form.amount <= 0) { setError("Enter a valid amount."); return; }
@@ -221,10 +246,15 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
     }
     if (!form.paymentDate) { setError("Payment date is required."); return; }
     setError("");
-    create(form as CreatePaymentPayload, {
-      onSuccess: onClose,
-      onError: (e: any) => setError(e?.response?.data?.message ?? "Failed to record payment."),
-    });
+    try {
+      const created = await create(form as CreatePaymentPayload);
+      if (proofFile && created?._id) {
+        await uploadProof({ id: created._id, file: proofFile });
+      }
+      onClose();
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "Failed to record payment.");
+    }
   };
 
   return (
@@ -232,7 +262,6 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
       {error && <ErrorBanner message={error} />}
 
       <div className={styles.formGrid}>
-        {/* Member */}
         <Field label={`Member * (${activeMembers.length} with active subscription)`}>
           <MemberCombobox
             members={activeMembers}
@@ -241,7 +270,6 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
           />
         </Field>
 
-        {/* Subscription */}
         <Field label="Subscription *">
           <select value={form.subscriptionId}
             onChange={e => { setForm(p => ({ ...p, subscriptionId: e.target.value })); setError(""); }}
@@ -265,7 +293,6 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
           </select>
         </Field>
 
-        {/* Amount + Mode */}
         <div className={styles.twoCol}>
           <Field label={selectedSub ? `Amount ₹ (max ₹${selectedSub.pendingAmount.toLocaleString()})` : "Amount (₹) *"}>
             <input type="number" min="1" max={selectedSub?.pendingAmount}
@@ -286,7 +313,6 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
           </Field>
         </div>
 
-        {/* Date + Transaction ID */}
         <div className={styles.twoCol}>
           <Field label="Payment Date *">
             <input type="date" value={form.paymentDate ?? ""}
@@ -303,7 +329,6 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
           </Field>
         </div>
 
-        {/* Notes */}
         <Field label="Notes">
           <input type="text" placeholder="Optional notes"
             value={form.notes ?? ""}
@@ -312,7 +337,31 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
           />
         </Field>
 
-        {/* Pending summary */}
+        <Field label={`Payment screenshot (optional) · max ${uploadLimits.maxFileMb}MB`}>
+          {proofPreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={proofPreview}
+              alt="Proof"
+              style={{
+                width: 64,
+                height: 64,
+                objectFit: "cover",
+                borderRadius: 6,
+                marginBottom: 8,
+                border: "1px solid var(--border)",
+                display: "block",
+              }}
+            />
+          ) : null}
+          <input
+            type="file"
+            accept={UPLOAD_ACCEPT}
+            onChange={onProofPick}
+            disabled={busy}
+          />
+        </Field>
+
         {selectedSub && (
           <div className={styles.paymentSummary}>
             <div className={styles.paymentSummaryDetail}>
@@ -325,7 +374,7 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
       </div>
 
       <ModalFooter onClose={onClose} onConfirm={handleSubmit}
-        isPending={isPending} confirmLabel="Record Payment" pendingLabel="Recording…" />
+        isPending={busy} confirmLabel="Record Payment" pendingLabel="Recording…" />
     </ModalShell>
   );
 }

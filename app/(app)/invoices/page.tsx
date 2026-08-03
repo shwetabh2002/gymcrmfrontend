@@ -9,6 +9,8 @@ import InvoiceTemplate from "./InvoiceTemplate";
 import InvoiceGeneratorModal, { InvoiceGeneratorData } from "@/app/(app)/invoices/InvoiceGeneratorModal";
 import { useInvoiceGenerator } from "@/services/invoices/invoices.generator.hook";
 import { createPortal } from "react-dom";
+import { invoiceBrandFromLocation, getInvoiceLocation } from "@/lib/invoice-location";
+import { RowActions } from "@/components/RowActions";
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -64,6 +66,7 @@ export default function InvoicesPage() {
 
   const handleGenerateInvoice = (inv: Invoice) => {
     const member = getMember(inv);
+    const brand = invoiceBrandFromLocation(inv);
     const data: InvoiceGeneratorData = {
       invoiceNumber: inv.invoiceNumber,
       invoiceDate:   inv.invoiceDate,
@@ -78,6 +81,8 @@ export default function InvoicesPage() {
       taxAmount:     inv.taxAmount ?? 0,
       totalAmount:   inv.totalAmount,
       notes:         inv.notes ?? undefined,
+      taxMode:       inv.taxMode,
+      ...brand,
     };
     openGenerator(data);
   };
@@ -135,25 +140,29 @@ export default function InvoicesPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Invoice #</th><th>Member</th><th>Items</th>
+                  <th>Invoice #</th><th>Member</th><th>Location</th><th>Items</th>
                   <th>Subtotal</th><th>Tax</th><th>Total</th>
                   <th>Date</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 && (
-                  <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "#444" }}>
+                  <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "#444" }}>
                     {invoices?.length === 0 ? "No invoices found. Create one to get started." : "No invoices match your search."}
                   </td></tr>
                 )}
                 {filtered.map((inv) => {
                   const member = getMember(inv);
+                  const loc = getInvoiceLocation(inv);
                   return (
                     <tr key={inv._id}>
                       <td className={styles.cellId}>{inv.invoiceNumber}</td>
                       <td>
                         <div className={styles.cellName}>{member?.name ?? "—"}</div>
                         <div className={styles.cellEmail}>{member?.phone ?? "—"}</div>
+                      </td>
+                      <td style={{ color: "#666", fontSize: "0.82rem" }}>
+                        {loc?.name ?? "—"}
                       </td>
                       <td style={{ color: "#666", fontSize: "0.82rem" }}>
                         {inv.items.map(it => it.description).join(", ")}
@@ -165,23 +174,23 @@ export default function InvoicesPage() {
                         {new Date(inv.invoiceDate).toLocaleDateString()}
                       </td>
                       <td>
-                        <div className={styles.rowActions}>
-                          <button
-                            className={styles.iconBtn}
-                            title="View"
-                            onClick={() => setSelectedInvoice(inv)}
-                          >👁</button>
-                          <button
-                            className={styles.iconBtn}
-                            title="Generate Invoice"
-                            onClick={() => handleGenerateInvoice(inv)}
-                          >🧾</button>
-                          <button
-                            className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                            title="Delete"
-                            onClick={() => deleteInvoice(inv._id)}
-                          >✕</button>
-                        </div>
+                        <RowActions
+                          actions={[
+                            {
+                              label: "View",
+                              onClick: () => setSelectedInvoice(inv),
+                            },
+                            {
+                              label: "PDF",
+                              onClick: () => handleGenerateInvoice(inv),
+                            },
+                            {
+                              label: "Delete",
+                              onClick: () => deleteInvoice(inv._id),
+                              tone: "danger",
+                            },
+                          ]}
+                        />
                       </td>
                     </tr>
                   );
@@ -216,10 +225,10 @@ export default function InvoicesPage() {
               />
               <motion.div
                 className={styles.invoiceViewModal}
-                initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 16, scale: 0.97 }}
-                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
               >
                 <div className={styles.invoiceViewHeader}>
                   <h2 className={styles.invoiceViewTitle}>Invoice {selectedInvoice.invoiceNumber}</h2>
@@ -239,6 +248,8 @@ export default function InvoicesPage() {
                     taxAmount={selectedInvoice.taxAmount || 0}
                     totalAmount={selectedInvoice.totalAmount}
                     notes={selectedInvoice.notes}
+                    {...invoiceBrandFromLocation(selectedInvoice)}
+                    taxMode={selectedInvoice.taxMode}
                     showActions={true}
                   />
                 </div>

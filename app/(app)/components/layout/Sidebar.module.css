@@ -37,6 +37,15 @@
   flex-shrink: 0;
 }
 
+.brandLogo {
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
 .brandIcon span {
   font-family: var(--sans);
   font-size: 10px;

@@ -1,0 +1,243 @@
+.page {
+  padding: 32px 36px;
+  min-height: 100vh;
+  background: #f5f4f1;
+  font-family: "DM Sans", system-ui, sans-serif;
+  color: #1a1a1a;
+}
+
+.header {
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #777;
+  font-family: "DM Mono", monospace;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 8px 0 0;
+  color: #666;
+  font-size: 13px;
+  max-width: 520px;
+  line-height: 1.45;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+}
+
+@media (max-width: 960px) {
+  .grid { grid-template-columns: 1fr; }
+  .page { padding: 20px 16px; }
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.panelHead h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.panelHead span {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: #888;
+}
+
+.list { list-style: none; margin: 0; padding: 0; }
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.rowMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.rowTitle {
+  font-weight: 560;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rowMeta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #888;
+  font-family: "DM Mono", monospace;
+}
+
+.layoutLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+  max-width: 320px;
+  font-size: 11px;
+  color: #666;
+  font-family: "DM Mono", monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.layoutSelect,
+.form select {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: "DM Sans", sans-serif;
+  color: #1a1a1a;
+  background: #fafaf8;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.pill, .pillMuted {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.pill {
+  background: rgba(39, 174, 96, 0.1);
+  color: #1d8a4e;
+  border: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+.pillMuted {
+  background: rgba(0, 0, 0, 0.04);
+  color: #777;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.actions button {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.danger { color: #c0392b !important; border-color: rgba(192, 57, 43, 0.25) !important; }
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 20px;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: #666;
+  font-family: "DM Mono", monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.form input[type="text"],
+.form input:not([type]) {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: "DM Sans", sans-serif;
+  color: #1a1a1a;
+  background: #fafaf8;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+  text-transform: none !important;
+  font-family: "DM Sans", sans-serif !important;
+  font-size: 13px !important;
+  letter-spacing: 0 !important;
+  color: #333 !important;
+}
+
+.primary {
+  border: 0;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 540;
+  cursor: pointer;
+}
+
+.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.error {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(192, 57, 43, 0.08);
+  color: #c0392b;
+  font-size: 13px;
+}
+
+.muted {
+  padding: 18px;
+  color: #888;
+  font-size: 13px;
+}

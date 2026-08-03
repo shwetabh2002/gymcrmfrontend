@@ -32,7 +32,18 @@ export const useCreatePayment = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       queryClient.invalidateQueries({ queryKey: ["member-subscriptions"] });
-      queryClient.invalidateQueries({ queryKey: ["invoices"] }); // auto-invoice generation
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    },
+  });
+};
+
+export const useUploadPaymentProof = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      paymentsApi.uploadProof(id, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
   });
 };
@@ -45,6 +56,9 @@ export const useUpdatePayment = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       queryClient.invalidateQueries({ queryKey: ["payments", id] });
+      queryClient.invalidateQueries({ queryKey: ["member-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
     },
   });
 };
@@ -53,6 +67,11 @@ export const useDeletePayment = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => paymentsApi.deletePayment(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payments"] }); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["member-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
   });
 };

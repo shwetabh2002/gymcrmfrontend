@@ -4,12 +4,24 @@ import { API_CONFIG } from "@/config/config";
 export interface DashboardCounts {
   totalMembers: number;
   activeSubscriptions: number;
+  expiredSubscriptions?: number;
   totalRevenue: number;
+  totalPaymentsCount?: number;
   monthlyRevenue: number;
+  monthlyPaymentsCount?: number;
+  lastMonthRevenue?: number;
+  lastMonthPaymentsCount?: number;
+  revenueMomPct?: number;
   totalPendingAmount: number;
   membersNearExpiry: number;
+  membersExpiringIn30Days?: number;
   membersWithPendingPayments: number;
   newMembersThisMonth: number;
+  renewalsOpen?: number;
+  renewalsContacted?: number;
+  renewalsPromised?: number;
+  renewalsRenewed?: number;
+  renewalsLost?: number;
 }
 
 export interface ActiveMember {
@@ -53,6 +65,7 @@ export interface RecentPayment {
   paymentMode: string;
   paymentDate: string;
   transactionId?: string;
+  receivedByName?: string | null;
 }
 
 export interface NewMember {
@@ -62,13 +75,34 @@ export interface NewMember {
   joinedDate: string;
 }
 
+export interface PaymentModeRow {
+  mode: string;
+  total: number;
+  count: number;
+}
+
+export interface ActivityFeedItem {
+  id: string;
+  actorName: string;
+  actorId: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  summary: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface DashboardData {
   counts: DashboardCounts;
+  paymentModeBreakdown?: PaymentModeRow[];
+  renewalsBreakdown?: Record<string, number>;
   activeMembers: ActiveMember[];
   membersNearExpiry: MemberNearExpiry[];
   membersWithPendingPayments: MemberWithPending[];
   recentPayments: RecentPayment[];
   newMembers: NewMember[];
+  activityFeed?: ActivityFeedItem[];
 }
 
 export interface MemberAnalytics {

@@ -27,6 +27,9 @@ export const useCreateMember = () => {
       membersApi.createMember(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["member-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 };
@@ -53,6 +56,19 @@ export const useDeleteMember = () => {
     mutationFn: (id: string) => membersApi.deleteMember(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+  });
+};
+
+// 🔹 Optional member photo (S3 / local)
+export const useUploadMemberPhoto = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      membersApi.uploadPhoto(id, file),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["members", id] });
     },
   });
 };

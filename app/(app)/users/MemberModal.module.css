@@ -215,6 +215,14 @@
 }
 .deleteMsg strong { color: #fff; }
 
+.hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #888;
+  line-height: 1.35;
+}
+
 @media (max-width: 640px) {
   .row, .row3 { grid-template-columns: 1fr; }
 }

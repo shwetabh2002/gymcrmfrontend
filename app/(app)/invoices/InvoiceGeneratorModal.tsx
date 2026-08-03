@@ -28,6 +28,14 @@ export interface InvoiceGeneratorData {
   gymAddress?: string;
   gymEmail?: string;
   gymPhone?: string;
+  locationName?: string;
+  taxMode?: "included" | "excluded" | string;
+  layout?: import("@/config/invoice").InvoiceLayout;
+  showLogo?: boolean;
+  showStamp?: boolean;
+  showGstin?: boolean;
+  showAddress?: boolean;
+  showContact?: boolean;
 }
 
 interface Props {
@@ -61,6 +69,7 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
         gymAddress: invoiceData.gymAddress,
         gymEmail: invoiceData.gymEmail,
         gymPhone: invoiceData.gymPhone,
+        locationName: invoiceData.locationName,
       });
     } finally {
       setIsGenerating(false);
@@ -143,6 +152,14 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                     gymAddress={invoiceData.gymAddress}
                     gymEmail={invoiceData.gymEmail}
                     gymPhone={invoiceData.gymPhone}
+                    locationName={invoiceData.locationName}
+                    taxMode={invoiceData.taxMode}
+                    layout={invoiceData.layout}
+                    showLogo={invoiceData.showLogo}
+                    showStamp={invoiceData.showStamp}
+                    showGstin={invoiceData.showGstin}
+                    showAddress={invoiceData.showAddress}
+                    showContact={invoiceData.showContact}
                     showActions={false}
                   />
                 </div>

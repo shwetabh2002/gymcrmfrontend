@@ -21,6 +21,7 @@ export interface InvoiceData {
   gymAddress?: string;
   gymEmail?: string;
   gymPhone?: string;
+  locationName?: string;
 }
 
 export const generateInvoicePDF = async (

@@ -7,6 +7,7 @@ import { usePlans } from "@/services/plans/plans.hook";
 import { Plan } from "@/services/plans/plans.api";
 import PlanModal from "./PlanModal";
 import DeletePlanDialog from "./DeletePlanDialog";
+import { RowActions } from "@/components/RowActions";
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 14 },
@@ -129,18 +130,16 @@ export default function PlansPage() {
                 <span className={`${styles.badge} ${badgeClass(plan.status, styles)}`}>
                   {plan.status}
                 </span>
-                <button
-                  className={styles.btnSecondary}
-                  onClick={() => openEdit(plan)}
-                >
-                  ✎ Edit
-                </button>
-                <button
-                  className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                  onClick={() => openDelete(plan)}
-                >
-                  ✕
-                </button>
+                <RowActions
+                  actions={[
+                    { label: "Edit", onClick: () => openEdit(plan) },
+                    {
+                      label: "Delete",
+                      onClick: () => openDelete(plan),
+                      tone: "danger",
+                    },
+                  ]}
+                />
               </div>
             </div>
           </div>
@@ -203,18 +202,16 @@ export default function PlansPage() {
                       {new Date(plan.createdAt).toLocaleDateString()}
                     </td>
                     <td>
-                      <div className={styles.rowActions}>
-                        <button
-                          className={styles.iconBtn}
-                          onClick={() => openEdit(plan)}
-                          title="Edit"
-                        >✎</button>
-                        <button
-                          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                          onClick={() => openDelete(plan)}
-                          title="Delete"
-                        >✕</button>
-                      </div>
+                      <RowActions
+                        actions={[
+                          { label: "Edit", onClick: () => openEdit(plan) },
+                          {
+                            label: "Delete",
+                            onClick: () => openDelete(plan),
+                            tone: "danger",
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}

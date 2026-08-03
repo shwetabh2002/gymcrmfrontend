@@ -144,7 +144,15 @@
   letter-spacing: -0.025em;
   color: var(--text);
   line-height: 1;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+}
+.statGst {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-2);
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+  line-height: 1.35;
 }
 .statFooter {
   display: flex;
@@ -257,3 +265,149 @@
 .feedAction  { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
 .feedDetail  { font-family: var(--mono); font-size: 10px; color: var(--text-2); letter-spacing: 0.02em; }
 .feedTime    { font-family: var(--mono); font-size: 9px; color: var(--text-3); letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0; margin-top: 3px; }
+
+/* ─── Wide stats (8 cards) ───────────────────────────────── */
+.statsWide {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 1200px) { .statsWide { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .statsWide { grid-template-columns: 1fr; } }
+
+.lowerGrid3 {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 1100px) { .lowerGrid3 { grid-template-columns: 1fr; } }
+
+.panelPad { padding: 16px 20px 18px; }
+.emptyHint {
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-family: var(--mono);
+}
+
+.modeList { display: flex; flex-direction: column; gap: 12px; }
+.modeRow { display: flex; flex-direction: column; gap: 6px; }
+.modeMeta { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.modeName {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  text-transform: capitalize;
+}
+.modeNums {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-2);
+}
+.modeTrack {
+  height: 6px;
+  background: var(--surface-3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.modeFill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+@media (max-width: 600px) { .pipeline { grid-template-columns: repeat(3, 1fr); } }
+.pipeCell {
+  text-align: center;
+  padding: 10px 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.pipeVal {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.pipeLabel {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-2);
+  margin-top: 4px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.actorName { color: var(--text); font-weight: 600; }
+.feedSummary { font-weight: 400; color: var(--text-2); }
+
+.inlineLink {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-2);
+  text-decoration: none;
+  border: 1px solid var(--border-2);
+  padding: 4px 10px;
+  border-radius: 5px;
+}
+.inlineLink:hover { color: var(--text); border-color: var(--text-3); }
+
+.headerActions { display: flex; align-items: center; gap: 0.75rem; }
+.sectionBadgeWarn {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: #b7791f;
+  letter-spacing: 0.08em;
+  background: rgba(240,164,75,0.08);
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid rgba(240,164,75,0.3);
+}
+
+.tablesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 1024px) { .tablesGrid { grid-template-columns: 1fr; } }
+
+.tableWrap { overflow-x: auto; }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.table th {
+  padding: 0.6rem 1rem;
+  text-align: left;
+  color: var(--text-2);
+  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+}
+.table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: top;
+}
+.tdPrimary { font-weight: 500; }
+.tdMuted {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+.danger { color: var(--red); font-weight: 600; }
+.warn { color: #b7791f; font-weight: 600; }
