@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import styles from "./InvoiceModal.module.css";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 export interface Invoice {
   id: string;
@@ -35,29 +36,44 @@ const EMPTY: Invoice = {
 };
 
 function generateId(existing: Invoice[]) {
-  const nums = existing.map((i) => parseInt(i.id.replace("#", ""))).filter(Boolean);
+  const nums = existing
+    .map((i) => parseInt(i.id.replace("#", "")))
+    .filter(Boolean);
   const next = nums.length ? Math.max(...nums) + 1 : 5000;
   return `#${next}`;
 }
 
-export default function InvoiceModal({ open, onClose, existing, onSave }: Props) {
+export default function InvoiceModal({
+  open,
+  onClose,
+  existing,
+  onSave,
+}: Props) {
   const isEdit = !!existing;
 
   const [form, setForm] = useState<Invoice>(EMPTY);
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (existing) {
       setForm(existing);
     } else {
       const today = new Date().toLocaleDateString("en-US", {
-        month: "short", day: "numeric", year: "numeric",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
       });
-      const due = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
-        month: "short", day: "numeric", year: "numeric",
+      const due = new Date(
+        Date.now() + 7 * 24 * 60 * 60 * 1000,
+      ).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
       });
       setForm({ ...EMPTY, issued: today, due });
     }
@@ -65,16 +81,28 @@ export default function InvoiceModal({ open, onClose, existing, onSave }: Props)
   }, [existing, open]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = () => {
-    if (!form.user)   { setError("Member name is required."); return; }
-    if (!form.email)  { setError("Email is required."); return; }
-    if (!form.amount) { setError("Amount is required."); return; }
-    if (!form.plan)   { setError("Plan is required."); return; }
+    if (!form.user) {
+      setError("Member name is required.");
+      return;
+    }
+    if (!form.email) {
+      setError("Email is required.");
+      return;
+    }
+    if (!form.amount) {
+      setError("Amount is required.");
+      return;
+    }
+    if (!form.plan) {
+      setError("Plan is required.");
+      return;
+    }
 
     onSave({ ...form });
     onClose();
@@ -96,19 +124,20 @@ export default function InvoiceModal({ open, onClose, existing, onSave }: Props)
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }}
+            transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
           >
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
                 {isEdit ? "Edit Invoice" : "New Invoice"}
               </h2>
-              <button className={styles.closeBtn} onClick={onClose}>✕</button>
+              <button className={styles.closeBtn} onClick={onClose}>
+                ✕
+              </button>
             </div>
 
             {error && <p className={styles.errorMsg}>{error}</p>}
 
             <div className={styles.fields}>
-
               <div className={styles.row}>
                 <div className={styles.field}>
                   <label className={styles.label}>Member Name *</label>
@@ -186,19 +215,22 @@ export default function InvoiceModal({ open, onClose, existing, onSave }: Props)
               <div className={styles.field}>
                 <label className={styles.label}>Status</label>
                 <div className={styles.statusRow}>
-                  {(["Paid", "Pending", "Failed", "Refunded"] as const).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={`${styles.statusChip} ${form.status === s ? styles[`chip${s}`] : ""}`}
-                      onClick={() => setForm((prev) => ({ ...prev, status: s }))}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  {(["Paid", "Pending", "Failed", "Refunded"] as const).map(
+                    (s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={`${styles.statusChip} ${form.status === s ? styles[`chip${s}`] : ""}`}
+                        onClick={() =>
+                          setForm((prev) => ({ ...prev, status: s }))
+                        }
+                      >
+                        {s}
+                      </button>
+                    ),
+                  )}
                 </div>
               </div>
-
             </div>
 
             <div className={styles.modalFooter}>

@@ -23,6 +23,7 @@ import {
 import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
 import { resolveInvoiceTax, formatAmountWithGstInline } from "@/lib/tax";
 import styles from "./Billing.module.css";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 export type BillingMode = "sell" | "collect";
 
@@ -370,7 +371,7 @@ export function BillingModal({
         className={styles.modal}
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] as any }}
+        transition={{ duration: 0.25, ease: EASE_OUT_EXPO }}
       >
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>Memberships & Payments</h2>
@@ -498,9 +499,7 @@ export function BillingModal({
                     max={selectedPlan?.price}
                     className={styles.input}
                     placeholder={
-                      selectedPlan
-                        ? `0 – ${selectedPlan.price}`
-                        : "0"
+                      selectedPlan ? `0 – ${selectedPlan.price}` : "0"
                     }
                     value={amount}
                     onChange={(e) =>
@@ -544,8 +543,7 @@ export function BillingModal({
                         : "Select subscription…"}
                   </option>
                   {memberSubs.map((s) => {
-                    const plan =
-                      typeof s.planId === "object" ? s.planId : null;
+                    const plan = typeof s.planId === "object" ? s.planId : null;
                     return (
                       <option key={s._id} value={s._id}>
                         {plan?.name ?? "—"} · pending ₹

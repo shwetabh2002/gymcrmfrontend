@@ -33,13 +33,14 @@ import {
   validateImageFile,
   resolveUploadLimits,
 } from "@/lib/upload";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.35, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] as any },
+    transition: { duration: 0.35, delay: i * 0.05, ease: EASE_OUT_EXPO },
   }),
 };
 
@@ -73,9 +74,11 @@ export default function EmployeesPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
-  const { data: employees, isLoading, isError } = useEmployees(
-    typeFilter === "ALL" ? undefined : { type: typeFilter },
-  );
+  const {
+    data: employees,
+    isLoading,
+    isError,
+  } = useEmployees(typeFilter === "ALL" ? undefined : { type: typeFilter });
   const createEmp = useCreateEmployee();
   const updateEmp = useUpdateEmployee();
   const deleteEmp = useDeleteEmployee();
@@ -94,7 +97,9 @@ export default function EmployeesPage() {
     );
   }, [employees, search]);
 
-  const activeCount = (employees ?? []).filter((e) => e.status === "ACTIVE").length;
+  const activeCount = (employees ?? []).filter(
+    (e) => e.status === "ACTIVE",
+  ).length;
   const byType = (t: EmployeeType) =>
     (employees ?? []).filter((e) => e.type === t).length;
 
@@ -241,7 +246,11 @@ export default function EmployeesPage() {
         id: emp._id,
         payload: { status: grant ? "ACTIVE" : "INACTIVE" },
       });
-      toast.success(grant ? `Login enabled for ${emp.name}` : `Login disabled for ${emp.name}`);
+      toast.success(
+        grant
+          ? `Login enabled for ${emp.name}`
+          : `Login disabled for ${emp.name}`,
+      );
       if (editing?._id === emp._id) {
         setForm((p) => ({ ...p, status: grant ? "ACTIVE" : "INACTIVE" }));
       }
@@ -319,7 +328,11 @@ export default function EmployeesPage() {
               {editing ? `Edit · ${editing.name}` : "Add employee"}
             </h2>
             {editing ? (
-              <button type="button" className={styles.chipBtn} onClick={resetForm}>
+              <button
+                type="button"
+                className={styles.chipBtn}
+                onClick={resetForm}
+              >
                 Cancel edit
               </button>
             ) : null}
@@ -388,7 +401,9 @@ export default function EmployeesPage() {
                   onChange={(e) =>
                     setForm({ ...form, password: e.target.value })
                   }
-                  placeholder={editing ? "Leave blank to keep" : "Min 6 characters"}
+                  placeholder={
+                    editing ? "Leave blank to keep" : "Min 6 characters"
+                  }
                   autoComplete="new-password"
                 />
               </label>
@@ -598,9 +613,7 @@ export default function EmployeesPage() {
           </div>
 
           <div className={styles.tableWrap}>
-            {isLoading && (
-              <p className={styles.empty}>Loading…</p>
-            )}
+            {isLoading && <p className={styles.empty}>Loading…</p>}
             {isError && (
               <p className={styles.emptyError}>Failed to load employees.</p>
             )}
@@ -624,7 +637,9 @@ export default function EmployeesPage() {
                       <tr
                         key={emp._id}
                         className={
-                          editing?._id === emp._id ? styles.rowActive : undefined
+                          editing?._id === emp._id
+                            ? styles.rowActive
+                            : undefined
                         }
                       >
                         <td>
@@ -643,13 +658,13 @@ export default function EmployeesPage() {
                             )}
                             <div>
                               <div className={styles.cellName}>{emp.name}</div>
-                              <div className={styles.cellMuted}>{emp.email}</div>
+                              <div className={styles.cellMuted}>
+                                {emp.email}
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td>
-                          {EMPLOYEE_TYPE_LABELS[emp.type] ?? emp.type}
-                        </td>
+                        <td>{EMPLOYEE_TYPE_LABELS[emp.type] ?? emp.type}</td>
                         <td>
                           <div className={styles.permTags}>
                             {(() => {

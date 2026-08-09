@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCreatePlan, useUpdatePlan } from "@/services/plans/plans.hook";
-import { Plan, CreatePlanPayload, UpdatePlanPayload } from "@/services/plans/plans.api";
+import {
+  Plan,
+  CreatePlanPayload,
+  UpdatePlanPayload,
+} from "@/services/plans/plans.api";
 import styles from "./PlanModal.module.css";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 interface Props {
   open: boolean;
@@ -32,16 +37,18 @@ export default function PlanModal({ open, onClose, existing }: Props) {
   const { mutate: updatePlan, isPending: updating } = useUpdatePlan();
   const isPending = creating || updating;
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (existing) {
       setForm({
-        name:         existing.name,
-        duration:     existing.duration,
+        name: existing.name,
+        duration: existing.duration,
         durationType: existing.durationType,
-        price:        existing.price,
-        description:  existing.description ?? "",
+        price: existing.price,
+        description: existing.description ?? "",
       });
     } else {
       setForm(EMPTY);
@@ -50,7 +57,7 @@ export default function PlanModal({ open, onClose, existing }: Props) {
   }, [existing, open]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -60,9 +67,18 @@ export default function PlanModal({ open, onClose, existing }: Props) {
   };
 
   const handleSubmit = () => {
-    if (!form.name)          { setError("Plan name is required."); return; }
-    if (form.duration < 1)   { setError("Duration must be at least 1."); return; }
-    if (form.price < 0)      { setError("Price cannot be negative."); return; }
+    if (!form.name) {
+      setError("Plan name is required.");
+      return;
+    }
+    if (form.duration < 1) {
+      setError("Duration must be at least 1.");
+      return;
+    }
+    if (form.price < 0) {
+      setError("Price cannot be negative.");
+      return;
+    }
 
     if (isEdit && existing) {
       updatePlan(
@@ -72,7 +88,7 @@ export default function PlanModal({ open, onClose, existing }: Props) {
           onError: (err: any) => {
             setError(err?.response?.data?.message ?? "Update failed.");
           },
-        }
+        },
       );
     } else {
       createPlan(form, {
@@ -98,15 +114,17 @@ export default function PlanModal({ open, onClose, existing }: Props) {
           <motion.div
             className={styles.modal}
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0,  scale: 1 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }}
+            transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
           >
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>
                 {isEdit ? "Edit Plan" : "New Subscription Plan"}
               </h2>
-              <button className={styles.closeBtn} onClick={onClose}>✕</button>
+              <button className={styles.closeBtn} onClick={onClose}>
+                ✕
+              </button>
             </div>
 
             {error && <p className={styles.errorMsg}>{error}</p>}
@@ -192,15 +210,21 @@ export default function PlanModal({ open, onClose, existing }: Props) {
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.btnSecondary} onClick={onClose}>Cancel</button>
+              <button className={styles.btnSecondary} onClick={onClose}>
+                Cancel
+              </button>
               <button
                 className={styles.btnPrimary}
                 onClick={handleSubmit}
                 disabled={isPending}
               >
                 {isPending
-                  ? isEdit ? "Saving…" : "Creating…"
-                  : isEdit ? "Save Changes" : "Create Plan"}
+                  ? isEdit
+                    ? "Saving…"
+                    : "Creating…"
+                  : isEdit
+                    ? "Save Changes"
+                    : "Create Plan"}
               </button>
             </div>
           </motion.div>

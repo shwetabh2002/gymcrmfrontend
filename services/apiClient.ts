@@ -1,10 +1,10 @@
 import axios from "axios";
-import { config } from "@/config";
+import { APP_CONFIG, HTTP_CONFIG } from "@/config/app.config";
 import { setupInterceptors } from "./interceptor";
 
 const apiClient = axios.create({
-  baseURL: config.apiBaseUrl,
-  timeout: 10000,
+  baseURL: APP_CONFIG.apiBaseUrl,
+  timeout: HTTP_CONFIG.timeoutMs,
   headers: {
     "Content-Type": "application/json",
   },

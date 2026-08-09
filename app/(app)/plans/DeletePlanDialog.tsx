@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useDeletePlan } from "@/services/plans/plans.hook";
 import { Plan } from "@/services/plans/plans.api";
 import styles from "./PlanModal.module.css";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 interface Props {
   open: boolean;
@@ -17,7 +18,9 @@ export default function DeletePlanDialog({ open, onClose, plan }: Props) {
   const { mutate: deletePlan, isPending } = useDeletePlan();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleDelete = () => {
     if (!plan) return;
@@ -41,22 +44,26 @@ export default function DeletePlanDialog({ open, onClose, plan }: Props) {
             className={styles.modal}
             style={{ maxWidth: 420 }}
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0,  scale: 1 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }}
+            transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
           >
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>Delete Plan</h2>
-              <button className={styles.closeBtn} onClick={onClose}>✕</button>
+              <button className={styles.closeBtn} onClick={onClose}>
+                ✕
+              </button>
             </div>
 
             <p className={styles.deleteMsg}>
-              Are you sure you want to delete{" "}
-              <strong>{plan.name}</strong>? This action cannot be undone.
+              Are you sure you want to delete <strong>{plan.name}</strong>? This
+              action cannot be undone.
             </p>
 
             <div className={styles.modalFooter}>
-              <button className={styles.btnSecondary} onClick={onClose}>Cancel</button>
+              <button className={styles.btnSecondary} onClick={onClose}>
+                Cancel
+              </button>
               <button
                 className={styles.btnDanger}
                 onClick={handleDelete}

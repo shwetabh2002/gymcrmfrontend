@@ -3,8 +3,14 @@
 import Link from "next/link";
 import { motion, Variants, Easing } from "framer-motion";
 import styles from "./Dashboard.module.css";
-import { useDashboard, usePaymentTrends } from "@/services/analytics/analytics.hooks";
-import type { ActivityFeedItem, PaymentModeRow } from "@/services/analytics/analytics.api";
+import {
+  useDashboard,
+  usePaymentTrends,
+} from "@/services/analytics/analytics.hooks";
+import type {
+  ActivityFeedItem,
+  PaymentModeRow,
+} from "@/services/analytics/analytics.api";
 import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
 import {
   computeTaxBreakdown,
@@ -12,8 +18,9 @@ import {
   resolveInvoiceTax,
   type InvoiceTaxMode,
 } from "@/lib/tax";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
-const customEase: Easing = [0.16, 1, 0.3, 1] as any;
+const customEase: Easing = EASE_OUT_EXPO;
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
@@ -81,11 +88,18 @@ function feedDotClass(action: string) {
   if (action.includes("PAYMENT")) return styles.payment;
   if (action.includes("MEMBER")) return styles.user;
   if (action.includes("INVOICE")) return styles.invoice;
-  if (action.includes("RENEWAL") || action.includes("SUBSCRIPTION")) return styles.sub;
+  if (action.includes("RENEWAL") || action.includes("SUBSCRIPTION"))
+    return styles.sub;
   return styles.user;
 }
 
-function buildPath(data: number[], w: number, h: number, allData: number[], pad = 40): string {
+function buildPath(
+  data: number[],
+  w: number,
+  h: number,
+  allData: number[],
+  pad = 40,
+): string {
   const min = Math.min(...allData) * 0.9;
   const max = Math.max(...allData) * 1.02 || 1;
   const pts = data.map((v, i) => {
@@ -101,7 +115,20 @@ function buildPath(data: number[], w: number, h: number, allData: number[], pad 
   }, "");
 }
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 function RevenueChart({
   trends,
@@ -112,7 +139,17 @@ function RevenueChart({
   const H = 140;
   if (!trends || trends.length < 2) {
     return (
-      <div className={styles.chartBody} style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 140, color: "var(--text-3)", fontSize: "0.85rem" }}>
+      <div
+        className={styles.chartBody}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: 140,
+          color: "var(--text-3)",
+          fontSize: "0.85rem",
+        }}
+      >
         Not enough data yet
       </div>
     );
@@ -125,7 +162,11 @@ function RevenueChart({
   return (
     <div className={styles.chartBody}>
       <div className={styles.chartWrap}>
-        <svg viewBox={`0 0 ${W} ${H}`} className={styles.chartSvg} preserveAspectRatio="none">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className={styles.chartSvg}
+          preserveAspectRatio="none"
+        >
           <defs>
             <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#c0392b" stopOpacity="0.18" />
@@ -144,7 +185,13 @@ function RevenueChart({
             />
           ))}
           <path d={areaPath} fill="url(#areaGrad)" />
-          <path d={mainPath} fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
+          <path
+            d={mainPath}
+            fill="none"
+            stroke="#c0392b"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
           {revenues.map((v, i) => {
             const min = Math.min(...revenues) * 0.9;
             const max = Math.max(...revenues) * 1.02 || 1;
@@ -152,7 +199,14 @@ function RevenueChart({
             const y = H - ((v - min) / (max - min || 1)) * H;
             return (
               <g key={i}>
-                <circle cx={x} cy={y} r="5" fill="#fff" stroke="#c0392b" strokeWidth="2" />
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="5"
+                  fill="#fff"
+                  stroke="#c0392b"
+                  strokeWidth="2"
+                />
                 <circle cx={x} cy={y} r="2" fill="#c0392b" />
               </g>
             );
@@ -206,7 +260,9 @@ function ModeBars({
 
 function ActivityList({ items }: { items: ActivityFeedItem[] }) {
   if (!items.length) {
-    return <p className={styles.emptyHint}>Actions will appear here as staff work</p>;
+    return (
+      <p className={styles.emptyHint}>Actions will appear here as staff work</p>
+    );
   }
   return (
     <ul className={styles.feedList}>
@@ -305,9 +361,7 @@ export default function DashboardPage() {
     {
       title: taxPercentage > 0 ? "GST Collected" : "Follow-ups Lost",
       value:
-        taxPercentage > 0
-          ? inr(lifetime.tax)
-          : (counts?.renewalsLost ?? "—"),
+        taxPercentage > 0 ? inr(lifetime.tax) : (counts?.renewalsLost ?? "—"),
       sub:
         taxPercentage > 0
           ? taxMode === "included"
@@ -316,10 +370,7 @@ export default function DashboardPage() {
           : `${counts?.renewalsContacted ?? 0} contacted in queue`,
       badge: taxPercentage > 0 ? "gst" : "lost",
       trend: "down" as const,
-      gstLine:
-        taxPercentage > 0
-          ? `this month ${inr(monthly.tax)}`
-          : null,
+      gstLine: taxPercentage > 0 ? `this month ${inr(monthly.tax)}` : null,
     },
   ];
 
@@ -336,7 +387,7 @@ export default function DashboardPage() {
         className={styles.header}
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.4, ease: EASE_OUT_EXPO }}
       >
         <div className={styles.headerLeft}>
           <p className={styles.eyebrow}>Operations</p>
@@ -362,12 +413,16 @@ export default function DashboardPage() {
               <span className={styles.statIconDot} />
               {s.title}
             </div>
-            <div className={styles.statValue}>{isLoading ? "…" : String(s.value)}</div>
+            <div className={styles.statValue}>
+              {isLoading ? "…" : String(s.value)}
+            </div>
             {s.gstLine ? (
               <div className={styles.statGst}>{s.gstLine}</div>
             ) : null}
             <div className={styles.statFooter}>
-              <span className={`${styles.statBadge} ${styles[s.trend]}`}>{s.badge}</span>
+              <span className={`${styles.statBadge} ${styles[s.trend]}`}>
+                {s.badge}
+              </span>
               <span>{s.sub}</span>
             </div>
           </motion.div>
@@ -375,7 +430,13 @@ export default function DashboardPage() {
       </div>
 
       <div className={styles.lowerGrid3}>
-        <motion.div className={styles.section} custom={8} variants={fadeUp} initial="hidden" animate="visible">
+        <motion.div
+          className={styles.section}
+          custom={8}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionTitleBar} />
@@ -386,7 +447,13 @@ export default function DashboardPage() {
           <RevenueChart trends={trendsData?.monthlyTrends ?? []} />
         </motion.div>
 
-        <motion.div className={styles.section} custom={9} variants={fadeUp} initial="hidden" animate="visible">
+        <motion.div
+          className={styles.section}
+          custom={9}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionTitleBar} />
@@ -403,7 +470,13 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        <motion.div className={styles.section} custom={10} variants={fadeUp} initial="hidden" animate="visible">
+        <motion.div
+          className={styles.section}
+          custom={10}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionTitleBar} />
@@ -417,8 +490,14 @@ export default function DashboardPage() {
             <div className={styles.pipeline}>
               {[
                 ["Pending", renewals?.PENDING ?? counts?.renewalsOpen ?? 0],
-                ["Contacted", renewals?.CONTACTED ?? counts?.renewalsContacted ?? 0],
-                ["Promised", renewals?.PROMISED ?? counts?.renewalsPromised ?? 0],
+                [
+                  "Contacted",
+                  renewals?.CONTACTED ?? counts?.renewalsContacted ?? 0,
+                ],
+                [
+                  "Promised",
+                  renewals?.PROMISED ?? counts?.renewalsPromised ?? 0,
+                ],
                 ["Renewed", renewals?.RENEWED ?? counts?.renewalsRenewed ?? 0],
                 ["Lost", renewals?.LOST ?? counts?.renewalsLost ?? 0],
               ].map(([label, val]) => (
@@ -433,18 +512,32 @@ export default function DashboardPage() {
       </div>
 
       <div className={styles.lowerGrid}>
-        <motion.div className={styles.section} custom={11} variants={fadeUp} initial="hidden" animate="visible">
+        <motion.div
+          className={styles.section}
+          custom={11}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionTitleBar} />
               Activity · who did what
             </h2>
-            <span className={styles.sectionBadge}>{activity.length} recent</span>
+            <span className={styles.sectionBadge}>
+              {activity.length} recent
+            </span>
           </div>
           <ActivityList items={activity} />
         </motion.div>
 
-        <motion.div className={styles.section} custom={12} variants={fadeUp} initial="hidden" animate="visible">
+        <motion.div
+          className={styles.section}
+          custom={12}
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+        >
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionTitleBar} />
@@ -491,14 +584,22 @@ export default function DashboardPage() {
       {(nearExpiry.length > 0 || pending.length > 0 || isLoading) && (
         <div className={styles.tablesGrid}>
           {(nearExpiry.length > 0 || isLoading) && (
-            <motion.div className={styles.section} custom={13} variants={fadeUp} initial="hidden" animate="visible">
+            <motion.div
+              className={styles.section}
+              custom={13}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+            >
               <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>
                   <span className={styles.sectionTitleBar} />
                   Expiring soon
                 </h2>
                 <div className={styles.headerActions}>
-                  <span className={styles.sectionBadgeWarn}>{nearExpiry.length} members</span>
+                  <span className={styles.sectionBadgeWarn}>
+                    {nearExpiry.length} members
+                  </span>
                   <Link href="/renewals" className={styles.inlineLink}>
                     Queue →
                   </Link>
@@ -522,7 +623,11 @@ export default function DashboardPage() {
                         </td>
                         <td>{m.planName}</td>
                         <td>
-                          <span className={m.daysRemaining <= 3 ? styles.danger : styles.warn}>
+                          <span
+                            className={
+                              m.daysRemaining <= 3 ? styles.danger : styles.warn
+                            }
+                          >
                             {m.daysRemaining}d
                           </span>
                         </td>
@@ -544,13 +649,21 @@ export default function DashboardPage() {
           )}
 
           {pending.length > 0 && (
-            <motion.div className={styles.section} custom={14} variants={fadeUp} initial="hidden" animate="visible">
+            <motion.div
+              className={styles.section}
+              custom={14}
+              variants={fadeUp}
+              initial="hidden"
+              animate="visible"
+            >
               <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>
                   <span className={styles.sectionTitleBar} />
                   Highest dues
                 </h2>
-                <span className={styles.sectionBadge}>{pending.length} shown</span>
+                <span className={styles.sectionBadge}>
+                  {pending.length} shown
+                </span>
               </div>
               <div className={styles.tableWrap}>
                 <table className={styles.table}>

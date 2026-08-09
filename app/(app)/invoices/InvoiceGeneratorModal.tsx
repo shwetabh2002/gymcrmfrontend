@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import InvoiceTemplate from "./InvoiceTemplate";
 import { generateInvoicePDF, printInvoice } from "@/lib/pdf-generator";
 import styles from "./InvoiceGeneratorModal.module.css";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 export interface InvoiceGeneratorData {
   invoiceNumber: string;
@@ -44,7 +45,11 @@ interface Props {
   invoiceData: InvoiceGeneratorData | null;
 }
 
-export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Props) {
+export default function InvoiceGeneratorModal({
+  open,
+  onClose,
+  invoiceData,
+}: Props) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -99,13 +104,14 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as any }}
+            transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
           >
             <div className={styles.modalHeader}>
               <div>
                 <h2 className={styles.modalTitle}>Invoice Generator</h2>
                 <p className={styles.modalSub}>
-                  Invoice #{invoiceData.invoiceNumber} for {invoiceData.memberName}
+                  Invoice #{invoiceData.invoiceNumber} for{" "}
+                  {invoiceData.memberName}
                 </p>
               </div>
               <button
@@ -167,8 +173,12 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                 <div className={styles.configSection}>
                   <div className={styles.configGrid}>
                     <div className={styles.configItem}>
-                      <label className={styles.configLabel}>Invoice Number</label>
-                      <div className={styles.configValue}>{invoiceData.invoiceNumber}</div>
+                      <label className={styles.configLabel}>
+                        Invoice Number
+                      </label>
+                      <div className={styles.configValue}>
+                        {invoiceData.invoiceNumber}
+                      </div>
                     </div>
 
                     <div className={styles.configItem}>
@@ -180,12 +190,16 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
 
                     <div className={styles.configItem}>
                       <label className={styles.configLabel}>Member Name</label>
-                      <div className={styles.configValue}>{invoiceData.memberName}</div>
+                      <div className={styles.configValue}>
+                        {invoiceData.memberName}
+                      </div>
                     </div>
 
                     <div className={styles.configItem}>
                       <label className={styles.configLabel}>Member Email</label>
-                      <div className={styles.configValue}>{invoiceData.memberContact}</div>
+                      <div className={styles.configValue}>
+                        {invoiceData.memberContact}
+                      </div>
                     </div>
 
                     <div className={styles.configItem}>
@@ -196,7 +210,9 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                     </div>
 
                     <div className={styles.configItem}>
-                      <label className={styles.configLabel}>Tax ({invoiceData.taxPercentage}%)</label>
+                      <label className={styles.configLabel}>
+                        Tax ({invoiceData.taxPercentage}%)
+                      </label>
                       <div className={styles.configValue}>
                         ₹{invoiceData.taxAmount.toLocaleString()}
                       </div>
@@ -222,7 +238,9 @@ export default function InvoiceGeneratorModal({ open, onClose, invoiceData }: Pr
                     <div className={styles.itemsList}>
                       {invoiceData.items.map((item, idx) => (
                         <div key={idx} className={styles.itemRow}>
-                          <span className={styles.itemDesc}>{item.description}</span>
+                          <span className={styles.itemDesc}>
+                            {item.description}
+                          </span>
                           <span className={styles.itemAmount}>
                             ₹{item.amount.toLocaleString()}
                           </span>

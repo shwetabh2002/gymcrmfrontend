@@ -4,13 +4,9 @@ import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import styles from "./Billing.module.css";
-import {
-  usePayments,
-} from "@/services/payments/payments.hooks";
+import { usePayments } from "@/services/payments/payments.hooks";
 import { useRevenueAnalytics } from "@/services/analytics/analytics.hooks";
-import {
-  useMemberSubscriptions,
-} from "@/services/subscriptions/subscriptions.hook";
+import { useMemberSubscriptions } from "@/services/subscriptions/subscriptions.hook";
 import { Payment } from "@/services/payments/payments.api";
 import { MemberSubscription } from "@/services/subscriptions/subscriptions.api";
 import { BillingModal, BillingMode } from "./BillingModal";
@@ -27,6 +23,7 @@ import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
 import { resolveInvoiceTax, formatAmountWithGstInline } from "@/lib/tax";
 import { MoneyWithGst } from "@/components/MoneyWithGst";
 import { RowActions } from "@/components/RowActions";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -36,7 +33,7 @@ const fadeUp = {
     transition: {
       duration: 0.4,
       delay: i * 0.07,
-      ease: [0.16, 1, 0.3, 1] as any,
+      ease: EASE_OUT_EXPO,
     },
   }),
 };
@@ -112,10 +109,16 @@ function BillingPageInner() {
   const [cancelSub, setCancelSub] = useState<MemberSubscription | null>(null);
   const [voidPay, setVoidPay] = useState<Payment | null>(null);
 
-  const { data: payments, isLoading: payLoading, isError: payError } =
-    usePayments();
-  const { data: subs, isLoading: subLoading, isError: subError } =
-    useMemberSubscriptions();
+  const {
+    data: payments,
+    isLoading: payLoading,
+    isError: payError,
+  } = usePayments();
+  const {
+    data: subs,
+    isLoading: subLoading,
+    isError: subError,
+  } = useMemberSubscriptions();
   const { data: revenue } = useRevenueAnalytics();
 
   const [search, setSearch] = useState("");
@@ -156,9 +159,7 @@ function BillingPageInner() {
   const STATS = [
     {
       label: "Total Collected",
-      val: revenue
-        ? `₹${revenue.totalRevenue.toLocaleString("en-IN")}`
-        : "—",
+      val: revenue ? `₹${revenue.totalRevenue.toLocaleString("en-IN")}` : "—",
       sub: "all time",
     },
     {
@@ -177,9 +178,7 @@ function BillingPageInner() {
     },
     {
       label: "Pending Dues",
-      val: revenue
-        ? `₹${revenue.pending.amount.toLocaleString("en-IN")}`
-        : "—",
+      val: revenue ? `₹${revenue.pending.amount.toLocaleString("en-IN")}` : "—",
       sub: `${revenue?.pending.subscriptions ?? 0} subscriptions`,
     },
   ];
@@ -209,17 +208,14 @@ function BillingPageInner() {
         />
       ) : null}
       {voidPay ? (
-        <VoidPaymentModal
-          payment={voidPay}
-          onClose={() => setVoidPay(null)}
-        />
+        <VoidPaymentModal payment={voidPay} onClose={() => setVoidPay(null)} />
       ) : null}
 
       <motion.div
         className={styles.pageHeader}
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
+        transition={{ duration: 0.4, ease: EASE_OUT_EXPO }}
       >
         <div>
           <p className={styles.eyebrow}>Admin Panel</p>
@@ -339,12 +335,24 @@ function BillingPageInner() {
           {tab === "memberships" && (
             <>
               {subLoading && (
-                <p style={{ padding: "1.5rem 22px", color: "var(--text-2)", fontSize: 13 }}>
+                <p
+                  style={{
+                    padding: "1.5rem 22px",
+                    color: "var(--text-2)",
+                    fontSize: 13,
+                  }}
+                >
                   Loading…
                 </p>
               )}
               {subError && (
-                <p style={{ padding: "1.5rem 22px", color: "#c45c5c", fontSize: 13 }}>
+                <p
+                  style={{
+                    padding: "1.5rem 22px",
+                    color: "#c45c5c",
+                    fontSize: 13,
+                  }}
+                >
                   Failed to load memberships.
                 </p>
               )}
@@ -486,12 +494,24 @@ function BillingPageInner() {
           {tab === "payments" && (
             <>
               {payLoading && (
-                <p style={{ padding: "1.5rem 22px", color: "var(--text-2)", fontSize: 13 }}>
+                <p
+                  style={{
+                    padding: "1.5rem 22px",
+                    color: "var(--text-2)",
+                    fontSize: 13,
+                  }}
+                >
                   Loading…
                 </p>
               )}
               {payError && (
-                <p style={{ padding: "1.5rem 22px", color: "#c45c5c", fontSize: 13 }}>
+                <p
+                  style={{
+                    padding: "1.5rem 22px",
+                    color: "#c45c5c",
+                    fontSize: 13,
+                  }}
+                >
                   Failed to load payments.
                 </p>
               )}

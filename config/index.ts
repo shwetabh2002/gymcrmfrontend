@@ -1,12 +1,32 @@
-// Validate required env variables
-if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
-  throw new Error("Missing NEXT_PUBLIC_API_BASE_URL in environment variables");
+import { APP_CONFIG, usingFallbackApiUrl } from "./app.config";
+
+if (usingFallbackApiUrl && typeof window !== "undefined") {
+  // A warning, not a throw: a missing env var must not break the whole app.
+  console.warn(
+    `NEXT_PUBLIC_API_BASE_URL is not set — falling back to ${APP_CONFIG.apiBaseUrl}`,
+  );
 }
 
-
+/** @deprecated prefer APP_CONFIG — kept so existing imports keep working. */
 export const config = {
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000",
+  apiBaseUrl: APP_CONFIG.apiBaseUrl,
 };
+
+export {
+  APP_CONFIG,
+  HTTP_CONFIG,
+  QUERY_CONFIG,
+  TOAST_CONFIG,
+} from "./app.config";
+export {
+  EASE_OUT_EXPO,
+  MOTION_DURATION,
+  MODAL_TRANSITION,
+  PANEL_TRANSITION,
+  PAGE_TRANSITION,
+  STAGGER_STEP,
+  staggered,
+} from "./motion";
 
 export { UPLOAD_CONFIG, UPLOAD_MAX_FILE_BYTES, UPLOAD_ACCEPT } from "./upload";
 export type { UploadLimits } from "./upload";

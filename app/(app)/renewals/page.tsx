@@ -15,13 +15,14 @@ import {
   RenewalStatusFilter,
 } from "@/services/renewals/renewals.api";
 import { RowActions } from "@/components/RowActions";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, delay: i * 0.07, ease: [0.16, 1, 0.3, 1] as any },
+    transition: { duration: 0.4, delay: i * 0.07, ease: EASE_OUT_EXPO },
   }),
 };
 
@@ -79,7 +80,10 @@ export default function RenewalsPage() {
   };
 
   const { data: queue, isLoading, isError } = useRenewalQueue(queueParams);
-  const { data: counts } = useRenewalCounts({ withinDays, expiredWithinDays: 30 });
+  const { data: counts } = useRenewalCounts({
+    withinDays,
+    expiredWithinDays: 30,
+  });
   const updateFollowUp = useUpdateFollowUp();
 
   const filtered = useMemo(() => {
@@ -207,7 +211,7 @@ export default function RenewalsPage() {
         className={styles.pageHeader}
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
+        transition={{ duration: 0.4, ease: EASE_OUT_EXPO }}
       >
         <div>
           <p className={styles.eyebrow}>Member Retention</p>

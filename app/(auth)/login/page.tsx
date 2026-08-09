@@ -7,15 +7,17 @@ import { adminLogin } from "@/services/admin/admin.api";
 import { motion, AnimatePresence, Variants, Easing } from "framer-motion";
 import { getDefaultRoute } from "@/lib/rbac";
 import styles from "./LoginPage.module.css";
+import { EASE_OUT_EXPO } from "@/config/motion";
 
 /* ─── Framer Motion variants ──────────────────────────────── */
 // custom cubic‑bezier easing; cast to satisfy framer-motion's typings
-const customEase: Easing = [0.16, 1, 0.3, 1] as any;
+const customEase: Easing = EASE_OUT_EXPO;
 
 const cardVariants: Variants = {
-  hidden:  { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 24 },
   visible: {
-    opacity: 1, y: 0,
+    opacity: 1,
+    y: 0,
     transition: { duration: 0.55, ease: customEase },
   },
 };
@@ -25,14 +27,18 @@ const stagger: Variants = {
 };
 
 const item: Variants = {
-  hidden:  { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: customEase } },
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: customEase },
+  },
 };
 
 const errorVariants: Variants = {
-  hidden:  { opacity: 0, y: -6, scale: 0.98 },
-  visible: { opacity: 1, y: 0,  scale: 1, transition: { duration: 0.25 } },
-  exit:    { opacity: 0, scale: 0.97, transition: { duration: 0.15 } },
+  hidden: { opacity: 0, y: -6, scale: 0.98 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25 } },
+  exit: { opacity: 0, scale: 0.97, transition: { duration: 0.15 } },
 };
 
 /* ─── Geo grid dots for left panel ───────────────────────── */
@@ -46,13 +52,13 @@ const GeoDots = () => (
 
 /* ─── Main component ──────────────────────────────────────── */
 export default function LoginPage() {
-  const router   = useRouter();
+  const router = useRouter();
   const { login } = useAuth();
 
-  const [email,    setEmail]    = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error,    setError]    = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +82,8 @@ export default function LoginPage() {
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-        err.message ||
-        "Login failed. Please check your credentials."
+          err.message ||
+          "Login failed. Please check your credentials.",
       );
     } finally {
       setLoading(false);
@@ -86,7 +92,6 @@ export default function LoginPage() {
 
   return (
     <div className={styles.root}>
-
       {/* ── Left visual panel ──────────────────────────── */}
       <div className={styles.visual}>
         <div className={styles.visualBg} />
@@ -102,8 +107,10 @@ export default function LoginPage() {
 
         <div className={styles.visualCenter}>
           <h2 className={styles.visualHeadline}>
-            Secure<br />
-            <em>Admin</em><br />
+            Secure
+            <br />
+            <em>Admin</em>
+            <br />
             Access
           </h2>
           <p className={styles.visualSub}>
@@ -132,7 +139,9 @@ export default function LoginPage() {
               Admin Portal
             </motion.p>
             <motion.h1 className={styles.formTitle} variants={item}>
-              Sign in to your<br />workspace
+              Sign in to your
+              <br />
+              workspace
             </motion.h1>
             <motion.p className={styles.formDesc} variants={item}>
               Enter your credentials to access the dashboard.
