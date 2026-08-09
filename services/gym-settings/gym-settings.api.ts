@@ -30,6 +30,12 @@ export interface GymSettings {
   invoiceTaxMode?: "excluded" | "included";
   /** Per-gym UPI Autopay feature flag (default off) */
   autopayEnabled?: boolean;
+  /** Mandate the member approves: upi | emandate | card | nach */
+  autopayMethod?: string;
+  /** Per-debit ceiling = plan price × this (headroom for price rises) */
+  autopayMandateMultiplier?: number;
+  /** How long the mandate stays valid, in months */
+  autopayMandateValidityMonths?: number;
   countryCode?: string;
   countryName?: string;
   currency?: string;
@@ -63,6 +69,9 @@ export interface UpdateGymSettingsPayload {
   invoiceTaxPercentage?: number;
   invoiceTaxMode?: "excluded" | "included";
   autopayEnabled?: boolean;
+  autopayMethod?: string;
+  autopayMandateMultiplier?: number;
+  autopayMandateValidityMonths?: number;
   countryCode?: string;
 }
 

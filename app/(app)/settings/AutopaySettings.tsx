@@ -11,10 +11,7 @@ import {
   paymentProviderApi,
   ProviderStatus,
 } from "@/services/payments/provider.api";
-import {
-  whatsappApi,
-  WhatsAppStatus,
-} from "@/services/whatsapp/whatsapp.api";
+import { whatsappApi, WhatsAppStatus } from "@/services/whatsapp/whatsapp.api";
 import profile from "../profile/Profile.module.css";
 import styles from "./AutopaySettings.module.css";
 
@@ -38,9 +35,16 @@ export default function AutopaySettings() {
   const [rzp, setRzp] = useState<ProviderStatus | null>(null);
   const [wa, setWa] = useState<WhatsAppStatus | null>(null);
   const [depsLoading, setDepsLoading] = useState(true);
+  const [mandateMethod, setMandateMethod] = useState("upi");
+  const [mandateMultiplier, setMandateMultiplier] = useState(2);
+  const [mandateMonths, setMandateMonths] = useState(60);
 
   useEffect(() => {
-    if (settings) setEnabled(settings.autopayEnabled === true);
+    if (!settings) return;
+    setEnabled(settings.autopayEnabled === true);
+    setMandateMethod(settings.autopayMethod || "upi");
+    setMandateMultiplier(settings.autopayMandateMultiplier ?? 2);
+    setMandateMonths(settings.autopayMandateValidityMonths ?? 60);
   }, [settings]);
 
   const loadDeps = async () => {
@@ -81,11 +85,33 @@ export default function AutopaySettings() {
     }
   };
 
+  /** Applies to mandates created from now on; existing ones keep their terms. */
+  const saveMandateTerms = async (patch: {
+    autopayMethod?: string;
+    autopayMandateMultiplier?: number;
+    autopayMandateValidityMonths?: number;
+  }) => {
+    if (!canEdit) return;
+    setError("");
+    if (patch.autopayMethod) setMandateMethod(patch.autopayMethod);
+    try {
+      await update.mutateAsync(patch);
+      setSavedMsg("Mandate terms saved — applies to new mandates.");
+      setTimeout(() => setSavedMsg(""), 4000);
+    } catch (e: any) {
+      setError(e?.response?.data?.message || "Failed to save mandate terms");
+    }
+  };
+
+  // WhatsApp counts as ready in either mode — click-to-chat is a valid choice.
+  const whatsappReady = !!wa?.autoSendReady || !!wa?.manualSendOnly;
+
   const steps: Step[] = [
     {
       id: "flag",
       title: "Turn Autopay ON for this gym",
-      detail: "Use the switch above. Default is OFF. Only this gym is affected.",
+      detail:
+        "Use the switch above. Default is OFF. Only this gym is affected.",
       done: enabled,
       kind: "live",
     },
@@ -99,17 +125,17 @@ export default function AutopaySettings() {
     },
     {
       id: "wa",
-      title: "WhatsApp auto-send ready",
+      title: "WhatsApp ready",
       detail:
-        "Scroll to WhatsApp below. Cloud API for production, or Mock auto-send for local.",
-      done: !!wa?.autoSendReady,
+        "Scroll to WhatsApp below. Save the gym number for manual send, or connect Cloud API for auto-send.",
+      done: whatsappReady,
       kind: "live",
     },
     {
       id: "member",
-      title: "Add member with Online + Autopay",
+      title: "Add member on Autopay",
       detail:
-        "Members → Add → Mode = Online / UPI Autopay → keep Autopay checked → save.",
+        "Members → Add → Mode of Payment = UPI Autopay (mandate) → save. Cash and Online stay manual-fill.",
       done: false,
       kind: "howto",
     },
@@ -131,7 +157,7 @@ export default function AutopaySettings() {
     },
   ];
 
-  const infraReady = enabled && !!rzp?.connected && !!wa?.autoSendReady;
+  const infraReady = enabled && !!rzp?.connected && whatsappReady;
   const busy = !canEdit || update.isPending;
 
   return (
@@ -153,9 +179,9 @@ export default function AutopaySettings() {
       ) : (
         <div className={styles.body}>
           <p className={styles.desc}>
-            Default is OFF. Platform works with cash, UPI, and one-time online
-            without Autopay. Turn ON only if this gym wants recurring UPI
-            Autopay, then complete the setup checklist.
+            Default is OFF. Cash and Online collection work without it. Turn ON
+            only if this gym wants recurring UPI Autopay, then complete the
+            setup checklist.
           </p>
 
           {error ? <p className={styles.alertError}>{error}</p> : null}
@@ -192,6 +218,87 @@ export default function AutopaySettings() {
               </span>
             </label>
           </div>
+
+          {/* Terms the member approves once, in their UPI app. */}
+          {enabled ? (
+            <div className={styles.panel}>
+              <div className={styles.panelHead}>
+                <p className={styles.panelTitle}>Mandate terms</p>
+              </div>
+              <p className={styles.toggleHint} style={{ padding: "0 0 10px" }}>
+                A member approves these once. Razorpay may then debit up to the
+                ceiling without asking again, until the mandate expires.
+              </p>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 12,
+                  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+                }}
+              >
+                <label>
+                  <span className={styles.toggleHint}>Method</span>
+                  <select
+                    className={profile.formInput}
+                    value={mandateMethod}
+                    disabled={busy}
+                    onChange={(e) =>
+                      saveMandateTerms({ autopayMethod: e.target.value })
+                    }
+                  >
+                    <option value="upi">UPI Autopay</option>
+                    <option value="emandate">e-Mandate (netbanking)</option>
+                    <option value="card">Card</option>
+                    <option value="nach">NACH</option>
+                  </select>
+                </label>
+                <label>
+                  <span className={styles.toggleHint}>
+                    Per-debit ceiling (× plan price)
+                  </span>
+                  <input
+                    className={profile.formInput}
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={mandateMultiplier}
+                    disabled={busy}
+                    onChange={(e) =>
+                      setMandateMultiplier(Number(e.target.value))
+                    }
+                    onBlur={() =>
+                      saveMandateTerms({
+                        autopayMandateMultiplier: mandateMultiplier,
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  <span className={styles.toggleHint}>Validity (months)</span>
+                  <input
+                    className={profile.formInput}
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={mandateMonths}
+                    disabled={busy}
+                    onChange={(e) => setMandateMonths(Number(e.target.value))}
+                    onBlur={() =>
+                      saveMandateTerms({
+                        autopayMandateValidityMonths: mandateMonths,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+              {rzp?.connected && rzp?.mandateCapable === false ? (
+                <p className={styles.toggleHint} style={{ paddingTop: 10 }}>
+                  Razorpay is on the Mock connection — members get a simulated
+                  link. Connect OAuth or API keys for real mandates.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className={styles.panel}>
             <div className={styles.panelHead}>

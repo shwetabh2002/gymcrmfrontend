@@ -7,6 +7,7 @@ import GymBrandingSettings from "./GymBrandingSettings";
 import RazorpaySettings from "./RazorpaySettings";
 import WhatsAppSettings from "./WhatsAppSettings";
 import AutopaySettings from "./AutopaySettings";
+import EmailTemplateSettings from "./EmailTemplateSettings";
 import styles from "../profile/Profile.module.css";
 
 export default function GymSettingsPage() {
@@ -48,6 +49,7 @@ export default function GymSettingsPage() {
       <AutopaySettings />
       <RazorpaySettings />
       <WhatsAppSettings />
+      <EmailTemplateSettings />
     </div>
   );
 }

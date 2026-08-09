@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/context/AuthContext";
 import { canEditGymSettings } from "@/lib/rbac";
 import { whatsappApi, WhatsAppStatus } from "@/services/whatsapp/whatsapp.api";
 import styles from "../profile/Profile.module.css";
+import toast from "react-hot-toast";
 
 export default function WhatsAppSettings() {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ export default function WhatsAppSettings() {
   const [cloudToken, setCloudToken] = useState("");
   const [phoneNumberId, setPhoneNumberId] = useState("");
   const [paymentTemplate, setPaymentTemplate] = useState("");
+  const [senderNumber, setSenderNumber] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -46,11 +48,28 @@ export default function WhatsAppSettings() {
     }
   };
 
+  const connectClickToChat = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const s = await whatsappApi.connectClickToChat(senderNumber);
+      setStatus(s);
+      toast.success("Gym WhatsApp number saved — staff will tap Send");
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || "Could not save number";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const connectCloud = async () => {
     setBusy(true);
     setError("");
     try {
       const s = await whatsappApi.connectCloud({
+        senderNumber: senderNumber.trim() || undefined,
         cloudToken,
         phoneNumberId,
         paymentTemplate,
@@ -87,10 +106,14 @@ export default function WhatsAppSettings() {
           {status?.autoSendReady ? "Auto-send ON" : "Not ready"}
         </span>
       </div>
-      <p className={styles.pageDesc} style={{ margin: "0", padding: "12px 22px 0" }}>
-        Payment / UPI Autopay links are sent automatically to the member phone
-        entered while adding them. Production: Meta Cloud API. Local: Mock
-        auto-send.
+      <p
+        className={styles.pageDesc}
+        style={{ margin: "0", padding: "12px 22px 0" }}
+      >
+        Payment / UPI Autopay links go to the member phone entered while adding
+        them, from <strong>this gym&apos;s own number</strong>. Two ways to
+        send: connect Meta Cloud API for hands-off auto-send, or just save your
+        number and tap Send yourself.
       </p>
 
       {loading ? (
@@ -109,16 +132,66 @@ export default function WhatsAppSettings() {
             </p>
           </div>
           <div>
-            <label className={styles.formLabel}>Sender</label>
+            <label className={styles.formLabel}>Your WhatsApp number</label>
             <p style={{ color: "var(--text-1)" }}>
-              {status?.displayName || "—"}
+              {status?.senderNumber || status?.displayName || "—"}
             </p>
           </div>
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label className={styles.formLabel}>Sending</label>
+            <p style={{ color: "var(--text-1)", margin: 0 }}>
+              {status?.autoSendReady
+                ? "Automatic — messages leave on their own."
+                : status?.manualSendOnly
+                  ? "Manual — WhatsApp opens with the message ready; staff taps Send."
+                  : "Not set up yet."}
+            </p>
+          </div>
+
+          {/* Option B: no Meta setup, gym just saves its number. */}
+          {canEdit ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label className={styles.formLabel}>
+                Option 1 — your number, staff taps Send
+              </label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  className={styles.formInput}
+                  value={senderNumber}
+                  onChange={(e) => setSenderNumber(e.target.value)}
+                  placeholder="Gym WhatsApp number with country code"
+                  disabled={busy}
+                  style={{ flex: "1 1 240px" }}
+                />
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  disabled={busy || !senderNumber.trim()}
+                  onClick={connectClickToChat}
+                >
+                  Save number
+                </button>
+              </div>
+              <span
+                style={{
+                  fontSize: "0.85rem",
+                  color: "var(--text-2)",
+                  display: "block",
+                  marginTop: 6,
+                }}
+              >
+                No Meta account needed. Every link opens a prefilled chat from
+                this number — one tap per member.
+              </span>
+            </div>
+          ) : null}
 
           {canEdit && !status?.connected ? (
             <>
               <div>
-                <label className={styles.formLabel}>Cloud token</label>
+                <label className={styles.formLabel}>
+                  Option 2 — Cloud API token (auto-send)
+                </label>
                 <input
                   className={styles.formInput}
                   type="password"
@@ -177,7 +250,10 @@ export default function WhatsAppSettings() {
           ) : null}
 
           {canEdit && status?.connected ? (
-            <div className={styles.formActions} style={{ gridColumn: "1 / -1" }}>
+            <div
+              className={styles.formActions}
+              style={{ gridColumn: "1 / -1" }}
+            >
               <button
                 type="button"
                 className={styles.btnSecondary}

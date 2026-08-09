@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canEditGymSettings } from "@/lib/rbac";
 import {
@@ -17,6 +18,7 @@ export default function RazorpaySettings() {
   const [error, setError] = useState("");
   const [keyId, setKeyId] = useState("");
   const [keySecret, setKeySecret] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -61,10 +63,43 @@ export default function RazorpaySettings() {
       const s = await paymentProviderApi.connectApiKeys({ keyId, keySecret });
       setStatus(s);
       setKeySecret("");
+      toast.success("Razorpay connected for this gym");
     } catch (e: any) {
-      setError(e?.response?.data?.message || "Connect failed");
+      const msg = e?.response?.data?.message || "Connect failed";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const saveWebhookSecret = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const s = await paymentProviderApi.setWebhookSecret(webhookSecret.trim());
+      setStatus(s);
+      setWebhookSecret("");
+      toast.success(
+        s.webhookSecretSet
+          ? "Webhook secret saved — autopay confirmations will be verified"
+          : "Webhook secret cleared",
+      );
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || "Could not save webhook secret";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Copy failed — select and copy manually");
     }
   };
 
@@ -74,8 +109,11 @@ export default function RazorpaySettings() {
     try {
       const s = await paymentProviderApi.connectMock();
       setStatus(s);
+      toast.success("Mock Razorpay connected (development only)");
     } catch (e: any) {
-      setError(e?.response?.data?.message || "Mock connect failed");
+      const msg = e?.response?.data?.message || "Mock connect failed";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -86,8 +124,11 @@ export default function RazorpaySettings() {
     try {
       await paymentProviderApi.disconnect();
       await load();
+      toast.success("Razorpay disconnected");
     } catch (e: any) {
-      setError(e?.response?.data?.message || "Disconnect failed");
+      const msg = e?.response?.data?.message || "Disconnect failed";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -104,10 +145,13 @@ export default function RazorpaySettings() {
           {status?.connected ? "Connected" : "Not connected"}
         </span>
       </div>
-      <p className={styles.pageDesc} style={{ margin: "0", padding: "12px 22px 0" }}>
+      <p
+        className={styles.pageDesc}
+        style={{ margin: "0", padding: "12px 22px 0" }}
+      >
         Connect this gym&apos;s Razorpay account so Online / UPI Autopay
-        settlements go to their bank. Prefer Partner OAuth in production;
-        API keys or Mock for local testing.
+        settlements go to their bank. Prefer Partner OAuth in production; API
+        keys or Mock for local testing.
       </p>
 
       {loading ? (
@@ -136,16 +180,34 @@ export default function RazorpaySettings() {
             <>
               {status?.partnerOAuthAvailable ? (
                 <div style={{ gridColumn: "1 / -1" }}>
-                    <button
+                  <button
                     type="button"
                     className={styles.btnPrimary}
                     disabled={busy}
                     onClick={connectOAuth}
                   >
-                    Connect with Razorpay OAuth
+                    Connect with Razorpay
                   </button>
+                  <p
+                    style={{
+                      fontSize: "0.85rem",
+                      color: "var(--text-2)",
+                      margin: "6px 0 0",
+                    }}
+                  >
+                    Recommended — one click, and webhooks are set up for you.
+                    Settlements go straight to this gym&apos;s bank account.
+                  </p>
                 </div>
               ) : null}
+
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label className={styles.formLabel}>
+                  {status?.partnerOAuthAvailable
+                    ? "Or connect with your own API keys"
+                    : "Connect with your Razorpay API keys"}
+                </label>
+              </div>
 
               <div>
                 <label className={styles.formLabel}>Key ID</label>
@@ -168,7 +230,10 @@ export default function RazorpaySettings() {
                   disabled={!canEdit || busy}
                 />
               </div>
-              <div className={styles.formActions} style={{ gridColumn: "1 / -1" }}>
+              <div
+                className={styles.formActions}
+                style={{ gridColumn: "1 / -1" }}
+              >
                 <button
                   type="button"
                   className={styles.btnPrimary}
@@ -191,8 +256,125 @@ export default function RazorpaySettings() {
             </>
           ) : null}
 
+          {status?.connected ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label className={styles.formLabel}>UPI Autopay mandates</label>
+              <p style={{ color: "var(--text-1)", margin: "0 0 4px" }}>
+                {status.mandateCapable
+                  ? "Live — members can approve a real UPI Autopay mandate."
+                  : "Mock connection: members get a simulated link. Connect OAuth or API keys for real mandates."}
+              </p>
+            </div>
+          ) : null}
+
+          {/* OAuth gyms are covered by the partner-level webhook. */}
+          {status?.connected && status?.webhookOwnedByPlatform ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label className={styles.formLabel}>Webhooks</label>
+              <p style={{ color: "var(--text-1)", margin: 0 }}>
+                Handled for you — connecting with Razorpay OAuth also subscribes
+                this gym to payment and mandate updates. Nothing to configure in
+                your Razorpay dashboard.
+              </p>
+            </div>
+          ) : null}
+
+          {/* API-key gyms must register the webhook themselves: it is how a
+              mandate approval and every recurring debit get confirmed. */}
+          {status?.connected &&
+          status?.webhookUrl &&
+          !status?.webhookOwnedByPlatform ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label className={styles.formLabel}>
+                Webhook — add this in your Razorpay dashboard
+              </label>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <code
+                  style={{
+                    background: "var(--surface-2, rgba(127,127,127,.12))",
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {status.webhookUrl}
+                </code>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => copy(status.webhookUrl!, "Webhook URL")}
+                >
+                  Copy URL
+                </button>
+              </div>
+
+              {status.webhookEvents?.length ? (
+                <p
+                  style={{
+                    color: "var(--text-2)",
+                    fontSize: "0.85rem",
+                    marginTop: 8,
+                  }}
+                >
+                  Enable these events: {status.webhookEvents.join(", ")}
+                </p>
+              ) : null}
+
+              <p
+                style={{
+                  color: status.webhookSecretSet ? "var(--text-2)" : "#f59e0b",
+                  fontSize: "0.85rem",
+                  marginTop: 8,
+                }}
+              >
+                {status.webhookSecretSet
+                  ? "This gym has its own webhook secret saved."
+                  : "No gym-specific secret yet — the platform-wide secret is used. Paste yours below for per-gym verification."}
+              </p>
+
+              {canEdit ? (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <input
+                    className={styles.formInput}
+                    type="password"
+                    value={webhookSecret}
+                    onChange={(e) => setWebhookSecret(e.target.value)}
+                    placeholder="Webhook signing secret from Razorpay"
+                    disabled={busy}
+                    style={{ flex: "1 1 240px" }}
+                  />
+                  <button
+                    type="button"
+                    className={styles.btnPrimary}
+                    disabled={busy}
+                    onClick={saveWebhookSecret}
+                  >
+                    {webhookSecret.trim() ? "Save secret" : "Clear secret"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {canEdit && status?.connected ? (
-            <div className={styles.formActions} style={{ gridColumn: "1 / -1" }}>
+            <div
+              className={styles.formActions}
+              style={{ gridColumn: "1 / -1" }}
+            >
               <button
                 type="button"
                 className={styles.btnSecondary}
