@@ -1,11 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { membersApi, CreateMemberPayload, UpdateMemberPayload } from "./members.api";
+import {
+  membersApi,
+  CreateMemberPayload,
+  UpdateMemberPayload,
+  MemberListParams,
+} from "./members.api";
 
-// 🔹 Fetch All Members
+// 🔹 Fetch All Members (unpaged — server caps the result)
 export const useMembers = () => {
   return useQuery({
     queryKey: ["members"],
     queryFn: membersApi.getMembers,
+  });
+};
+
+/**
+ * Paged members list. `placeholderData` keeps the previous page on screen while
+ * the next one loads, so paging does not flash an empty table.
+ */
+export const useMembersPaged = (params: MemberListParams) => {
+  return useQuery({
+    queryKey: ["members", "paged", params],
+    queryFn: () => membersApi.getMembersPaged(params),
+    placeholderData: (previous) => previous,
   });
 };
 

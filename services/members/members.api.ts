@@ -97,8 +97,34 @@ async function postMultipartMemberPhoto(
   return data;
 }
 
+export type Paginated<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+};
+
+export type MemberListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  /** ALL | ACTIVE | INACTIVE | SUSPENDED */
+  status?: string;
+  /** ALL | GT | PT | OTHER */
+  trainingType?: string;
+};
+
 export const membersApi = {
+  /** Unpaged. The server caps this, so use getMembersPaged for real lists. */
   getMembers: () => requestService.get<Member[]>(API_CONFIG.MEMBERS.BASE),
+
+  /**
+   * Server-side paging, search and filters — the list, the search and the
+   * filters all stay in the database instead of being shipped to the browser.
+   */
+  getMembersPaged: (params: MemberListParams) =>
+    requestService.get<Paginated<Member>>(API_CONFIG.MEMBERS.BASE, params),
 
   getMemberById: (id: string) =>
     requestService.get<Member>(API_CONFIG.MEMBERS.BY_ID(id)),

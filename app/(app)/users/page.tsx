@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Users.module.css";
-import { useMembers } from "@/services/members/members.hook";
+import { useMembers, useMembersPaged } from "@/services/members/members.hook";
 import { Member } from "@/services/members/members.api";
 import { useAuth } from "@/lib/context/AuthContext";
 import {
@@ -18,6 +18,7 @@ import { RowActions } from "@/components/RowActions";
 import MemberModal from "./MemberModal";
 import DeleteMemberDialog from "./DeleteMemberDialog";
 import { EASE_OUT_EXPO } from "@/config/motion";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -61,22 +62,50 @@ function formatDate(dateStr?: string | null) {
   });
 }
 
+/** Rows per page. Small enough to render instantly, large enough to scan. */
+const MEMBERS_PAGE_SIZE = 25;
+
 export default function UsersPage() {
   const { user } = useAuth();
   const canCreate = canCreateMembers(user?.role, user?.permissions);
   const canUpdate = canUpdateMembers(user?.role, user?.permissions);
   const canDelete = canDeleteMembers(user?.role, user?.permissions);
-  const { data: members, isLoading, isError } = useMembers();
+  const [page, setPage] = useState(1);
+  const [search, setSearchInput] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [trainFilter, setTrainFilter] = useState("ALL");
+  /**
+   * Typing hits the database, so wait for a pause instead of firing a query per
+   * keystroke.
+   */
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const {
+    data: paged,
+    isLoading,
+    isError,
+  } = useMembersPaged({
+    page,
+    limit: MEMBERS_PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    status: statusFilter,
+    trainingType: trainFilter,
+  });
+
+  const members = paged?.items;
+  const total = paged?.total ?? 0;
+  const pages = paged?.pages ?? 1;
+
+  // Any filter change means the current page number no longer makes sense.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, trainFilter]);
   const { data: gymSettings } = useGymSettings();
   const { taxPercentage, taxMode } = resolveInvoiceTax(gymSettings);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [trainFilter, setTrainFilter] = useState("ALL");
-
   const openCreate = () => {
     setSelected(null);
     setModalOpen(true);
@@ -90,25 +119,9 @@ export default function UsersPage() {
     setDeleteOpen(true);
   };
 
-  const filtered = useMemo(() => {
-    if (!members) return [];
-    return members.filter((m) => {
-      const phone = m.contactNumber || m.phone || "";
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q ||
-        m.name.toLowerCase().includes(q) ||
-        phone.includes(q) ||
-        (m.idNo ?? "").toLowerCase().includes(q) ||
-        (m.trainer ?? "").toLowerCase().includes(q) ||
-        (m.salesPerson ?? "").toLowerCase().includes(q);
-      const matchStatus =
-        statusFilter === "ALL" || m.memberStatus === statusFilter;
-      const matchTrain =
-        trainFilter === "ALL" || m.trainingType === trainFilter;
-      return matchSearch && matchStatus && matchTrain;
-    });
-  }, [members, search, statusFilter, trainFilter]);
+  // Search and filters are applied by the server, so this page renders the
+  // rows it was handed rather than filtering a full copy of the gym.
+  const filtered = members ?? [];
 
   return (
     <div className={styles.page}>
@@ -162,7 +175,7 @@ export default function UsersPage() {
                 className={styles.searchInput}
                 placeholder="Search name, ID, phone, trainer…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
             </div>
             <select
@@ -351,10 +364,43 @@ export default function UsersPage() {
 
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
-            {filtered.length !== members?.length
-              ? `Showing ${filtered.length} of ${members?.length ?? 0} members`
-              : `${members?.length ?? 0} member${members?.length !== 1 ? "s" : ""}`}
+            {total === 0
+              ? "No members"
+              : `Showing ${(page - 1) * MEMBERS_PAGE_SIZE + 1}–${
+                  (page - 1) * MEMBERS_PAGE_SIZE + filtered.length
+                } of ${total} member${total !== 1 ? "s" : ""}`}
           </span>
+
+          {pages > 1 ? (
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                marginLeft: "auto",
+              }}
+            >
+              <button
+                type="button"
+                className={styles.pageNav}
+                disabled={page <= 1 || isLoading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                ← Prev
+              </button>
+              <span className={styles.paginationInfo}>
+                Page {page} of {pages}
+              </span>
+              <button
+                type="button"
+                className={styles.pageNav}
+                disabled={page >= pages || isLoading}
+                onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              >
+                Next →
+              </button>
+            </div>
+          ) : null}
         </div>
       </motion.div>
     </div>
