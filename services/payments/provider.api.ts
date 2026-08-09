@@ -10,6 +10,39 @@ export type ProviderStatus = {
   connectedAt: string | null;
   partnerOAuthAvailable: boolean;
   mockAvailable: boolean;
+  /** development | production — decides whether Mock is offered at all. */
+  environment?: string;
+  /** URL the gym pastes into its own Razorpay dashboard. */
+  webhookUrl?: string;
+  webhookEvents?: string[];
+  webhookSecretSet?: boolean;
+  /** True for OAuth gyms — the partner-level webhook covers them. */
+  webhookOwnedByPlatform?: boolean;
+  /** Real UPI Autopay mandates need live credentials, not the mock. */
+  mandateCapable?: boolean;
+};
+
+export type MandateInfo = {
+  id: string;
+  status: string;
+  method: string;
+  maxAmount: number | null;
+  expireAt: string | null;
+  lastChargedAt: string | null;
+  nextChargeAt: string | null;
+  lastFailureReason: string | null;
+  consecutiveFailures: number;
+  awaitingConfirmation: boolean;
+};
+
+export type AutopayRunSummary = {
+  charged: number;
+  pending: number;
+  failed: number;
+  skipped: number;
+  examined: number;
+  skippedReasons?: Record<string, number>;
+  alreadyRunning?: boolean;
 };
 
 export type CheckoutSession = {
@@ -27,6 +60,8 @@ export type CheckoutSession = {
   whatsappMode?: "wa_me" | "cloud_api" | "mock";
   whatsappSent?: boolean;
   whatsappToPhone?: string | null;
+  emailSent?: boolean;
+  emailToAddress?: string | null;
   expiresAt: string;
   failureReason: string | null;
   subscriptionId: string | null;
@@ -48,6 +83,11 @@ export type CreateCheckoutPayload = {
   trainerId?: string;
   salesPersonId?: string;
   enableAutopay?: boolean;
+  /** Member email — needed for the email notification to go anywhere. */
+  email?: string;
+  /** Both default true on the server; untick to skip that channel. */
+  sendWhatsApp?: boolean;
+  sendEmail?: boolean;
   idempotencyKey?: string;
 };
 
@@ -81,6 +121,37 @@ export const paymentProviderApi = {
       API_CONFIG.PAYMENTS.PROVIDER_DISCONNECT,
       {},
     ),
+
+  /** Signing secret from the gym's own Razorpay dashboard ("" clears it). */
+  setWebhookSecret: (secret: string) =>
+    requestService.post<ProviderStatus, { secret: string }>(
+      API_CONFIG.PAYMENTS.PROVIDER_WEBHOOK_SECRET,
+      { secret },
+    ),
+};
+
+export const autopayApi = {
+  run: () =>
+    requestService.post<AutopayRunSummary, Record<string, never>>(
+      API_CONFIG.PAYMENTS.AUTOPAY_RUN,
+      {},
+    ),
+
+  getMandate: (subscriptionId: string) =>
+    requestService.get<MandateInfo | null>(
+      API_CONFIG.PAYMENTS.AUTOPAY_MANDATE(subscriptionId),
+    ),
+
+  cancelMandate: (subscriptionId: string) =>
+    requestService.post<
+      {
+        ok: boolean;
+        providerCancelled: boolean;
+        mandateId: string;
+        billingMode: string;
+      },
+      Record<string, never>
+    >(API_CONFIG.PAYMENTS.AUTOPAY_MANDATE_CANCEL(subscriptionId), {}),
 };
 
 export const checkoutApi = {

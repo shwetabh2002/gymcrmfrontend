@@ -39,6 +39,9 @@ export interface Member {
 }
 
 export interface CreateMemberPayload {
+  /** Notify the member — both default true on the server. */
+  sendWhatsApp?: boolean;
+  sendEmail?: boolean;
   name: string;
   phone: string;
   email?: string;
@@ -60,37 +63,57 @@ export interface CreateMemberPayload {
 }
 
 export type UpdateMemberPayload = Partial<
-  Omit<CreateMemberPayload, "planId" | "startingDate" | "expiryDate" | "amount" | "received" | "paymentMode">
+  Omit<
+    CreateMemberPayload,
+    | "planId"
+    | "startingDate"
+    | "expiryDate"
+    | "amount"
+    | "received"
+    | "paymentMode"
+  >
 >;
 
-async function postMultipartMemberPhoto(id: string, file: File): Promise<Member> {
+async function postMultipartMemberPhoto(
+  id: string,
+  file: File,
+): Promise<Member> {
   const form = new FormData();
   form.append("file", file);
-  const { data } = await apiClient.post<Member>(API_CONFIG.MEMBERS.PHOTO(id), form, {
-    transformRequest: [
-      (body, headers) => {
-        if (headers && typeof headers === "object") {
-          delete (headers as Record<string, unknown>)["Content-Type"];
-        }
-        return body;
-      },
-    ],
-  });
+  const { data } = await apiClient.post<Member>(
+    API_CONFIG.MEMBERS.PHOTO(id),
+    form,
+    {
+      transformRequest: [
+        (body, headers) => {
+          if (headers && typeof headers === "object") {
+            delete (headers as Record<string, unknown>)["Content-Type"];
+          }
+          return body;
+        },
+      ],
+    },
+  );
   return data;
 }
 
 export const membersApi = {
-  getMembers: () =>
-    requestService.get<Member[]>(API_CONFIG.MEMBERS.BASE),
+  getMembers: () => requestService.get<Member[]>(API_CONFIG.MEMBERS.BASE),
 
   getMemberById: (id: string) =>
     requestService.get<Member>(API_CONFIG.MEMBERS.BY_ID(id)),
 
   createMember: (payload: CreateMemberPayload) =>
-    requestService.post<Member, CreateMemberPayload>(API_CONFIG.MEMBERS.BASE, payload),
+    requestService.post<Member, CreateMemberPayload>(
+      API_CONFIG.MEMBERS.BASE,
+      payload,
+    ),
 
   updateMember: (id: string, payload: UpdateMemberPayload) =>
-    requestService.put<Member, UpdateMemberPayload>(API_CONFIG.MEMBERS.BY_ID(id), payload),
+    requestService.put<Member, UpdateMemberPayload>(
+      API_CONFIG.MEMBERS.BY_ID(id),
+      payload,
+    ),
 
   uploadPhoto: (id: string, file: File) => postMultipartMemberPhoto(id, file),
 
