@@ -3,6 +3,11 @@
 import { useBranding } from "@/lib/context/BrandingContext";
 import type { InvoiceLayout } from "@/config/invoice";
 import { formatMoney } from "@/config/countries";
+import {
+  amountInWords,
+  buildTaxLines,
+  paymentStatusLabel,
+} from "@/lib/invoice-format";
 import styles from "./InvoiceTemplate.module.css";
 
 export interface InvoiceTemplateProps {
@@ -12,6 +17,12 @@ export interface InvoiceTemplateProps {
   memberName: string;
   memberContact: string;
   memberInstagram?: string;
+  /** Gym's own member number, e.g. GYM-0042 */
+  memberIdNo?: string | null;
+  /** What was bought and for how long */
+  planName?: string | null;
+  planFrom?: string | null;
+  planTo?: string | null;
   items: Array<{
     description: string;
     amount: number;
@@ -23,6 +34,18 @@ export interface InvoiceTemplateProps {
   notes?: string;
   /** How GST was applied — changes labels on breakdown */
   taxMode?: "included" | "excluded" | string;
+  /** split = CGST + SGST halves, single = one combined line */
+  taxBreakup?: string;
+  /** SAC / HSN printed against the line item */
+  sacCode?: string | null;
+  placeOfSupply?: string | null;
+  showAmountInWords?: boolean;
+  invoiceTerms?: string | null;
+  /** What has actually been collected against this invoice */
+  amountPaid?: number | null;
+  paymentMode?: string | null;
+  paymentDate?: string | null;
+  paymentReference?: string | null;
   /** Optional overrides — defaults from company branding; all brand bits optional */
   gymName?: string;
   gymAddress?: string;
@@ -109,6 +132,21 @@ export default function InvoiceTemplate(props: InvoiceTemplateProps) {
     });
 
   const formatCurrency = (amount: number) => formatMoney(amount, countryCode);
+
+  const memberIdNo = props.memberIdNo;
+  const planName = props.planName;
+  const planFrom = props.planFrom;
+  const planTo = props.planTo;
+  const sacCode = props.sacCode ?? branding.invoice.sacCode;
+  const placeOfSupply = props.placeOfSupply ?? branding.invoice.placeOfSupply;
+  const taxBreakup = props.taxBreakup ?? branding.invoice.taxBreakup;
+  const invoiceTerms = props.invoiceTerms ?? branding.invoice.terms;
+  const showAmountInWords =
+    props.showAmountInWords ?? branding.invoice.showAmountInWords;
+
+  const taxLines = buildTaxLines(taxAmount, taxPercentage, taxBreakup);
+  const status = paymentStatusLabel({ totalAmount, amountPaid: props.amountPaid });
+  const balanceDue = Math.max(totalAmount - (Number(props.amountPaid) || 0), 0);
 
   const layoutClass =
     layout === "modern"
@@ -249,6 +287,9 @@ export default function InvoiceTemplate(props: InvoiceTemplateProps) {
           <div className={styles.detailsSection}>
             <h3 className={styles.sectionTitle}>Bill To</h3>
             <p className={styles.detailName}>{memberName}</p>
+            {memberIdNo ? (
+              <p className={styles.detailText}>Member ID: {memberIdNo}</p>
+            ) : null}
             {memberContact ? (
               <p className={styles.detailText}>{memberContact}</p>
             ) : null}
@@ -272,6 +313,34 @@ export default function InvoiceTemplate(props: InvoiceTemplateProps) {
                 </span>
               </div>
             ) : null}
+            {planFrom && planTo ? (
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Valid:</span>
+                <span className={styles.detailValue}>
+                  {formatDate(planFrom)} – {formatDate(planTo)}
+                </span>
+              </div>
+            ) : null}
+            {placeOfSupply ? (
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Place of Supply:</span>
+                <span className={styles.detailValue}>{placeOfSupply}</span>
+              </div>
+            ) : null}
+            <div className={styles.detailRow}>
+              <span className={styles.detailLabel}>Status:</span>
+              <span
+                className={`${styles.statusBadge} ${
+                  status.tone === "paid"
+                    ? styles.statusPaid
+                    : status.tone === "partial"
+                      ? styles.statusPartial
+                      : styles.statusDue
+                }`}
+              >
+                {status.label}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -279,13 +348,22 @@ export default function InvoiceTemplate(props: InvoiceTemplateProps) {
           <thead>
             <tr>
               <th className={styles.thDescription}>Description</th>
+              {sacCode ? <th className={styles.thCode}>SAC</th> : null}
               <th className={styles.thAmount}>Amount</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item, idx) => (
               <tr key={idx}>
-                <td className={styles.tdDescription}>{item.description}</td>
+                <td className={styles.tdDescription}>
+                  {item.description}
+                  {planName && idx === 0 ? (
+                    <span className={styles.tdSubtext}>{planName}</span>
+                  ) : null}
+                </td>
+                {sacCode ? (
+                  <td className={styles.tdCode}>{sacCode}</td>
+                ) : null}
                 <td className={styles.tdAmount}>
                   {formatCurrency(item.amount)}
                 </td>
@@ -303,17 +381,17 @@ export default function InvoiceTemplate(props: InvoiceTemplateProps) {
               {formatCurrency(subtotal)}
             </span>
           </div>
-          {taxPercentage > 0 ? (
-            <div className={styles.summaryRow}>
+          {taxLines.map((line) => (
+            <div className={styles.summaryRow} key={line.label}>
               <span className={styles.summaryLabel}>
-                GST ({taxPercentage}%)
-                {taxMode === "included" ? " included" : ""}
+                {line.label}
+                {taxMode === "included" ? " incl." : ""}
               </span>
               <span className={styles.summaryValue}>
-                {formatCurrency(taxAmount)}
+                {formatCurrency(line.amount)}
               </span>
             </div>
-          ) : null}
+          ))}
           <div className={`${styles.summaryRow} ${styles.totalRow}`}>
             <span className={styles.totalLabel}>Total</span>
             <span
@@ -323,12 +401,57 @@ export default function InvoiceTemplate(props: InvoiceTemplateProps) {
               {formatCurrency(totalAmount)}
             </span>
           </div>
+
+          {props.amountPaid !== undefined && props.amountPaid !== null ? (
+            <>
+              <div className={styles.summaryRow}>
+                <span className={styles.summaryLabel}>
+                  Received
+                  {props.paymentMode ? ` (${props.paymentMode})` : ""}
+                </span>
+                <span className={styles.summaryValue}>
+                  {formatCurrency(Number(props.amountPaid))}
+                </span>
+              </div>
+              {balanceDue > 0 ? (
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Balance due</span>
+                  <span className={styles.summaryValue}>
+                    {formatCurrency(balanceDue)}
+                  </span>
+                </div>
+              ) : null}
+            </>
+          ) : null}
         </div>
+
+        {showAmountInWords ? (
+          <div className={styles.wordsSection}>
+            <span className={styles.wordsLabel}>Amount in words</span>
+            <span className={styles.wordsValue}>
+              {amountInWords(totalAmount, branding.country)}
+            </span>
+          </div>
+        ) : null}
+
+        {props.paymentReference ? (
+          <p className={styles.refLine}>
+            Payment reference: {props.paymentReference}
+            {props.paymentDate ? ` · ${formatDate(props.paymentDate)}` : ""}
+          </p>
+        ) : null}
 
         {notes ? (
           <div className={styles.notesSection}>
             <h4 className={styles.notesTitle}>Notes</h4>
             <p className={styles.notesText}>{notes}</p>
+          </div>
+        ) : null}
+
+        {invoiceTerms ? (
+          <div className={styles.termsSection}>
+            <h4 className={styles.notesTitle}>Terms</h4>
+            <p className={styles.notesText}>{invoiceTerms}</p>
           </div>
         ) : null}
 

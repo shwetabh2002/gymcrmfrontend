@@ -88,3 +88,11 @@
   .profileGrid { grid-template-columns: 1fr; }
   .formGrid { grid-template-columns: 1fr; }
 }
+/* Helper text under a settings field. */
+.formHint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}

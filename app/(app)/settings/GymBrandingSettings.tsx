@@ -51,6 +51,11 @@ export default function GymBrandingSettings() {
   const [invoiceEmail, setInvoiceEmail] = useState("");
   const [invoicePhone, setInvoicePhone] = useState("");
   const [invoiceGstin, setInvoiceGstin] = useState("");
+  const [sacCode, setSacCode] = useState("");
+  const [placeOfSupply, setPlaceOfSupply] = useState("");
+  const [taxBreakup, setTaxBreakup] = useState("split");
+  const [showAmountInWords, setShowAmountInWords] = useState(true);
+  const [invoiceTerms, setInvoiceTerms] = useState("");
   const [invoiceFooter, setInvoiceFooter] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [invoiceLayout, setInvoiceLayout] = useState<InvoiceLayout>("classic");
@@ -73,6 +78,11 @@ export default function GymBrandingSettings() {
     setInvoiceEmail(settings.invoiceEmail || "");
     setInvoicePhone(settings.invoicePhone || "");
     setInvoiceGstin(settings.invoiceGstin || "");
+    setSacCode(settings.invoiceSacCode || "");
+    setPlaceOfSupply(settings.invoicePlaceOfSupply || "");
+    setTaxBreakup(settings.invoiceTaxBreakup || "split");
+    setShowAmountInWords(settings.invoiceShowAmountInWords !== false);
+    setInvoiceTerms(settings.invoiceTerms || "");
     setInvoiceFooter(settings.invoiceFooter || "");
     setWebsiteUrl(settings.websiteUrl || "");
     setInvoiceLayout((settings.invoiceLayout as InvoiceLayout) || "classic");
@@ -136,6 +146,11 @@ export default function GymBrandingSettings() {
         invoiceShowContact: showContact,
         invoiceTaxPercentage: taxPercentage,
         invoiceTaxMode: taxMode,
+        invoiceSacCode: sacCode.trim(),
+        invoicePlaceOfSupply: placeOfSupply.trim(),
+        invoiceTaxBreakup: taxBreakup,
+        invoiceShowAmountInWords: showAmountInWords,
+        invoiceTerms: invoiceTerms.trim(),
         countryCode,
       });
       toast.success("Saved for this gym — invoices & app will use these settings");
@@ -418,6 +433,66 @@ export default function GymBrandingSettings() {
             value={invoiceGstin}
             onChange={(e) => setInvoiceGstin(e.target.value)}
             placeholder="22AAAAA0000A1Z5"
+            disabled={!canEdit}
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>SAC / HSN code</label>
+          <input
+            className={styles.formInput}
+            value={sacCode}
+            onChange={(e) => setSacCode(e.target.value)}
+            placeholder="999723"
+            disabled={!canEdit}
+          />
+          <span className={styles.formHint}>
+            Printed against each line. 999723 is gym &amp; fitness services.
+          </span>
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Place of supply</label>
+          <input
+            className={styles.formInput}
+            value={placeOfSupply}
+            onChange={(e) => setPlaceOfSupply(e.target.value)}
+            placeholder="Maharashtra"
+            disabled={!canEdit}
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Tax breakup</label>
+          <select
+            className={styles.formInput}
+            value={taxBreakup}
+            onChange={(e) => setTaxBreakup(e.target.value)}
+            disabled={!canEdit}
+          >
+            <option value="split">CGST + SGST (same state)</option>
+            <option value="single">Single line / IGST</option>
+          </select>
+        </div>
+        <div className={styles.formGroup}>
+          <label
+            className={styles.formLabel}
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
+          >
+            <input
+              type="checkbox"
+              checked={showAmountInWords}
+              onChange={(e) => setShowAmountInWords(e.target.checked)}
+              disabled={!canEdit}
+            />
+            Show amount in words
+          </label>
+        </div>
+        <div className={styles.formGroup} style={{ gridColumn: "1 / -1" }}>
+          <label className={styles.formLabel}>Terms / declaration</label>
+          <textarea
+            className={styles.formInput}
+            rows={2}
+            value={invoiceTerms}
+            onChange={(e) => setInvoiceTerms(e.target.value)}
+            placeholder="Fees once paid are non-refundable."
             disabled={!canEdit}
           />
         </div>

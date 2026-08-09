@@ -36,6 +36,37 @@ function getMember(inv: Invoice) {
   return null;
 }
 
+/**
+ * Pulls the plan period, member number and what was actually collected off the
+ * populated invoice, so the document can say more than "an amount was billed".
+ */
+function invoiceDocumentDetails(inv: Invoice) {
+  const member = getMember(inv);
+  const sub =
+    typeof inv.subscriptionId === "object" && inv.subscriptionId !== null
+      ? inv.subscriptionId
+      : null;
+  const payment =
+    typeof inv.paymentId === "object" && inv.paymentId !== null
+      ? inv.paymentId
+      : null;
+  const plan =
+    sub && typeof sub.planId === "object" && sub.planId !== null
+      ? sub.planId
+      : null;
+
+  return {
+    memberIdNo: member?.idNo ?? null,
+    planName: plan?.name ?? null,
+    planFrom: sub?.startDate ?? null,
+    planTo: sub?.expiryDate ?? null,
+    amountPaid: payment?.amount ?? null,
+    paymentMode: payment?.paymentMode ?? null,
+    paymentDate: payment?.paymentDate ?? null,
+    paymentReference: payment?.transactionId ?? null,
+  };
+}
+
 export default function InvoicesPage() {
   const { data: invoices, isLoading, isError } = useInvoices();
   const { mutate: deleteInvoice } = useDeleteInvoice();
@@ -350,6 +381,7 @@ export default function InvoicesPage() {
                       memberName={getMember(selectedInvoice)?.name || ""}
                       memberContact={getMember(selectedInvoice)?.phone || ""}
                       memberInstagram={undefined}
+                      {...invoiceDocumentDetails(selectedInvoice)}
                       items={selectedInvoice.items}
                       subtotal={selectedInvoice.subtotal}
                       taxPercentage={selectedInvoice.taxPercentage}

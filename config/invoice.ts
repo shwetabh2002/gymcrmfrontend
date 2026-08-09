@@ -20,6 +20,14 @@ export const INVOICE_STAMP_ALIGN_LABELS: Record<InvoiceStampAlign, string> = {
 };
 
 export type InvoiceDisplayOptions = {
+  /** SAC / HSN printed against the line item. */
+  sacCode?: string | null;
+  /** State whose GST applies. */
+  placeOfSupply?: string | null;
+  /** split = CGST + SGST, single = one combined tax line. */
+  taxBreakup?: string;
+  showAmountInWords?: boolean;
+  terms?: string | null;
   layout: InvoiceLayout;
   showLogo: boolean;
   showStamp: boolean;
@@ -29,6 +37,9 @@ export type InvoiceDisplayOptions = {
   stampAlign: InvoiceStampAlign;
 };
 
+/** SAC for gym / fitness services; a gym may override it in Settings. */
+export const DEFAULT_SAC_CODE = "999723";
+
 export const DEFAULT_INVOICE_DISPLAY: InvoiceDisplayOptions = {
   layout: "classic",
   showLogo: true,
@@ -37,6 +48,12 @@ export const DEFAULT_INVOICE_DISPLAY: InvoiceDisplayOptions = {
   showAddress: true,
   showContact: true,
   stampAlign: "right",
+  sacCode: DEFAULT_SAC_CODE,
+  placeOfSupply: null,
+  /** CGST + SGST halves; "single" prints one combined line (IGST). */
+  taxBreakup: "split",
+  showAmountInWords: true,
+  terms: null,
 };
 
 export function isInvoiceStampAlign(v: unknown): v is InvoiceStampAlign {

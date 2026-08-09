@@ -116,6 +116,12 @@ function resolveInvoiceOptions(settings?: GymSettings): InvoiceDisplayOptions {
     showAddress: settings?.invoiceShowAddress !== false,
     showContact: settings?.invoiceShowContact !== false,
     stampAlign,
+    sacCode: settings?.invoiceSacCode ?? DEFAULT_INVOICE_DISPLAY.sacCode,
+    placeOfSupply: settings?.invoicePlaceOfSupply ?? null,
+    taxBreakup:
+      settings?.invoiceTaxBreakup ?? DEFAULT_INVOICE_DISPLAY.taxBreakup,
+    showAmountInWords: settings?.invoiceShowAmountInWords !== false,
+    terms: settings?.invoiceTerms ?? null,
   };
 }
 

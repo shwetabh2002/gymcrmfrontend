@@ -28,6 +28,14 @@ export interface GymSettings {
   invoiceStampAlign?: "left" | "center" | "right";
   invoiceTaxPercentage?: number;
   invoiceTaxMode?: "excluded" | "included";
+  /** SAC / HSN printed on the invoice line */
+  invoiceSacCode?: string | null;
+  /** State whose GST applies */
+  invoicePlaceOfSupply?: string | null;
+  /** split = CGST + SGST halves, single = one combined line */
+  invoiceTaxBreakup?: string;
+  invoiceShowAmountInWords?: boolean;
+  invoiceTerms?: string | null;
   /** Per-gym UPI Autopay feature flag (default off) */
   autopayEnabled?: boolean;
   /** Mandate the member approves: upi | emandate | card | nach */
@@ -68,6 +76,14 @@ export interface UpdateGymSettingsPayload {
   invoiceStampAlign?: "left" | "center" | "right";
   invoiceTaxPercentage?: number;
   invoiceTaxMode?: "excluded" | "included";
+  /** SAC / HSN printed on the invoice line */
+  invoiceSacCode?: string | null;
+  /** State whose GST applies */
+  invoicePlaceOfSupply?: string | null;
+  /** split = CGST + SGST halves, single = one combined line */
+  invoiceTaxBreakup?: string;
+  invoiceShowAmountInWords?: boolean;
+  invoiceTerms?: string | null;
   autopayEnabled?: boolean;
   autopayMethod?: string;
   autopayMandateMultiplier?: number;

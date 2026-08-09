@@ -26,8 +26,26 @@ export interface Invoice {
         invoiceShowAddress?: boolean | null;
         invoiceShowContact?: boolean | null;
       };
-  memberId: string | { _id: string; name: string; email: string; phone: string };
-  subscriptionId: string | { _id: string; planPrice: number; paymentStatus: string };
+  memberId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        email: string;
+        phone: string;
+        /** Gym's own member number, e.g. GYM-0042 */
+        idNo?: string | null;
+      };
+  subscriptionId:
+    | string
+    | {
+        _id: string;
+        planPrice: number;
+        paymentStatus: string;
+        startDate?: string;
+        expiryDate?: string;
+        planId?: string | { _id: string; name: string };
+      };
   items: InvoiceItem[];
   subtotal: number;
   taxPercentage: number;
@@ -35,7 +53,15 @@ export interface Invoice {
   totalAmount: number;
   invoiceDate: string;
   dueDate?: string;
-  paymentId?: string | { _id: string; amount: number; paymentMode: string };
+  paymentId?:
+    | string
+    | {
+        _id: string;
+        amount: number;
+        paymentMode: string;
+        paymentDate?: string;
+        transactionId?: string | null;
+      };
   generatedBy?: string | { _id: string; name: string; email: string };
   notes?: string;
   taxMode?: "included" | "excluded" | string;
