@@ -4,9 +4,18 @@ import {
   CreateMemberSubscriptionPayload,
   UpdateMemberSubscriptionPayload,
   AddPaymentPayload,
+  SubscriptionListParams,
 } from "./subscriptions.api";
 
 // 🔹 Fetch All Member Subscriptions
+/** Paged subscriptions; keeps the previous page visible while the next loads. */
+export const useSubscriptionsPaged = (params: SubscriptionListParams) =>
+  useQuery({
+    queryKey: ["member-subscriptions", "paged", params],
+    queryFn: () => memberSubscriptionsApi.getSubscriptionsPaged(params),
+    placeholderData: (previous) => previous,
+  });
+
 export const useMemberSubscriptions = () => {
   return useQuery({
     queryKey: ["member-subscriptions"],

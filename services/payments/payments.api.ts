@@ -70,9 +70,29 @@ async function postMultipartPaymentProof(
   return data;
 }
 
+export type Paginated<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+};
+
+export type PaymentListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  /** ALL | CASH | ONLINE */
+  mode?: string;
+};
+
 export const paymentsApi = {
   getPayments: () =>
     requestService.get<Payment[]>(API_CONFIG.PAYMENTS.BASE),
+
+  /** Server-side paging, search and mode filter. */
+  getPaymentsPaged: (params: PaymentListParams) =>
+    requestService.get<Paginated<Payment>>(API_CONFIG.PAYMENTS.BASE, params),
 
   getPaymentById: (id: string) =>
     requestService.get<Payment>(API_CONFIG.PAYMENTS.BY_ID(id)),

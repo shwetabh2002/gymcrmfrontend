@@ -57,10 +57,34 @@ export interface AddPaymentPayload {
   amount: number;
 }
 
+export type Paginated<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+};
+
+export type SubscriptionListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  /** ALL | ACTIVE | EXPIRING_SOON | EXPIRED | CANCELLED */
+  status?: string;
+};
+
 export const memberSubscriptionsApi = {
+  /** Unpaged. The server caps this, so prefer the paged call for real lists. */
   getMemberSubscriptions: () =>
     requestService.get<MemberSubscription[]>(
       API_CONFIG.MEMBER_SUBSCRIPTIONS.BASE,
+    ),
+
+  /** Server-side paging, search and status filter. */
+  getSubscriptionsPaged: (params: SubscriptionListParams) =>
+    requestService.get<Paginated<MemberSubscription>>(
+      API_CONFIG.MEMBER_SUBSCRIPTIONS.BASE,
+      params,
     ),
 
   getMemberSubscriptionById: (id: string) =>

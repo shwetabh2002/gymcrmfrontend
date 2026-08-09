@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import styles from "./Billing.module.css";
-import { usePayments } from "@/services/payments/payments.hooks";
+import { usePaymentsPaged } from "@/services/payments/payments.hooks";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { useRevenueAnalytics } from "@/services/analytics/analytics.hooks";
-import { useMemberSubscriptions } from "@/services/subscriptions/subscriptions.hook";
+import { useSubscriptionsPaged } from "@/services/subscriptions/subscriptions.hook";
 import { Payment } from "@/services/payments/payments.api";
 import { MemberSubscription } from "@/services/subscriptions/subscriptions.api";
 import { BillingModal, BillingMode } from "./BillingModal";
@@ -76,6 +77,9 @@ type BillingLaunch = {
   subscriptionId?: string;
 };
 
+/** Rows per page in both billing tabs. */
+const BILLING_PAGE_SIZE = 25;
+
 export default function BillingPage() {
   return (
     <Suspense fallback={<div style={{ padding: 32 }}>Loading…</div>}>
@@ -109,52 +113,50 @@ function BillingPageInner() {
   const [cancelSub, setCancelSub] = useState<MemberSubscription | null>(null);
   const [voidPay, setVoidPay] = useState<Payment | null>(null);
 
-  const {
-    data: payments,
-    isLoading: payLoading,
-    isError: payError,
-  } = usePayments();
-  const {
-    data: subs,
-    isLoading: subLoading,
-    isError: subError,
-  } = useMemberSubscriptions();
-  const { data: revenue } = useRevenueAnalytics();
-
   const [search, setSearch] = useState("");
   const [modeFilter, setModeFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
+  /** Typing now reaches the database, so wait for the typing to settle. */
+  const debouncedSearch = useDebouncedValue(search, 300);
 
-  const filteredPayments = useMemo(() => {
-    if (!payments) return [];
-    return payments.filter((p) => {
-      const member = getPaymentMember(p);
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q ||
-        member?.name.toLowerCase().includes(q) ||
-        (member?.phone ?? "").includes(q);
-      const matchMode = modeFilter === "ALL" || p.paymentMode === modeFilter;
-      return matchSearch && matchMode;
-    });
-  }, [payments, search, modeFilter]);
+  const {
+    data: pagedPayments,
+    isLoading: payLoading,
+    isError: payError,
+  } = usePaymentsPaged({
+    page: tab === "payments" ? page : 1,
+    limit: BILLING_PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    mode: modeFilter,
+  });
+  const {
+    data: pagedSubs,
+    isLoading: subLoading,
+    isError: subError,
+  } = useSubscriptionsPaged({
+    page: tab === "memberships" ? page : 1,
+    limit: BILLING_PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    status: statusFilter,
+  });
+  const { data: revenue } = useRevenueAnalytics();
 
-  const filteredSubs = useMemo(() => {
-    if (!subs) return [];
-    return subs.filter((sub) => {
-      const member = getMember(sub);
-      const plan = getPlan(sub);
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q ||
-        member?.name.toLowerCase().includes(q) ||
-        (member?.contactNumber ?? member?.phone ?? "").includes(q) ||
-        (plan?.name ?? "").toLowerCase().includes(q);
-      const matchStatus =
-        statusFilter === "ALL" || sub.subscriptionStatus === statusFilter;
-      return matchSearch && matchStatus;
-    });
-  }, [subs, search, statusFilter]);
+  const payments = pagedPayments?.items;
+  const subs = pagedSubs?.items;
+  const activePaged = tab === "payments" ? pagedPayments : pagedSubs;
+  const total = activePaged?.total ?? 0;
+  const pages = activePaged?.pages ?? 1;
+
+  // Switching tab or narrowing the list makes the current page number stale.
+  useEffect(() => {
+    setPage(1);
+  }, [tab, debouncedSearch, modeFilter, statusFilter]);
+
+  // Search, mode and status are applied by the server, so these are simply the
+  // rows this page was handed.
+  const filteredPayments = payments ?? [];
+  const filteredSubs = subs ?? [];
 
   const STATS = [
     {
@@ -622,6 +624,59 @@ function BillingPageInner() {
               )}
             </>
           )}
+
+          {/* Server-side paging: the table only ever holds one page. */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "14px 0 4px",
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>
+              {total === 0
+                ? "Nothing to show"
+                : `Showing ${(page - 1) * BILLING_PAGE_SIZE + 1}–${
+                    (page - 1) * BILLING_PAGE_SIZE +
+                    (tab === "payments"
+                      ? filteredPayments.length
+                      : filteredSubs.length)
+                  } of ${total}`}
+            </span>
+
+            {pages > 1 ? (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  marginLeft: "auto",
+                }}
+              >
+                <button
+                  type="button"
+                  className={styles.pageNav}
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  ← Prev
+                </button>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>
+                  Page {page} of {pages}
+                </span>
+                <button
+                  type="button"
+                  className={styles.pageNav}
+                  disabled={page >= pages}
+                  onClick={() => setPage((p) => Math.min(pages, p + 1))}
+                >
+                  Next →
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </motion.div>
     </div>

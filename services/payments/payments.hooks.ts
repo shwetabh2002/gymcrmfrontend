@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { paymentsApi, CreatePaymentPayload, UpdatePaymentPayload } from "./payments.api";
+import { paymentsApi, CreatePaymentPayload, UpdatePaymentPayload , PaymentListParams } from "./payments.api";
+
+/** Paged payments; keeps the previous page visible while the next loads. */
+export const usePaymentsPaged = (params: PaymentListParams) =>
+  useQuery({
+    queryKey: ["payments", "paged", params],
+    queryFn: () => paymentsApi.getPaymentsPaged(params),
+    placeholderData: (previous) => previous,
+  });
 
 export const usePayments = () =>
   useQuery({ queryKey: ["payments"], queryFn: paymentsApi.getPayments });
