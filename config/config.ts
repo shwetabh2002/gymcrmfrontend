@@ -110,6 +110,23 @@ export const API_CONFIG = {
     MESSAGES: "/whatsapp/messages",
   },
 
+  SUBSCRIPTION: {
+    BASE: "/subscription",
+    PLANS: "/subscription/plans",
+    INVOICES: "/subscription/invoices",
+    PLAN: "/subscription/plan",
+    MANDATE: "/subscription/mandate",
+    CANCEL: "/subscription/cancel",
+    RESUME: "/subscription/resume",
+  },
+
+  PLATFORM: {
+    OVERVIEW: "/platform/overview",
+    COMPANIES: "/platform/companies",
+    PLANS: "/platform/plans",
+    RUN_BILLING: "/platform/billing/run",
+  },
+
   EMAIL_TEMPLATES: {
     BASE: "/email-templates",
     BY_TYPE: (type: string) => `/email-templates/${type}`,

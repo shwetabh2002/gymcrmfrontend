@@ -380,6 +380,11 @@ export function canAccessRoute(
     return role === "SUPER_ADMIN";
   }
 
+  // Platform billing across all gyms — ours, not any tenant's.
+  if (href === "/platform" || href.startsWith("/platform")) {
+    return role === "SUPER_ADMIN";
+  }
+
   const entry = Object.entries(ROUTE_PERMISSION).find(
     ([path]) => href === path || (path !== "/dashboard" && href.startsWith(path)),
   );
@@ -510,7 +515,10 @@ export function navItemsForRole(
 ) {
   const all = [
     ...(role === "SUPER_ADMIN"
-      ? [{ href: "/companies", label: "Companies", icon: "⬡" }]
+      ? [
+          { href: "/companies", label: "Companies", icon: "⬡" },
+          { href: "/platform", label: "Platform", icon: "◈" },
+        ]
       : []),
     { href: "/dashboard", label: "Dashboard", icon: "⊞" },
     { href: "/renewals", label: "Expiry Follow-ups", icon: "↻" },

@@ -8,6 +8,7 @@ import { canAccessRoute, getDefaultRoute } from "@/lib/rbac";
 import Sidebar from "../(app)/components/layout/Sidebar";
 import Header  from "../(app)/components/layout/Header";
 import Footer  from "../(app)/components/layout/Footer";
+import SubscriptionBanner from "../(app)/components/SubscriptionBanner";
 import styles  from "./AppLayout.module.css";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -57,6 +58,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className={styles.main}>
         <Header />
         <div className={styles.content}>
+          {/* Shows only when the trial is running out or billing needs action. */}
+          <SubscriptionBanner />
           {children}
         </div>
         <Footer />
