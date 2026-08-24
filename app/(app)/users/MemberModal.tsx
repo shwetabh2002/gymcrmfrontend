@@ -57,11 +57,39 @@ const COUNTRY_CODES = [
 
 // Membership plan pricing (update these with actual website prices)
 const MEMBERSHIP_PLANS = [
-  { months: 1, label: "1 Month", price: 3000 },
-  { months: 3, label: "3 Months", price: 8000 },
-  { months: 6, label: "6 Months", price: 15000 },
-  { months: 12, label: "12 Months", price: 28000 },
+  { id: "1m", months: 1, label: "1 Month", price: 3000, trainingType: "GT" as const },
+  { id: "3m", months: 3, label: "3 Months", price: 8000, trainingType: "GT" as const },
+  { id: "6m", months: 6, label: "6 Months", price: 15000, trainingType: "GT" as const },
+  { id: "12m", months: 12, label: "12 Months", price: 28000, trainingType: "GT" as const },
+  { id: "1m-pt", months: 1, label: "1 Month + PT", price: 12000, trainingType: "PT" as const },
+  { id: "3m-pt", months: 3, label: "3 Months + PT", price: 32000, trainingType: "PT" as const },
+  { id: "6m-pt", months: 6, label: "6 Months + PT", price: 60000, trainingType: "PT" as const },
 ];
+
+function findPlanByForm(form: {
+  membershipMonths?: number;
+  membershipPlan?: string;
+  amount?: number;
+  trainingType?: string;
+}) {
+  return (
+    MEMBERSHIP_PLANS.find(
+      (p) =>
+        p.label === form.membershipPlan &&
+        p.months === form.membershipMonths,
+    ) ||
+    MEMBERSHIP_PLANS.find(
+      (p) =>
+        p.months === form.membershipMonths &&
+        p.price === form.amount &&
+        p.trainingType === form.trainingType,
+    ) ||
+    MEMBERSHIP_PLANS.find(
+      (p) => p.months === form.membershipMonths && p.price === form.amount,
+    ) ||
+    null
+  );
+}
 
 // Fixed approvers for discount
 const APPROVERS = ["Mannu Rawat", "Suman Upadhyaya"];
@@ -93,18 +121,21 @@ export default function MemberModal({ open, onClose, existing }: Props) {
   const salesEmployees = (!employeesError && employees?.filter(emp => emp.employeeType === "SALES" && emp.status === "ACTIVE")) || [];
   const trainerEmployees = (!employeesError && employees?.filter(emp => emp.employeeType === "TRAINER" && emp.status === "ACTIVE")) || [];
 
-  // Handle membership plan selection - auto-fill price
+  // Handle membership plan selection - auto-fill price + training type
   const handlePlanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const months = parseInt(e.target.value);
-    const selectedPlan = MEMBERSHIP_PLANS.find(p => p.months === months);
+    const selectedPlan = MEMBERSHIP_PLANS.find((p) => p.id === e.target.value);
     if (selectedPlan) {
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
-        membershipMonths: months,
+        membershipMonths: selectedPlan.months,
         membershipPlan: selectedPlan.label,
         amount: selectedPlan.price,
         membershipAmount: selectedPlan.price,
-        expiryDate: addMonthsToYmd(prev.startingDate || new Date().toISOString().split("T")[0], months),
+        trainingType: selectedPlan.trainingType,
+        expiryDate: addMonthsToYmd(
+          prev.startingDate || new Date().toISOString().split("T")[0],
+          selectedPlan.months,
+        ),
       }));
     }
   };
@@ -218,14 +249,32 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       if (name === "contactNumber" && typeof processedValue === "string") {
         next.phone = processedValue;
       }
+      if (name === "amount") {
+        const price = Number(processedValue ?? 0);
+        const matched = MEMBERSHIP_PLANS.find(
+          (p) =>
+            p.price === price &&
+            p.months === Number(next.membershipMonths ?? 0),
+        );
+        if (matched) {
+          next.membershipPlan = matched.label;
+          next.membershipAmount = matched.price;
+          next.trainingType = matched.trainingType;
+        }
+      }
       if (name === "membershipMonths") {
         const months = Number(processedValue ?? 0);
         if (months >= 1) {
-          const selectedPlan = MEMBERSHIP_PLANS.find((p) => p.months === months);
+          const matches = MEMBERSHIP_PLANS.filter((p) => p.months === months);
+          const selectedPlan =
+            matches.find((p) => p.trainingType === next.trainingType) ||
+            matches.find((p) => p.label === next.membershipPlan) ||
+            matches[0];
           if (selectedPlan) {
             next.membershipPlan = selectedPlan.label;
             next.amount = selectedPlan.price;
             next.membershipAmount = selectedPlan.price;
+            next.trainingType = selectedPlan.trainingType;
           }
           next.expiryDate = addMonthsToYmd(
             next.startingDate || new Date().toISOString().split("T")[0],
@@ -539,10 +588,15 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                 <div className={styles.row}>
                   <div className={styles.field}>
                     <label className={styles.label}>Membership Plan *</label>
-                    <select className={styles.input} value={form.membershipMonths ?? ""} onChange={handlePlanChange} disabled={isEdit}>
+                    <select
+                      className={styles.input}
+                      value={findPlanByForm(form)?.id ?? ""}
+                      onChange={handlePlanChange}
+                      disabled={isEdit}
+                    >
                       <option value="">Select Plan</option>
-                      {MEMBERSHIP_PLANS.map(plan => (
-                        <option key={plan.months} value={plan.months}>
+                      {MEMBERSHIP_PLANS.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
                           {plan.label} - ₹{plan.price.toLocaleString()}
                         </option>
                       ))}
@@ -637,10 +691,11 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                     >
                       <option value="">Select Amount</option>
                       {MEMBERSHIP_PLANS
-                        .filter(plan => plan.months === form.membershipMonths)
-                        .map(plan => (
-                          <option key={plan.months} value={plan.price}>
+                        .filter((plan) => plan.months === form.membershipMonths)
+                        .map((plan) => (
+                          <option key={plan.id} value={plan.price}>
                             ₹{plan.price.toLocaleString()}
+                            {plan.trainingType === "PT" ? " (PT)" : ""}
                           </option>
                         ))}
                     </select>

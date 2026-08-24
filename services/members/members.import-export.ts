@@ -185,14 +185,20 @@ function normalizeMemberType(value: string | undefined): "New" | "Old" | "Renewa
  */
 function determineMemberStatus(expiryDate: string | undefined): "ACTIVE" | "INACTIVE" | "EXPIRED" {
   if (!expiryDate) return "ACTIVE";
-  
+
   try {
     const expiry = new Date(formatDateForDb(expiryDate));
-    const now = new Date();
-    
     if (isNaN(expiry.getTime())) return "ACTIVE";
-    
-    return expiry < now ? "EXPIRED" : "ACTIVE";
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const inactiveFrom = new Date(expiry);
+    inactiveFrom.setMonth(inactiveFrom.getMonth() + 3);
+
+    if (inactiveFrom < today) return "INACTIVE";
+    if (expiry < today) return "EXPIRED";
+    return "ACTIVE";
   } catch {
     return "ACTIVE";
   }

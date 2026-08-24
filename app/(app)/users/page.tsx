@@ -64,14 +64,54 @@ function formatCurrency(amount?: number) {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
-// Helper to get active membership from memberships array
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// Helper to get current membership (ACTIVE preferred, else latest by expiry)
 function getActiveMembership(member: Member) {
-  return member.memberships?.find(m => m.status === "ACTIVE") || null;
+  const list = member.memberships || [];
+  const active = list.filter((m) => m.status === "ACTIVE");
+  if (active.length) return active[active.length - 1];
+  if (!list.length) return null;
+  return [...list].sort((a, b) => {
+    const ta = a.expiryDate ? new Date(a.expiryDate).getTime() : 0;
+    const tb = b.expiryDate ? new Date(b.expiryDate).getTime() : 0;
+    return tb - ta;
+  })[0] || null;
+}
+
+/** Status from expiry: past → EXPIRED; past + 3 months → INACTIVE. */
+function resolveDisplayStatus(member: Member): string {
+  const stored = (member.memberStatus || "").toUpperCase();
+  if (stored === "SUSPENDED") return "SUSPENDED";
+  if (stored === "INACTIVE") return "INACTIVE";
+
+  const current = getActiveMembership(member);
+  const raw = current?.expiryDate ?? member.expiryDate;
+  if (raw) {
+    const expiry = new Date(raw);
+    if (!Number.isNaN(expiry.getTime())) {
+      const today = startOfToday();
+      const inactiveFrom = new Date(expiry);
+      inactiveFrom.setMonth(inactiveFrom.getMonth() + 3);
+      if (inactiveFrom < today) return "INACTIVE";
+      if (expiry < today) return "EXPIRED";
+    }
+  }
+
+  if (stored === "EXPIRED" || stored === "ACTIVE" || stored === "INACTIVE") {
+    return stored;
+  }
+  return "ACTIVE";
 }
 
 // Helper to get membership info with fallback to legacy fields
 function getMembershipInfo(member: Member) {
   const activeMembership = getActiveMembership(member);
+  const status = resolveDisplayStatus(member);
 
   if (activeMembership) {
     return {
@@ -81,7 +121,7 @@ function getMembershipInfo(member: Member) {
       startDate: activeMembership.startDate,
       expiryDate: activeMembership.expiryDate,
       months: activeMembership.months,
-      status: activeMembership.status,
+      status,
     };
   }
 
@@ -93,7 +133,7 @@ function getMembershipInfo(member: Member) {
     startDate: member.startingDate,
     expiryDate: member.expiryDate,
     months: member.membershipMonths,
-    status: member.memberStatus,
+    status,
   };
 }
 
@@ -423,8 +463,8 @@ export default function UsersPage() {
                     </td>
                     <td className={styles.cellMono}>{formatDate(getMembershipInfo(m).expiryDate)}</td>
                     <td>
-                      <span className={`${styles.badge} ${statusBadgeClass(m.memberStatus, styles)}`}>
-                        {m.memberStatus ?? "ACTIVE"}
+                      <span className={`${styles.badge} ${statusBadgeClass(resolveDisplayStatus(m), styles)}`}>
+                        {resolveDisplayStatus(m)}
                       </span>
                     </td>
                     <td>
