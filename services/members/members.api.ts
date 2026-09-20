@@ -11,12 +11,14 @@ export interface Member {
   email?: string;
   phone?: string | null;
   contactNumber?: string;
+  /** Dial prefix, e.g. +91 */
+  countryCode?: string | null;
   dob?: string | null;
   instagramHandle?: string | null;
   photoUrl?: string | null;
   registrationDate?: string | null;
   date?: string | null;
-  trainingType?: "GT" | "PT" | "OTHER" | null;
+  trainingType?: "GT" | "PT" | "NONE" | "OTHER" | null;
   trainerId?: string | null;
   salesPersonId?: string | null;
   trainer?: string | null;
@@ -26,6 +28,10 @@ export interface Member {
   amount?: number | null;
   received?: number | null;
   pending?: number | null;
+  dueReminderDate?: string | null;
+  /** GST snapshot from current subscription (null = fall back to live settings) */
+  taxPercentage?: number | null;
+  taxMode?: "included" | "excluded" | string | null;
   mop?: string | null;
   startingDate?: string | null;
   expiryDate?: string | null;
@@ -44,11 +50,13 @@ export interface CreateMemberPayload {
   sendEmail?: boolean;
   name: string;
   phone: string;
+  /** Default +91 on the server if omitted */
+  countryCode?: string;
   email?: string;
   registrationDate?: string;
   dob?: string;
   instagramHandle?: string;
-  trainingType?: "GT" | "PT" | "OTHER";
+  trainingType?: "GT" | "PT" | "NONE" | "OTHER";
   trainerId?: string;
   salesPersonId?: string;
   memberStatus?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
@@ -57,6 +65,7 @@ export interface CreateMemberPayload {
   expiryDate?: string;
   amount?: number;
   received?: number;
+  dueReminderDate?: string;
   paymentMode?: PaymentMode;
   locationId?: string;
   photoUrl?: string;
@@ -113,6 +122,8 @@ export type MemberListParams = {
   status?: string;
   /** ALL | GT | PT | OTHER */
   trainingType?: string;
+  /** "true" — only members with pending dues (sorted nearest reminder first) */
+  hasPending?: string;
 };
 
 export const membersApi = {

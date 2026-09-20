@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import styles from "./Billing.module.css";
 import { usePaymentsPaged } from "@/services/payments/payments.hooks";
@@ -21,10 +21,16 @@ import {
   normalizePermissions,
 } from "@/lib/rbac";
 import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
-import { resolveInvoiceTax, formatAmountWithGstInline } from "@/lib/tax";
+import { resolveInvoiceTax, resolveRecordTax, formatAmountWithGstInline } from "@/lib/tax";
 import { MoneyWithGst } from "@/components/MoneyWithGst";
 import { RowActions } from "@/components/RowActions";
 import { EASE_OUT_EXPO } from "@/config/motion";
+import {
+  FilterBar,
+  FilterField,
+  FilterSearch,
+  FilterSelect,
+} from "@/components/FilterBar/FilterBar";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -109,6 +115,21 @@ function BillingPageInner() {
 
   const [tab, setTab] = useState<"memberships" | "payments">(initialTab);
   const [launch, setLaunch] = useState<BillingLaunch | null>(null);
+  const router = useRouter();
+  const modeParam = searchParams.get("mode");
+  const memberParam = searchParams.get("memberId");
+  const subscriptionParam = searchParams.get("subscriptionId");
+
+  // Deep-link from Partial dues / elsewhere: open Collect for that member.
+  useEffect(() => {
+    if (modeParam !== "collect" || !memberParam) return;
+    setLaunch({
+      mode: "collect",
+      memberId: memberParam,
+      subscriptionId: subscriptionParam || undefined,
+    });
+    router.replace("/billing", { scroll: false });
+  }, [modeParam, memberParam, subscriptionParam, router]);
   const [editPayment, setEditPayment] = useState<Payment | null>(null);
   const [cancelSub, setCancelSub] = useState<MemberSubscription | null>(null);
   const [voidPay, setVoidPay] = useState<Payment | null>(null);
@@ -119,6 +140,17 @@ function BillingPageInner() {
   const [page, setPage] = useState(1);
   /** Typing now reaches the database, so wait for the typing to settle. */
   const debouncedSearch = useDebouncedValue(search, 300);
+
+  const activeFilterCount =
+    tab === "payments"
+      ? [search.trim() !== "", modeFilter !== "ALL"].filter(Boolean).length
+      : [search.trim() !== "", statusFilter !== "ALL"].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setModeFilter("ALL");
+    setStatusFilter("ALL");
+  };
 
   const {
     data: pagedPayments,
@@ -295,43 +327,43 @@ function BillingPageInner() {
             <span className={styles.cardTitleBar} />
             {tab === "memberships" ? "Plan assignments" : "Transactions"}
           </h2>
-          <div className={styles.toolbar}>
-            <div className={styles.searchWrap}>
-              <span className={styles.searchIcon}>⌕</span>
-              <input
-                className={styles.searchInput}
-                placeholder="Search member…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            {tab === "payments" ? (
-              <select
-                className={styles.filterSelect}
-                value={modeFilter}
-                onChange={(e) => setModeFilter(e.target.value)}
-              >
-                <option value="ALL">All Modes</option>
+        </div>
+        <FilterBar
+          title={tab === "memberships" ? "Membership filters" : "Payment filters"}
+          activeCount={activeFilterCount}
+          onClear={clearFilters}
+        >
+          <FilterField label="Search" grow>
+            <FilterSearch
+              value={search}
+              onChange={setSearch}
+              placeholder="Search member…"
+            />
+          </FilterField>
+          {tab === "payments" ? (
+            <FilterField label="Payment mode">
+              <FilterSelect value={modeFilter} onChange={setModeFilter}>
+                <option value="ALL">All modes</option>
                 {["CASH", "CARD", "UPI", "BANK_TRANSFER"].map((m) => (
                   <option key={m} value={m}>
                     {m.replace("_", " ")}
                   </option>
                 ))}
-              </select>
-            ) : (
-              <select
-                className={styles.filterSelect}
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="ALL">All Status</option>
+              </FilterSelect>
+            </FilterField>
+          ) : (
+            <FilterField label="Subscription status">
+              <FilterSelect value={statusFilter} onChange={setStatusFilter}>
+                <option value="ALL">All statuses</option>
                 <option value="ACTIVE">Active</option>
                 <option value="EXPIRED">Expired</option>
+                <option value="ENDED">Ended</option>
                 <option value="CANCELLED">Cancelled</option>
-              </select>
-            )}
-          </div>
-        </div>
+                <option value="EXPIRING_SOON">Expiring soon</option>
+              </FilterSelect>
+            </FilterField>
+          )}
+        </FilterBar>
 
         <div className={styles.tableWrap}>
           {tab === "memberships" && (
@@ -390,6 +422,10 @@ function BillingPageInner() {
                       const member = getMember(s);
                       const plan = getPlan(s);
                       const mid = memberIdOf(s);
+                      const subTax = resolveRecordTax(
+                        { taxPercentage, taxMode },
+                        s,
+                      );
                       return (
                         <tr key={s._id}>
                           <td>
@@ -405,8 +441,8 @@ function BillingPageInner() {
                             <div className={styles.cellSub}>
                               {formatAmountWithGstInline(
                                 s.planPrice,
-                                taxPercentage,
-                                taxMode,
+                                subTax.taxPercentage,
+                                subTax.taxMode,
                               )}
                             </div>
                           </td>
@@ -419,16 +455,16 @@ function BillingPageInner() {
                             <div>
                               {formatAmountWithGstInline(
                                 s.totalPaid,
-                                taxPercentage,
-                                taxMode,
+                                subTax.taxPercentage,
+                                subTax.taxMode,
                               )}
                             </div>
                             <div className={styles.cellSub}>
                               pending{" "}
                               {formatAmountWithGstInline(
                                 s.pendingAmount,
-                                taxPercentage,
-                                taxMode,
+                                subTax.taxPercentage,
+                                subTax.taxMode,
                               )}
                             </div>
                           </td>
@@ -440,7 +476,15 @@ function BillingPageInner() {
                                   : styles.badgePending
                               }`}
                             >
-                              {s.subscriptionStatus}
+                              {s.subscriptionStatus === "ENDED"
+                                ? "Ended"
+                                : s.subscriptionStatus === "CANCELLED"
+                                  ? "Cancelled"
+                                  : s.subscriptionStatus === "EXPIRED"
+                                    ? "Expired"
+                                    : s.subscriptionStatus === "EXPIRING_SOON"
+                                      ? "Expiring soon"
+                                      : s.subscriptionStatus}
                             </span>
                           </td>
                           <td>

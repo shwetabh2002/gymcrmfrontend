@@ -1,9 +1,5 @@
 /* ─── Page Layout ─────────────────────────────────────────────── */
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 32px 36px;
+.page { display: flex; flex-direction: column; gap: 28px; padding: 36px 40px;
   min-height: 100%;
   background: var(--bg);
   font-family: var(--sans);
@@ -46,7 +42,7 @@
 /* ─── Stats Grid ──────────────────────────────────────────────── */
 .statsGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
 .statCard  { background: var(--surface); padding: 18px 22px; display: flex; flex-direction: column; gap: 5px; }
-.statLabel { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2); display: flex; align-items: center; gap: 6px; }
+.statLabel { font-family: var(--sans); font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--text-2); display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .statDot   { width: 3px; height: 3px; border-radius: 50%; background: var(--text-3); }
 .statValue { font-family: var(--sans); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); line-height: 1; }
 
@@ -60,21 +56,11 @@
 .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .searchWrap { position: relative; display: flex; align-items: center; }
 .searchIcon { position: absolute; left: 9px; font-size: 13px; color: var(--text-2); pointer-events: none; user-select: none; }
-.searchInput {
-  background: #161616; border: 1px solid var(--border); border-radius: 5px;
-  color: var(--text); font-family: var(--sans); font-size: 12px;
-  padding: 6px 10px 6px 28px; outline: none; width: 200px;
-  transition: border-color 0.15s, width 0.2s;
-}
-.searchInput:focus { border-color: #3a3a3a; width: 240px; }
+.searchInput { width: 100%; background: #fff; border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 10px 12px 10px 34px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; box-sizing: border-box; transition: border-color 0.15s, box-shadow 0.15s; min-height: 42px; }
+.searchInput:focus { border-color: var(--red); box-shadow: 0 0 0 4px var(--red-dim); }
 .searchInput::placeholder { color: #444; }
-.filterSelect {
-  background: #161616; border: 1px solid var(--border); border-radius: 5px;
-  color: var(--text-2); font-family: var(--mono); font-size: 10px;
-  letter-spacing: 0.05em; padding: 6px 10px; outline: none; cursor: pointer;
-  transition: border-color 0.15s;
-}
-.filterSelect:focus { border-color: #3a3a3a; }
+.filterSelect { background: #fff; border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 10px 12px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; cursor: pointer; appearance: none; transition: border-color 0.15s, box-shadow 0.15s; min-height: 42px; }
+.filterSelect:focus { border-color: var(--red); box-shadow: 0 0 0 4px var(--red-dim); }
 
 /* Table */
 .tableWrap { overflow-x: auto; }
@@ -94,9 +80,9 @@
 .tdPlanName  { font-size: 13px; color: var(--text); }
 
 /* Badges */
-.badge { display: inline-flex; align-items: center; font-family: var(--mono); font-size: 9px; font-weight: 500; padding: 3px 7px; border-radius: 3px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
-.badgeActive      { background: rgba(62,201,90,0.08);  color: #5ab870; border: 1px solid rgba(62,201,90,0.18); }
-.badgeExpired     { background: rgba(240,164,75,0.08); color: #c9913e; border: 1px solid rgba(240,164,75,0.18); }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--sans); font-size: 11px; font-weight: 800; padding: 5px 10px; border-radius: 999px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.badgeActive { background: #e2f7eb; color: #187242; border: none; }
+.badgeExpired { background: #f2f2ef; color: #62646b; border: none; }
 .badgeCancelled   { background: rgba(212,43,43,0.08);  color: #c45c5c; border: 1px solid rgba(212,43,43,0.18); }
 .badgeFullyPaid   { background: rgba(62,201,90,0.08);  color: #5ab870; border: 1px solid rgba(62,201,90,0.18); }
 .badgePartiallyPaid { background: rgba(240,164,75,0.08); color: #c9913e; border: 1px solid rgba(240,164,75,0.18); }
@@ -144,14 +130,14 @@
 .modalFooter { display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 0.25rem; flex-shrink: 0; }
 
 /* Buttons */
-.btnPrimary   { background: #e63946; color: #fff; border: none; border-radius: 6px; padding: 0.6rem 1.25rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: opacity 0.15s; }
+.btnPrimary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--red); color: #fff; border: none; padding: 0 18px; min-height: 44px; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 700; letter-spacing: 0; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s, background 0.15s; box-shadow: var(--btn-shadow); }
 .btnPrimary:hover:not(:disabled)   { opacity: 0.88; }
 .btnPrimary:disabled   { opacity: 0.45; cursor: not-allowed; }
 .btnDanger    { background: transparent; color: #e63946; border: 1px solid #e63946; border-radius: 6px; padding: 0.6rem 1.25rem; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: background 0.15s; }
 .btnDanger:hover:not(:disabled)    { background: rgba(230,57,70,0.08); }
 .btnDanger:disabled    { opacity: 0.45; cursor: not-allowed; }
-.btnSecondary { background: #1e1e1e; color: #ccc; border: 1px solid #2a2a2a; border-radius: 6px; padding: 0.6rem 1.25rem; font-size: 0.88rem; cursor: pointer; font-family: var(--sans); transition: background 0.12s; }
-.btnSecondary:hover { background: #252525; }
+.btnSecondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #fff; color: var(--text); border: 1px solid var(--border-2); padding: 0 16px; min-height: 44px; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.btnSecondary:hover { background: var(--cream); border-color: var(--border-2); color: var(--text); }
 
 /* Form */
 .formGrid { display: flex; flex-direction: column; gap: 1.5rem; }

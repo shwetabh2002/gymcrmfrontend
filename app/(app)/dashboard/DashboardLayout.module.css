@@ -4,11 +4,7 @@
   gap: 24px;
 }
 
-.pageHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.pageHeader { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding-bottom: 8px; border-bottom: none; }
 
 .title {
   font-size: 28px;

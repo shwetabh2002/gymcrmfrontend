@@ -22,7 +22,7 @@
 }
 
 .badgeOn {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -35,7 +35,7 @@
 }
 
 .badgeOff {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -152,7 +152,7 @@
 }
 
 .switchLabel {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -247,7 +247,7 @@
   background: var(--surface-3);
   color: var(--text-2);
   border: 1px solid var(--border-2);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
 }
 
@@ -271,7 +271,7 @@
 }
 
 .pillDone {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -285,7 +285,7 @@
 }
 
 .pillNext {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -299,7 +299,7 @@
 }
 
 .pillLater {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;

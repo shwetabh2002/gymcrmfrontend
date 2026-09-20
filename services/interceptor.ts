@@ -81,16 +81,24 @@ export const setupInterceptors = (apiClient: AxiosInstance) => {
       // full composed URL contains the refresh path, checking both `.url` and
       // the resolved baseURL+url combination.
       // ────────────────────────────────────────────────────────────────────
+      const requestUrl =
+        originalRequest.url ??
+        `${originalRequest.baseURL ?? ""}${originalRequest.url ?? ""}`;
+
       const isRefreshEndpoint =
-        originalRequest.url?.includes(API_CONFIG.AUTH.REFRESH_TOKEN) ||
-        (originalRequest.baseURL + (originalRequest.url ?? "")).includes(
-          API_CONFIG.AUTH.REFRESH_TOKEN
-        );
+        requestUrl.includes(API_CONFIG.AUTH.REFRESH_TOKEN);
+
+      // Login / public auth failures must reach the form — do not treat as
+      // expired session (that used to hard-redirect and look like a refresh).
+      const isAuthCredentialRequest =
+        requestUrl.includes(API_CONFIG.AUTH.ADMIN_LOGIN) ||
+        requestUrl.includes(API_CONFIG.COMPANIES.SIGNUP);
 
       if (
         error.response?.status === 401 &&
         !originalRequest._retry &&
-        !isRefreshEndpoint
+        !isRefreshEndpoint &&
+        !isAuthCredentialRequest
       ) {
         // Queue concurrent requests while a refresh is already in flight
         if (refreshState.isRefreshing) {

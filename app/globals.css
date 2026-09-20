@@ -1,25 +1,76 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
 
-* {
-  margin: 0;
-  padding: 0;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 :root {
-  --bg:         #f5f4f1;
-  --surface:    #ffffff;
-  --surface-2:  #fafaf8;
-  --surface-3:  #f0efe9;
-  --border:     rgba(0,0,0,0.07);
-  --border-2:   rgba(0,0,0,0.13);
-  --red:        #c0392b;
-  --red-bright: #e74c3c;
-  --red-dim:    rgba(192,57,43,0.08);
-  --red-glow:   rgba(192,57,43,0.12);
-  --green-text: #219150;
-  --text:       #1a1a1a;
-  --text-2:     #777;
-  --text-3:     #bbb;
-  --mono:       'DM Mono', monospace;
-  --sans:       'DM Sans', sans-serif;
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --surface-2: #fffdf9;
+  --surface-3: #f1f0ec;
+  --cream: #fffaf1;
+  --paper: #f6f7f8;
+
+  --border: #e8e4dc;
+  --border-2: #dedbd3;
+  --line: #e8e4dc;
+
+  --red: #ff725c;
+  --red-bright: #ff8a78;
+  --red-deep: #c84535;
+  --red-dim: rgba(255, 114, 92, 0.1);
+  --red-glow: rgba(255, 114, 92, 0.18);
+
+  --lime: #d8f25d;
+  --lime-deep: #9ebc25;
+  --lavender: #e6ddff;
+  --lavender-ink: #6746b4;
+  --aqua: #dff6f0;
+  --aqua-ink: #238773;
+
+  --text: #1f2229;
+  --text-2: #71747d;
+  --text-3: #9a9ca3;
+  --ink: #1f2229;
+  --muted: #71747d;
+
+  --green-text: #187242;
+  --green-bg: #e2f7eb;
+  --orange-text: #a15b00;
+  --orange-bg: #fff0d9;
+
+  --display: "Fraunces", Georgia, "Times New Roman", serif;
+  --sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --shadow: 0 7px 24px rgba(31, 34, 41, 0.035);
+  --shadow-lg: 0 16px 40px rgba(31, 34, 41, 0.08);
+  --btn-shadow: 0 5px 0 var(--red-deep);
+  --btn-shadow-lime: 0 5px 0 var(--lime-deep);
 }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+::selection { background: var(--lime); color: var(--ink); }
+.font-display { font-family: var(--display); }
+.tabular-nums { font-variant-numeric: tabular-nums; }

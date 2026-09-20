@@ -3,12 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { useMembers } from "@/services/members/members.hook";
+import {
+  useMembersPaged,
+  useMemberById,
+} from "@/services/members/members.hook";
 import { usePlans } from "@/services/plans/plans.hook";
 import {
-  useMemberSubscriptions,
+  useMemberSubscriptionsByMember,
   useCreateMemberSubscription,
 } from "@/services/subscriptions/subscriptions.hook";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import {
   useCreatePayment,
   useUploadPaymentProof,
@@ -26,6 +30,61 @@ import styles from "./Billing.module.css";
 import { EASE_OUT_EXPO } from "@/config/motion";
 
 export type BillingMode = "sell" | "collect";
+
+function todayYmd() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function toYmd(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso).slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function computeExpiry(
+  start: string,
+  plan?: { duration: number; durationType: string } | null,
+) {
+  if (!start || !plan) return "";
+  const d = new Date(start + "T12:00:00");
+  if (isNaN(d.getTime())) return "";
+  const units = Number(plan.duration) > 0 ? Number(plan.duration) : 1;
+  switch (plan.durationType) {
+    case "DAYS":
+      d.setDate(d.getDate() + units);
+      break;
+    case "YEARS":
+      d.setFullYear(d.getFullYear() + units);
+      break;
+    case "MONTHS":
+    default:
+      d.setMonth(d.getMonth() + units);
+      break;
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatDisplayDate(ymd: string) {
+  if (!ymd) return "—";
+  const d = new Date(ymd + "T12:00:00");
+  if (isNaN(d.getTime())) return ymd;
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 function highlight(text: string | undefined | null, query: string) {
   const safe = text ?? "";
@@ -47,12 +106,14 @@ function MemberCombobox({
   members,
   value,
   onChange,
+  onQueryChange,
   placeholder = "Search and select a member…",
   emptyLabel = "No members match",
 }: {
   members: Member[];
   value: string;
   onChange: (id: string) => void;
+  onQueryChange?: (q: string) => void;
   placeholder?: string;
   emptyLabel?: string;
 }) {
@@ -61,13 +122,7 @@ function MemberCombobox({
   const wrapRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const selected = members.find((m) => m._id === value) ?? null;
-  const filtered = query.trim()
-    ? members.filter(
-        (m) =>
-          m.name.toLowerCase().includes(query.toLowerCase()) ||
-          (m.contactNumber ?? "").includes(query),
-      )
-    : members;
+  const filtered = members;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -121,7 +176,10 @@ function MemberCombobox({
               className={styles.comboboxSearchInput}
               placeholder="Search by name or contact…"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                onQueryChange?.(e.target.value);
+              }}
             />
           </div>
           <div className={styles.comboboxList}>
@@ -162,9 +220,7 @@ export function BillingModal({
   initialMemberId?: string;
   initialSubscriptionId?: string;
 }) {
-  const { data: members } = useMembers();
   const { data: plans } = usePlans();
-  const { data: subs } = useMemberSubscriptions();
   const { mutateAsync: createSub, isPending: creatingSub } =
     useCreateMemberSubscription();
   const { mutateAsync: createPay, isPending: creatingPay } = useCreatePayment();
@@ -176,83 +232,75 @@ export function BillingModal({
 
   const [mode, setMode] = useState<BillingMode>(initialMode);
   const [memberId, setMemberId] = useState(initialMemberId);
+  const [memberSearch, setMemberSearch] = useState("");
+  const debouncedMemberSearch = useDebouncedValue(memberSearch, 250);
   const [planId, setPlanId] = useState("");
   const [subscriptionId, setSubscriptionId] = useState(initialSubscriptionId);
-  const [startDate, setStartDate] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  const [startDate, setStartDate] = useState(todayYmd());
+  const [expiryDate, setExpiryDate] = useState("");
   const [amount, setAmount] = useState<number | "">("");
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("CASH");
-  const [paymentDate, setPaymentDate] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
+  const [paymentDate, setPaymentDate] = useState(todayYmd());
   const [replaceActive, setReplaceActive] = useState(true);
+  const [dueReminderDate, setDueReminderDate] = useState("");
   const [error, setError] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
 
   const busy = creatingSub || creatingPay || uploadingProof;
-  const allMembers = members ?? [];
   const activePlans = (plans ?? []).filter((p) => p.status === "ACTIVE");
 
-  /** Member IDs that have at least one sub with pending dues */
-  const memberIdsWithDues = useMemo(() => {
-    const ids = new Set<string>();
-    for (const s of subs ?? []) {
-      if (s.pendingAmount > 0) {
-        const id =
-          typeof s.memberId === "object"
-            ? (s.memberId as { _id?: string })?._id
-            : s.memberId;
-        if (id) ids.add(String(id));
-      }
-    }
-    return ids;
-  }, [subs]);
+  const { data: membersPage } = useMembersPaged({
+    page: 1,
+    limit: 40,
+    search: debouncedMemberSearch || undefined,
+    hasPending: mode === "collect" ? "true" : undefined,
+    status: mode === "sell" ? "ACTIVE" : undefined,
+  });
+  const { data: selectedMemberDetail } = useMemberById(memberId);
+  const { data: memberSubsRaw } = useMemberSubscriptionsByMember(memberId);
 
   const selectableMembers = useMemo(() => {
-    if (mode !== "collect") return allMembers;
-    return allMembers.filter((m) => memberIdsWithDues.has(m._id));
-  }, [mode, allMembers, memberIdsWithDues]);
+    const items = membersPage?.items ?? [];
+    if (
+      selectedMemberDetail &&
+      !items.some((m) => m._id === selectedMemberDetail._id)
+    ) {
+      return [selectedMemberDetail, ...items];
+    }
+    return items;
+  }, [membersPage?.items, selectedMemberDetail]);
 
   const selectedPlan = activePlans.find((p) => p._id === planId);
-  const selectedMember = selectableMembers.find((m) => m._id === memberId);
+  const selectedMember =
+    selectableMembers.find((m) => m._id === memberId) ??
+    selectedMemberDetail ??
+    null;
 
+  const allMemberSubs = memberSubsRaw ?? [];
   const memberSubs = useMemo(() => {
-    if (!subs || !memberId) return [];
-    return subs.filter((s) => {
-      const id =
-        typeof s.memberId === "object"
-          ? (s.memberId as { _id?: string })?._id
-          : s.memberId;
-      if (id !== memberId) return false;
-      if (mode === "collect") {
-        return s.pendingAmount > 0;
-      }
-      return s.subscriptionStatus === "ACTIVE";
-    });
-  }, [subs, memberId, mode]);
+    if (!memberId) return [];
+    if (mode === "collect") {
+      return allMemberSubs.filter((s) => s.pendingAmount > 0);
+    }
+    return allMemberSubs.filter((s) => s.subscriptionStatus === "ACTIVE");
+  }, [allMemberSubs, memberId, mode]);
 
   const selectedSub = memberSubs.find((s) => s._id === subscriptionId);
   const hasActiveSub =
     mode === "sell" &&
-    (subs ?? []).some((s) => {
-      if (s.subscriptionStatus !== "ACTIVE") return false;
-      const id =
-        typeof s.memberId === "object"
-          ? (s.memberId as { _id?: string })?._id
-          : s.memberId;
-      return id === memberId;
-    });
+    allMemberSubs.some((s) => s.subscriptionStatus === "ACTIVE");
 
-  // Drop selection if member has no dues when switching to collect
-  useEffect(() => {
-    if (mode === "collect" && memberId && !memberIdsWithDues.has(memberId)) {
-      setMemberId("");
-      setSubscriptionId("");
-      setAmount("");
-    }
-  }, [mode, memberId, memberIdsWithDues]);
+  /** Latest plan for this member (any status) — renew starts from its end date. */
+  const priorSub = useMemo(() => {
+    if (!memberId || !allMemberSubs.length) return null;
+    return [...allMemberSubs].sort(
+      (a, b) =>
+        new Date(b.expiryDate).getTime() - new Date(a.expiryDate).getTime(),
+    )[0];
+  }, [allMemberSubs, memberId]);
+
+  const priorEndYmd = priorSub ? toYmd(priorSub.expiryDate) : "";
 
   useEffect(() => {
     if (mode === "sell" && selectedPlan && amount === "") {
@@ -265,6 +313,32 @@ export function BillingModal({
       setSubscriptionId(memberSubs[0]._id);
     }
   }, [mode, memberSubs]);
+
+  // Renew default: start = previous end date (past or future). First plan → today.
+  useEffect(() => {
+    if (mode !== "sell") return;
+    const nextStart = priorEndYmd || todayYmd();
+    setStartDate(nextStart);
+    if (selectedPlan) {
+      setExpiryDate(computeExpiry(nextStart, selectedPlan));
+    } else {
+      setExpiryDate("");
+    }
+  }, [mode, memberId, priorEndYmd]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Plan change → recompute end from current start
+  useEffect(() => {
+    if (mode !== "sell" || !selectedPlan || !startDate) return;
+    setExpiryDate(computeExpiry(startDate, selectedPlan));
+  }, [planId, selectedPlan, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sellPending =
+    mode === "sell" && selectedPlan
+      ? Math.max(
+          selectedPlan.price - (amount === "" ? 0 : Number(amount)),
+          0,
+        )
+      : 0;
 
   const onProofPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -297,6 +371,20 @@ export function BillingModal({
           setError("Start date is required.");
           return;
         }
+        if (priorEndYmd && startDate < priorEndYmd) {
+          setError(
+            `Renew start cannot be before previous end (${formatDisplayDate(priorEndYmd)}).`,
+          );
+          return;
+        }
+        if (!expiryDate) {
+          setError("End date is required.");
+          return;
+        }
+        if (expiryDate <= startDate) {
+          setError("End date must be after start date.");
+          return;
+        }
         const received = amount === "" ? 0 : Number(amount);
         if (received < 0) {
           setError("Amount cannot be negative.");
@@ -306,14 +394,25 @@ export function BillingModal({
           setError(`Amount cannot exceed plan price ₹${selectedPlan.price}.`);
           return;
         }
+        const pending = selectedPlan
+          ? Math.max(selectedPlan.price - received, 0)
+          : 0;
+        if (pending > 0 && !dueReminderDate) {
+          setError(
+            "Due reminder date is required when renew / assign is partial.",
+          );
+          return;
+        }
 
         const created = await createSub({
           memberId,
           planId,
           startDate,
+          expiryDate,
           initialPayment: received,
           paymentMode: received > 0 ? paymentMode : undefined,
           replaceActive: hasActiveSub ? replaceActive : undefined,
+          dueReminderDate: pending > 0 ? dueReminderDate : undefined,
         });
 
         if (proofFile && created?.initialPaymentId) {
@@ -424,6 +523,7 @@ export function BillingModal({
                 setSubscriptionId("");
                 setError("");
               }}
+              onQueryChange={setMemberSearch}
               emptyLabel={
                 mode === "collect"
                   ? "No members with pending dues"
@@ -437,7 +537,7 @@ export function BillingModal({
             />
             {selectedMember?.currentSubscriptionId && mode === "sell" ? (
               <span className={styles.fieldHint}>
-                Member has an active plan — renew will replace it if checked
+                Member has an active plan — renew will end it if checked
                 below.
               </span>
             ) : null}
@@ -486,9 +586,48 @@ export function BillingModal({
                     type="date"
                     className={styles.input}
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    min={priorEndYmd || undefined}
+                    onChange={(e) => {
+                      let v = e.target.value;
+                      if (priorEndYmd && v && v < priorEndYmd) {
+                        v = priorEndYmd;
+                      }
+                      setStartDate(v);
+                      if (selectedPlan) {
+                        setExpiryDate(computeExpiry(v, selectedPlan));
+                      }
+                    }}
                   />
+                  {priorEndYmd ? (
+                    <span className={styles.fieldHint}>
+                      Cannot start before previous end{" "}
+                      {formatDisplayDate(priorEndYmd)} — later dates OK
+                    </span>
+                  ) : null}
                 </div>
+                <div className={styles.field}>
+                  <label className={styles.fieldLabel}>End date *</label>
+                  <input
+                    type="date"
+                    className={styles.input}
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
+                    min={startDate || undefined}
+                  />
+                  {selectedPlan ? (
+                    <span className={styles.fieldHint}>
+                      Default from plan ({selectedPlan.duration}{" "}
+                      {selectedPlan.durationType.toLowerCase()}) — editable
+                    </span>
+                  ) : (
+                    <span className={styles.fieldHint}>
+                      Select a plan to auto-fill end date
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.twoCol}>
                 <div className={styles.field}>
                   <label className={styles.fieldLabel}>
                     Amount received (₹)
@@ -502,14 +641,56 @@ export function BillingModal({
                       selectedPlan ? `0 – ${selectedPlan.price}` : "0"
                     }
                     value={amount}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setAmount(
                         e.target.value === "" ? "" : Number(e.target.value),
-                      )
-                    }
+                      );
+                      if (
+                        selectedPlan &&
+                        e.target.value !== "" &&
+                        Number(e.target.value) >= selectedPlan.price
+                      ) {
+                        setDueReminderDate("");
+                      }
+                    }}
                     disabled={!planId}
                   />
+                  {selectedPlan ? (
+                    <span className={styles.fieldHint}>
+                      Plan{" "}
+                      {formatAmountWithGstInline(
+                        selectedPlan.price,
+                        taxPercentage,
+                        taxMode,
+                      )}{" "}
+                      · Pending{" "}
+                      {formatAmountWithGstInline(
+                        sellPending,
+                        taxPercentage,
+                        taxMode,
+                      )}
+                    </span>
+                  ) : null}
                 </div>
+                {sellPending > 0 ? (
+                  <div className={styles.field}>
+                    <label className={styles.fieldLabel}>
+                      Due reminder date *
+                    </label>
+                    <input
+                      type="date"
+                      className={styles.input}
+                      value={dueReminderDate}
+                      min={todayYmd()}
+                      onChange={(e) => setDueReminderDate(e.target.value)}
+                    />
+                    <span className={styles.fieldHint}>
+                      Required for partial renew — shows on Partial dues
+                    </span>
+                  </div>
+                ) : (
+                  <div className={styles.field} />
+                )}
               </div>
 
               {hasActiveSub ? (
@@ -520,7 +701,7 @@ export function BillingModal({
                     onChange={(e) => setReplaceActive(e.target.checked)}
                   />
                   <span>
-                    Cancel current active subscription and assign this plan
+                    Cancel current plan (marks it Ended) and assign this one
                   </span>
                 </label>
               ) : null}
@@ -544,9 +725,23 @@ export function BillingModal({
                   </option>
                   {memberSubs.map((s) => {
                     const plan = typeof s.planId === "object" ? s.planId : null;
+                    const start = s.startDate
+                      ? new Date(s.startDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "—";
+                    const end = s.expiryDate
+                      ? new Date(s.expiryDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "—";
                     return (
                       <option key={s._id} value={s._id}>
-                        {plan?.name ?? "—"} · pending ₹
+                        {plan?.name ?? "—"} · {start} → {end} · pending ₹
                         {s.pendingAmount.toLocaleString("en-IN")}
                       </option>
                     );
@@ -588,6 +783,30 @@ export function BillingModal({
 
               {selectedSub ? (
                 <div className={styles.paymentSummary}>
+                  <div className={styles.paymentSummaryDetail}>
+                    Plan from{" "}
+                    {selectedSub.startDate
+                      ? new Date(selectedSub.startDate).toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )
+                      : "—"}{" "}
+                    → valid till{" "}
+                    {selectedSub.expiryDate
+                      ? new Date(selectedSub.expiryDate).toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )
+                      : "—"}
+                  </div>
                   <div className={styles.paymentSummaryDetail}>
                     Total{" "}
                     {formatAmountWithGstInline(

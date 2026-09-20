@@ -12,7 +12,7 @@ export const useGymSettings = (enabled = true) => {
     queryKey: ["gym-settings", companyId],
     queryFn: gymSettingsApi.get,
     enabled: enabled && !!companyId,
-    staleTime: 30_000,
+    staleTime: 15_000,
   });
 };
 
@@ -22,8 +22,17 @@ export const useUpdateGymSettings = () => {
   return useMutation({
     mutationFn: (payload: UpdateGymSettingsPayload) =>
       gymSettingsApi.update(payload),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["gym-settings", user?.companyId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["gym-settings", user?.companyId] });
+      // GST / branding change should refresh money displays and docs.
+      qc.invalidateQueries({ queryKey: ["members"] });
+      qc.invalidateQueries({ queryKey: ["member-subscriptions"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["analytics"] });
+      qc.invalidateQueries({ queryKey: ["dues"] });
+      qc.invalidateQueries({ queryKey: ["renewals"] });
+    },
   });
 };
 

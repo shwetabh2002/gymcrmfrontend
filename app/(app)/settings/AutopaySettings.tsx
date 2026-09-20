@@ -11,7 +11,6 @@ import {
   paymentProviderApi,
   ProviderStatus,
 } from "@/services/payments/provider.api";
-import { whatsappApi, WhatsAppStatus } from "@/services/whatsapp/whatsapp.api";
 import profile from "../profile/Profile.module.css";
 import styles from "./AutopaySettings.module.css";
 
@@ -33,16 +32,13 @@ export default function AutopaySettings() {
   const [error, setError] = useState("");
   const [savedMsg, setSavedMsg] = useState("");
   const [rzp, setRzp] = useState<ProviderStatus | null>(null);
-  const [wa, setWa] = useState<WhatsAppStatus | null>(null);
   const [depsLoading, setDepsLoading] = useState(true);
-  const [mandateMethod, setMandateMethod] = useState("upi");
   const [mandateMultiplier, setMandateMultiplier] = useState(2);
   const [mandateMonths, setMandateMonths] = useState(60);
 
   useEffect(() => {
     if (!settings) return;
     setEnabled(settings.autopayEnabled === true);
-    setMandateMethod(settings.autopayMethod || "upi");
     setMandateMultiplier(settings.autopayMandateMultiplier ?? 2);
     setMandateMonths(settings.autopayMandateValidityMonths ?? 60);
   }, [settings]);
@@ -50,12 +46,8 @@ export default function AutopaySettings() {
   const loadDeps = async () => {
     setDepsLoading(true);
     try {
-      const [p, w] = await Promise.all([
-        paymentProviderApi.getStatus().catch(() => null),
-        whatsappApi.getStatus().catch(() => null),
-      ]);
+      const p = await paymentProviderApi.getStatus().catch(() => null);
       setRzp(p);
-      setWa(w);
     } finally {
       setDepsLoading(false);
     }
@@ -87,24 +79,20 @@ export default function AutopaySettings() {
 
   /** Applies to mandates created from now on; existing ones keep their terms. */
   const saveMandateTerms = async (patch: {
-    autopayMethod?: string;
     autopayMandateMultiplier?: number;
     autopayMandateValidityMonths?: number;
   }) => {
     if (!canEdit) return;
     setError("");
-    if (patch.autopayMethod) setMandateMethod(patch.autopayMethod);
     try {
-      await update.mutateAsync(patch);
-      setSavedMsg("Mandate terms saved — applies to new mandates.");
+      // UPI Autopay only — e-Mandate / card / NACH are not offered.
+      await update.mutateAsync({ ...patch, autopayMethod: "upi" });
+      setSavedMsg("Mandate terms saved — applies to new mandates for this gym.");
       setTimeout(() => setSavedMsg(""), 4000);
     } catch (e: any) {
       setError(e?.response?.data?.message || "Failed to save mandate terms");
     }
   };
-
-  // WhatsApp counts as ready in either mode — click-to-chat is a valid choice.
-  const whatsappReady = !!wa?.autoSendReady || !!wa?.manualSendOnly;
 
   const steps: Step[] = [
     {
@@ -119,16 +107,8 @@ export default function AutopaySettings() {
       id: "rzp",
       title: "Connect Razorpay",
       detail:
-        "Scroll to Payments — Razorpay below. Connect OAuth / API keys (or Mock for local).",
+        "Scroll to Payments — Razorpay on this page. Connect OAuth / API keys (or Mock for local).",
       done: !!rzp?.connected,
-      kind: "live",
-    },
-    {
-      id: "wa",
-      title: "WhatsApp ready",
-      detail:
-        "Scroll to WhatsApp below. Save the gym number for manual send, or connect Cloud API for auto-send.",
-      done: whatsappReady,
       kind: "live",
     },
     {
@@ -141,9 +121,9 @@ export default function AutopaySettings() {
     },
     {
       id: "pay",
-      title: "Member pays & approves UPI Autopay",
+      title: "Member scans QR & approves UPI Autopay",
       detail:
-        "Member opens WhatsApp link, pays, and approves the mandate in their UPI app.",
+        "Show the QR on screen (or share the link). Member scans with their UPI app, pays, and approves the mandate. WhatsApp send is coming soon.",
       done: false,
       kind: "howto",
     },
@@ -157,7 +137,7 @@ export default function AutopaySettings() {
     },
   ];
 
-  const infraReady = enabled && !!rzp?.connected && whatsappReady;
+  const infraReady = enabled && !!rzp?.connected;
   const busy = !canEdit || update.isPending;
 
   return (
@@ -192,7 +172,7 @@ export default function AutopaySettings() {
               <p className={styles.toggleTitle}>Enable for this gym</p>
               <p className={styles.toggleHint}>
                 {enabled
-                  ? "Autopay is ON. Complete Razorpay + WhatsApp below, then add members with Online + Autopay."
+                  ? "Autopay is ON. Connect Razorpay below, then add members with UPI Autopay — show them the QR to approve."
                   : "Autopay is OFF. Members and payments work normally without recurring Autopay."}
               </p>
             </div>
@@ -226,8 +206,11 @@ export default function AutopaySettings() {
                 <p className={styles.panelTitle}>Mandate terms</p>
               </div>
               <p className={styles.toggleHint} style={{ padding: "0 0 10px" }}>
-                A member approves these once. Razorpay may then debit up to the
-                ceiling without asking again, until the mandate expires.
+                These terms are <strong>per gym</strong> — each gym can set its
+                own ceiling and validity. A member approves them once; Razorpay
+                may then debit up to the ceiling without asking again until the
+                mandate expires. Changes apply to <strong>new</strong> mandates
+                only.
               </p>
               <div
                 style={{
@@ -238,19 +221,12 @@ export default function AutopaySettings() {
               >
                 <label>
                   <span className={styles.toggleHint}>Method</span>
-                  <select
+                  <input
                     className={profile.formInput}
-                    value={mandateMethod}
-                    disabled={busy}
-                    onChange={(e) =>
-                      saveMandateTerms({ autopayMethod: e.target.value })
-                    }
-                  >
-                    <option value="upi">UPI Autopay</option>
-                    <option value="emandate">e-Mandate (netbanking)</option>
-                    <option value="card">Card</option>
-                    <option value="nach">NACH</option>
-                  </select>
+                    value="UPI Autopay"
+                    readOnly
+                    disabled
+                  />
                 </label>
                 <label>
                   <span className={styles.toggleHint}>
@@ -315,10 +291,10 @@ export default function AutopaySettings() {
                 {!enabled
                   ? "Preview only — nothing changes until the switch is ON."
                   : depsLoading
-                    ? "Checking Razorpay and WhatsApp…"
+                    ? "Checking Razorpay…"
                     : infraReady
-                      ? "Ready — you can add members with Online + Autopay."
-                      : "Pending — connect Razorpay and WhatsApp first."}
+                      ? "Ready — add members with UPI Autopay and show the QR."
+                      : "Pending — connect Razorpay first."}
               </p>
             </div>
 
@@ -330,7 +306,7 @@ export default function AutopaySettings() {
                   ? done
                     ? "Done"
                     : "Pending"
-                  : idx === 3
+                  : idx === 2
                     ? "Next"
                     : "Later";
                 const pillClass = isLive
@@ -369,9 +345,8 @@ export default function AutopaySettings() {
                 <p className={styles.live}>
                   Live: Razorpay{" "}
                   {rzp?.connected ? "connected" : "not connected"}
-                  {rzp?.authMode ? ` (${rzp.authMode})` : ""} · WhatsApp{" "}
-                  {wa?.autoSendReady ? "ready" : "not ready"}
-                  {wa?.authMode ? ` (${wa.authMode})` : ""}
+                  {rzp?.authMode ? ` (${rzp.authMode})` : ""} · Member flow: QR /
+                  link (WhatsApp coming soon)
                 </p>
                 <button
                   type="button"

@@ -47,6 +47,9 @@ export const useCreateMember = () => {
       queryClient.invalidateQueries({ queryKey: ["member-subscriptions"] });
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["renewals"] });
     },
   });
 };
@@ -61,6 +64,8 @@ export const useUpdateMember = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       queryClient.invalidateQueries({ queryKey: ["members", id] });
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 };
@@ -73,6 +78,11 @@ export const useDeleteMember = () => {
     mutationFn: (id: string) => membersApi.deleteMember(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["member-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["dues"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 };

@@ -18,7 +18,7 @@
   z-index: 101;
   background: #111;
   border: 1px solid #2a2a2a;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   padding: 2rem;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
   width: 90vw;
@@ -62,7 +62,7 @@
   justify-content: center;
   background: #1e1e1e;
   border: 1px solid #2a2a2a;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: #666;
   cursor: pointer;
   font-size: 0.85rem;
@@ -154,7 +154,7 @@
 .configValue {
   background: #161616;
   border: 1px solid #2a2a2a;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   font-size: 13px;
   color: #e8e8e8;
@@ -164,7 +164,7 @@
 .configValueLarge {
   background: rgba(230, 57, 70, 0.1);
   border: 1px solid rgba(230, 57, 70, 0.2);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 12px;
   font-size: 18px;
   font-weight: 700;
@@ -180,7 +180,7 @@
   padding: 12px;
   background: #161616;
   border: 1px solid #2a2a2a;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .notesText {
@@ -198,7 +198,7 @@
   padding: 12px;
   background: #161616;
   border: 1px solid #2a2a2a;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .itemsList {
@@ -246,18 +246,7 @@
 }
 
 /* ─── Buttons ─────────────────────────────────────────────────────────── */
-.btnPrimary {
-  background: #e63946;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
-  transition: opacity 0.15s, background 0.15s;
-}
+.btnPrimary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--red); color: #fff; border: none; padding: 0 18px; min-height: 44px; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 700; letter-spacing: 0; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s, background 0.15s; box-shadow: var(--btn-shadow); }
 
 .btnPrimary:hover:not(:disabled) {
   opacity: 0.88;
@@ -269,22 +258,9 @@
   cursor: not-allowed;
 }
 
-.btnSecondary {
-  background: #1e1e1e;
-  color: #ccc;
-  border: 1px solid #2a2a2a;
-  border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: var(--sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
-  transition: background 0.12s, color 0.12s;
-}
+.btnSecondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #fff; color: var(--text); border: 1px solid var(--border-2); padding: 0 16px; min-height: 44px; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 
-.btnSecondary:hover {
-  background: #252525;
-  color: #e8e8e8;
-}
+.btnSecondary:hover { background: var(--cream); border-color: var(--border-2); color: var(--text); }
 
 .btnSecondary:disabled {
   opacity: 0.45;
@@ -315,9 +291,7 @@
   }
 
   .btnPrimary,
-  .btnSecondary {
-    width: 100%;
-  }
+  .btnSecondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #fff; color: var(--text); border: 1px solid var(--border-2); padding: 0 16px; min-height: 44px; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 }
 
 /* ─── Scrollbar Styling ───────────────────────────────────────────────── */

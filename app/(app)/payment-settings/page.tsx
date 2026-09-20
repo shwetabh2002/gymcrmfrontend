@@ -1,13 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canEditGymSettings, canCreateMembers } from "@/lib/rbac";
-import GymBrandingSettings from "./GymBrandingSettings";
+import AutopaySettings from "../settings/AutopaySettings";
+import RazorpaySettings from "../settings/RazorpaySettings";
+import WhatsAppSettings from "../settings/WhatsAppSettings";
+import EmailTemplateSettings from "../settings/EmailTemplateSettings";
 import styles from "../profile/Profile.module.css";
 
-export default function GymSettingsPage() {
+export default function PaymentSettingsPage() {
   const { user } = useAuth();
   const canView =
     canEditGymSettings(user?.role, user?.permissions) ||
@@ -17,7 +19,7 @@ export default function GymSettingsPage() {
     return (
       <div className={styles.page}>
         <p style={{ color: "var(--text-2)" }}>
-          You do not have access to gym settings.
+          You do not have access to payment settings.
         </p>
       </div>
     );
@@ -33,29 +35,19 @@ export default function GymSettingsPage() {
       >
         <div>
           <p className={styles.eyebrow}>Per gym</p>
-          <h1 className={styles.pageTitle}>Gym settings</h1>
+          <h1 className={styles.pageTitle}>Payment settings</h1>
           <p className={styles.pageDesc}>
             {user?.companyName
-              ? `Branding and invoice PDFs for ${user.companyName}.`
-              : "Branding and invoice PDFs for the selected gym."}
-          </p>
-          <p className={styles.pageDesc} style={{ marginTop: 8 }}>
-            Razorpay, Autopay, WhatsApp and email live under{" "}
-            <Link
-              href="/payment-settings"
-              style={{
-                color: "var(--red, #c0392b)",
-                textDecoration: "underline",
-              }}
-            >
-              Payment settings
-            </Link>
-            .
+              ? `Razorpay, UPI Autopay, WhatsApp and email for ${user.companyName}.`
+              : "Razorpay, UPI Autopay, WhatsApp and email for the selected gym."}
           </p>
         </div>
       </motion.div>
 
-      <GymBrandingSettings />
+      <AutopaySettings />
+      <RazorpaySettings />
+      <WhatsAppSettings />
+      <EmailTemplateSettings />
     </div>
   );
 }

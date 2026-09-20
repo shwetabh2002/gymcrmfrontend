@@ -7,7 +7,7 @@ import {
   useUpdatePayment,
   useUploadPaymentProof,
 } from "@/services/payments/payments.hooks";
-import { useMemberSubscriptions } from "@/services/subscriptions/subscriptions.hook";
+import { useMemberSubscriptionsByMember } from "@/services/subscriptions/subscriptions.hook";
 import {
   Payment,
   PaymentMode,
@@ -28,6 +28,13 @@ function memberName(p: Payment) {
     : "Member";
 }
 
+
+function memberIdOf(p: Payment) {
+  return typeof p.memberId === "object" && p.memberId
+    ? p.memberId._id
+    : String(p.memberId);
+}
+
 function subIdOf(p: Payment) {
   return typeof p.subscriptionId === "object" && p.subscriptionId
     ? p.subscriptionId._id
@@ -41,7 +48,7 @@ export function PaymentEditModal({
   payment: Payment;
   onClose: () => void;
 }) {
-  const { data: subs } = useMemberSubscriptions();
+  const { data: subs } = useMemberSubscriptionsByMember(memberIdOf(payment));
   const { data: gymSettings } = useGymSettings();
   const { taxPercentage, taxMode } = resolveInvoiceTax(gymSettings);
   const { mutateAsync: updatePay, isPending } = useUpdatePayment();

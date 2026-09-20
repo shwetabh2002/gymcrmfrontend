@@ -15,7 +15,7 @@ import {
 } from "@/services/members/members.api";
 import { useUploadPaymentProof } from "@/services/payments/payments.hooks";
 import { checkoutApi, CheckoutSession } from "@/services/payments/provider.api";
-import { usePlans } from "@/services/plans/plans.hook";
+import { usePlans, useCreatePlan } from "@/services/plans/plans.hook";
 import { useEmployees } from "@/services/employees/employees.hooks";
 import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
 import { locationsApi, LocationRow } from "@/services/locations/locations.api";
@@ -45,6 +45,7 @@ interface Props {
 type FormState = {
   name: string;
   phone: string;
+  countryCode: string;
   email: string;
   registrationDate: string;
   dob: string;
@@ -54,9 +55,10 @@ type FormState = {
   amount: number | "";
   received: number | "";
   pending: number | "";
+  dueReminderDate: string;
   startingDate: string;
   expiryDate: string;
-  trainingType: "GT" | "PT" | "OTHER";
+  trainingType: "GT" | "PT" | "NONE" | "OTHER";
   trainerId: string;
   salesPersonId: string;
   memberStatus: "ACTIVE" | "INACTIVE" | "SUSPENDED";
@@ -89,6 +91,7 @@ function computeExpiry(start: string, plan?: Plan | null) {
 const EMPTY: FormState = {
   name: "",
   phone: "",
+  countryCode: "+91",
   email: "",
   registrationDate: today(),
   dob: "",
@@ -98,6 +101,7 @@ const EMPTY: FormState = {
   amount: "",
   received: "",
   pending: "",
+  dueReminderDate: "",
   startingDate: today(),
   expiryDate: "",
   trainingType: "GT",
@@ -105,7 +109,7 @@ const EMPTY: FormState = {
   salesPersonId: "",
   memberStatus: "ACTIVE",
   locationId: "",
-  sendWhatsApp: true,
+  sendWhatsApp: false,
   sendEmail: true,
 };
 
@@ -132,6 +136,14 @@ export default function MemberModal({ open, onClose, existing }: Props) {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
 
   const { data: plans } = usePlans();
+  const createPlan = useCreatePlan();
+  const [showPlanForm, setShowPlanForm] = useState(false);
+  const [newPlan, setNewPlan] = useState({
+    name: "",
+    duration: 1,
+    durationType: "MONTHS" as "DAYS" | "MONTHS" | "YEARS",
+    price: "",
+  });
   const { data: trainers } = useEmployees({
     type: "TRAINER",
     status: "ACTIVE",
@@ -210,7 +222,18 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     if (existing) {
       setForm({
         name: existing.name ?? "",
-        phone: existing.contactNumber || existing.phone || "",
+        phone: (() => {
+          const raw = String(
+            existing.contactNumber || existing.phone || "",
+          ).replace(/\D/g, "");
+          const dial = String(existing.countryCode || "+91").replace(/\D/g, "");
+          if (dial && raw.startsWith(dial) && raw.length === dial.length + 10) {
+            return raw.slice(dial.length);
+          }
+          if (raw.length > 10) return raw.slice(-10);
+          return raw;
+        })(),
+        countryCode: existing.countryCode || "+91",
         registrationDate: existing.registrationDate
           ? String(existing.registrationDate).slice(0, 10)
           : existing.date
@@ -223,6 +246,9 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         amount: existing.amount ?? "",
         received: existing.received ?? "",
         pending: existing.pending ?? "",
+        dueReminderDate: existing.dueReminderDate
+          ? String(existing.dueReminderDate).slice(0, 10)
+          : "",
         startingDate: existing.startingDate
           ? String(existing.startingDate).slice(0, 10)
           : today(),
@@ -239,7 +265,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
             : (existing.memberStatus as FormState["memberStatus"]) || "ACTIVE",
         locationId: existing.locationId ?? "",
         email: existing.email ?? "",
-        sendWhatsApp: true,
+        sendWhatsApp: false,
         sendEmail: true,
       });
     } else {
@@ -293,12 +319,21 @@ export default function MemberModal({ open, onClose, existing }: Props) {
 
   const applyPlan = (planId: string, startingDate?: string) => {
     const plan = activePlans.find((p) => p._id === planId);
+    if (!plan && !planId) {
+      setForm((prev) => ({ ...prev, planId: "" }));
+      return;
+    }
+    if (!plan) {
+      setForm((prev) => ({ ...prev, planId }));
+      return;
+    }
     const start = startingDate ?? (form.startingDate || today());
     setForm((prev) => {
-      const amount = plan?.price ?? prev.amount;
+      const amount: number | "" =
+        typeof plan?.price === "number" ? plan.price : prev.amount;
       const received = prev.received === "" ? 0 : Number(prev.received);
       const pending =
-        amount === "" || amount == null
+        amount === ""
           ? prev.pending
           : Math.max(Number(amount) - received, 0);
       return {
@@ -306,7 +341,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         planId,
         startingDate: start,
         expiryDate: computeExpiry(start, plan),
-        amount: amount === undefined ? prev.amount : amount,
+        amount,
         pending,
       };
     });
@@ -319,6 +354,29 @@ export default function MemberModal({ open, onClose, existing }: Props) {
 
     if (name === "planId") {
       applyPlan(value);
+      return;
+    }
+
+    if (name === "trainingType") {
+      setForm((prev) => ({
+        ...prev,
+        trainingType: value as FormState["trainingType"],
+        trainerId: value === "NONE" ? "" : prev.trainerId,
+      }));
+      return;
+    }
+
+    if (name === "phone") {
+      const digits = value.replace(/\D/g, "").slice(0, 10);
+      setForm((prev) => ({ ...prev, phone: digits }));
+      return;
+    }
+
+    if (name === "countryCode") {
+      let code = value.trim();
+      if (code && !code.startsWith("+")) code = `+${code.replace(/\D/g, "")}`;
+      else code = `+${code.slice(1).replace(/\D/g, "").slice(0, 4)}`;
+      setForm((prev) => ({ ...prev, countryCode: code || "+91" }));
       return;
     }
 
@@ -341,7 +399,15 @@ export default function MemberModal({ open, onClose, existing }: Props) {
           amount === "" || received === ""
             ? prev.pending
             : Math.max(Number(amount) - Number(received), 0);
-        return { ...prev, [name]: num, pending };
+        return {
+          ...prev,
+          [name]: num,
+          pending,
+          dueReminderDate:
+            typeof pending === "number" && pending <= 0
+              ? ""
+              : prev.dueReminderDate,
+        };
       });
       return;
     }
@@ -355,6 +421,26 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       setError("Name and contact number are required.");
       return;
     }
+    if (!/^\d{10}$/.test(form.phone.trim())) {
+      setError("Contact number must be exactly 10 digits.");
+      return;
+    }
+    const countryCode = form.countryCode?.trim() || "+91";
+    if (!/^\+\d{1,4}$/.test(countryCode)) {
+      setError("Country code must look like +91.");
+      return;
+    }
+    if (
+      !isEdit &&
+      form.pending !== "" &&
+      Number(form.pending) > 0 &&
+      !form.dueReminderDate
+    ) {
+      setError(
+        "Due reminder date is required when there is a pending balance.",
+      );
+      return;
+    }
 
     try {
       if (isEdit && existing) {
@@ -363,11 +449,15 @@ export default function MemberModal({ open, onClose, existing }: Props) {
           payload: {
             name: form.name.trim(),
             phone: form.phone.trim(),
+            countryCode,
             registrationDate: form.registrationDate || undefined,
             dob: form.dob || undefined,
             instagramHandle: form.instagramHandle || undefined,
             trainingType: form.trainingType,
-            trainerId: form.trainerId || undefined,
+            trainerId:
+              form.trainingType === "NONE"
+                ? undefined
+                : form.trainerId || undefined,
             salesPersonId: form.salesPersonId || undefined,
             memberStatus: form.memberStatus,
           },
@@ -415,11 +505,14 @@ export default function MemberModal({ open, onClose, existing }: Props) {
             registrationDate: form.registrationDate || undefined,
             dob: form.dob || undefined,
             trainingType: form.trainingType,
-            trainerId: form.trainerId || undefined,
+            trainerId:
+              form.trainingType === "NONE"
+                ? undefined
+                : form.trainerId || undefined,
             salesPersonId: form.salesPersonId || undefined,
             email: form.email.trim() || undefined,
             enableAutopay: true,
-            sendWhatsApp: form.sendWhatsApp,
+            sendWhatsApp: false,
             sendEmail: form.sendEmail && !!form.email.trim(),
             idempotencyKey: `${form.phone.trim()}-${form.planId}-${Date.now()}`,
           });
@@ -443,11 +536,13 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       const payload: CreateMemberPayload = {
         name: form.name.trim(),
         phone: form.phone.trim(),
+        countryCode,
         registrationDate: form.registrationDate || undefined,
         dob: form.dob || undefined,
         instagramHandle: form.instagramHandle || undefined,
         trainingType: form.trainingType,
-        trainerId: form.trainerId || undefined,
+        trainerId:
+          form.trainingType === "NONE" ? undefined : form.trainerId || undefined,
         salesPersonId: form.salesPersonId || undefined,
         memberStatus: form.memberStatus,
         planId: form.planId,
@@ -455,6 +550,12 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         expiryDate: form.expiryDate || undefined,
         amount: form.amount === "" ? undefined : Number(form.amount),
         received: form.received === "" ? 0 : Number(form.received),
+        dueReminderDate:
+          form.pending !== "" &&
+          Number(form.pending) > 0 &&
+          form.dueReminderDate
+            ? form.dueReminderDate
+            : undefined,
         paymentMode: ledgerModeFor(
           (form.paymentMode || "CASH") as CollectionMode,
         ) as PaymentMode,
@@ -531,16 +632,18 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                         : " · One-time"}
                     </p>
                     <p className={styles.hint} style={{ marginBottom: 12 }}>
-                      {checkout.whatsappSent
-                        ? `Payment link AUTO-SENT to WhatsApp ${
-                            checkout.whatsappToPhone
-                              ? checkout.whatsappToPhone.startsWith("91") &&
-                                checkout.whatsappToPhone.length === 12
-                                ? `+91 ${checkout.whatsappToPhone.slice(2)}`
-                                : `+${checkout.whatsappToPhone}`
-                              : "member number"
-                          }. Member pay kare — status yahan update hoga.`
-                        : "Auto-send fail hua. Niche Open WhatsApp se manually bhejo."}
+                      {checkout.enableAutopay
+                        ? "Member ko QR scan karwao — UPI app mein pay + Autopay mandate approve. WhatsApp send coming soon."
+                        : checkout.whatsappSent
+                          ? `Payment link AUTO-SENT to WhatsApp ${
+                              checkout.whatsappToPhone
+                                ? checkout.whatsappToPhone.startsWith("91") &&
+                                  checkout.whatsappToPhone.length === 12
+                                  ? `+91 ${checkout.whatsappToPhone.slice(2)}`
+                                  : `+${checkout.whatsappToPhone}`
+                                : "member number"
+                            }. Member pay kare — status yahan update hoga.`
+                          : "Show the QR or share the link below. WhatsApp send is coming soon."}
                     </p>
                     {checkout.qrData ? (
                       <div style={{ textAlign: "center", margin: "16px 0" }}>
@@ -550,17 +653,25 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                             borderRadius: 8,
                             border: "1px solid var(--border)",
                             background: "#fff",
-                            padding: 4,
+                            padding: 8,
                           }}
                         >
-                          <PaymentQr value={checkout.qrData} size={200} />
+                          <PaymentQr value={checkout.qrData} size={220} />
                         </div>
-                        <p className={styles.hint} style={{ marginTop: 8 }}>
-                          Scan with UPI app or open the link on the
-                          member&apos;s phone
+                        <p
+                          className={styles.hint}
+                          style={{ marginTop: 10, fontWeight: 600 }}
+                        >
+                          {checkout.enableAutopay
+                            ? "Scan to pay & set up UPI Autopay"
+                            : "Scan with UPI app to pay"}
                         </p>
                       </div>
-                    ) : null}
+                    ) : (
+                      <p className={styles.hint} style={{ marginBottom: 12 }}>
+                        QR not available yet — use the payment link below.
+                      </p>
+                    )}
                     {checkout.shareUrl ? (
                       <div className={styles.field}>
                         <label className={styles.label}>Payment link</label>
@@ -621,13 +732,6 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                       try {
                         const s = await checkoutApi.resend(checkout.sessionId);
                         setCheckout(s);
-                        if (
-                          s.whatsappUrl &&
-                          !s.whatsappSent &&
-                          s.whatsappMode === "wa_me"
-                        ) {
-                          openWhatsAppShare(s.whatsappUrl);
-                        }
                       } catch (e: any) {
                         setError(e?.response?.data?.message || "Resend failed");
                       } finally {
@@ -636,29 +740,17 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                     }}
                     disabled={isPending}
                   >
-                    Resend link
+                    Refresh link / QR
                   </button>
-                  {checkout.whatsappUrl && !checkout.whatsappSent ? (
+                  {checkout.shareUrl ? (
                     <a
                       className={styles.btnPrimary}
-                      href={checkout.whatsappUrl}
+                      href={checkout.shareUrl}
                       target="_blank"
                       rel="noreferrer"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        openWhatsAppShare(checkout.whatsappUrl);
-                      }}
                     >
-                      Open WhatsApp
+                      Open payment page
                     </a>
-                  ) : null}
-                  {checkout.whatsappSent ? (
-                    <span
-                      className={styles.btnPrimary}
-                      style={{ opacity: 0.85, pointerEvents: "none" }}
-                    >
-                      Sent on WhatsApp
-                    </span>
                   ) : null}
                 </div>
               </>
@@ -737,13 +829,30 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                       </div>
                       <div className={styles.field}>
                         <label className={styles.label}>Contact Number *</label>
-                        <input
-                          className={styles.input}
-                          name="phone"
-                          placeholder="e.g. 9876543210"
-                          value={form.phone}
-                          onChange={handleChange}
-                        />
+                        <div className={styles.phoneRow}>
+                          <input
+                            className={`${styles.input} ${styles.countryCode}`}
+                            name="countryCode"
+                            inputMode="tel"
+                            placeholder="+91"
+                            value={form.countryCode}
+                            onChange={handleChange}
+                            title="Country code"
+                          />
+                          <input
+                            className={styles.input}
+                            name="phone"
+                            inputMode="numeric"
+                            placeholder="9876543210"
+                            value={form.phone}
+                            onChange={handleChange}
+                            maxLength={10}
+                          />
+                        </div>
+                        <span className={styles.hint}>
+                          10-digit number only — country code saved separately
+                          (default +91).
+                        </span>
                       </div>
                       <div className={styles.field}>
                         <label className={styles.label}>Email</label>
@@ -830,6 +939,176 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                                 </option>
                               ))}
                             </select>
+                            {activePlans.length === 0 || showPlanForm ? (
+                              <div
+                                style={{
+                                  marginTop: 10,
+                                  padding: 12,
+                                  border: "1px solid var(--border)",
+                                  borderRadius: 6,
+                                  background: "var(--surface-2)",
+                                }}
+                              >
+                                <p
+                                  className={styles.hint}
+                                  style={{ marginBottom: 8, fontWeight: 600 }}
+                                >
+                                  {activePlans.length === 0
+                                    ? "No plans yet — add one here to continue"
+                                    : "New plan"}
+                                </p>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gap: 8,
+                                    gridTemplateColumns: "1fr 1fr",
+                                  }}
+                                >
+                                  <input
+                                    className={styles.input}
+                                    placeholder="Plan name"
+                                    value={newPlan.name}
+                                    onChange={(e) =>
+                                      setNewPlan((p) => ({
+                                        ...p,
+                                        name: e.target.value,
+                                      }))
+                                    }
+                                    style={{ gridColumn: "1 / -1" }}
+                                  />
+                                  <input
+                                    className={styles.input}
+                                    type="number"
+                                    min={1}
+                                    placeholder="Duration"
+                                    value={newPlan.duration}
+                                    onChange={(e) =>
+                                      setNewPlan((p) => ({
+                                        ...p,
+                                        duration: Number(e.target.value) || 1,
+                                      }))
+                                    }
+                                  />
+                                  <select
+                                    className={styles.input}
+                                    value={newPlan.durationType}
+                                    onChange={(e) =>
+                                      setNewPlan((p) => ({
+                                        ...p,
+                                        durationType: e.target
+                                          .value as typeof newPlan.durationType,
+                                      }))
+                                    }
+                                  >
+                                    <option value="DAYS">Days</option>
+                                    <option value="MONTHS">Months</option>
+                                    <option value="YEARS">Years</option>
+                                  </select>
+                                  <input
+                                    className={styles.input}
+                                    type="number"
+                                    min={0}
+                                    placeholder="Price ₹"
+                                    value={newPlan.price}
+                                    onChange={(e) =>
+                                      setNewPlan((p) => ({
+                                        ...p,
+                                        price: e.target.value,
+                                      }))
+                                    }
+                                    style={{ gridColumn: "1 / -1" }}
+                                  />
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: 8,
+                                    marginTop: 10,
+                                  }}
+                                >
+                                  <button
+                                    type="button"
+                                    className={styles.btnPrimary}
+                                    disabled={createPlan.isPending}
+                                    onClick={async () => {
+                                      if (!newPlan.name.trim()) {
+                                        setError("Plan name is required");
+                                        return;
+                                      }
+                                      const price = Number(newPlan.price);
+                                      if (!Number.isFinite(price) || price < 0) {
+                                        setError("Enter a valid plan price");
+                                        return;
+                                      }
+                                      try {
+                                        setError("");
+                                        const created =
+                                          await createPlan.mutateAsync({
+                                            name: newPlan.name.trim(),
+                                            duration: newPlan.duration,
+                                            durationType: newPlan.durationType,
+                                            price,
+                                          });
+                                        setShowPlanForm(false);
+                                        setNewPlan({
+                                          name: "",
+                                          duration: 1,
+                                          durationType: "MONTHS",
+                                          price: "",
+                                        });
+                                        // Select after list refreshes
+                                        setTimeout(() => {
+                                          applyPlan(created._id);
+                                        }, 50);
+                                        setForm((prev) => ({
+                                          ...prev,
+                                          planId: created._id,
+                                          amount: created.price,
+                                          pending: Math.max(
+                                            created.price -
+                                              (prev.received === ""
+                                                ? 0
+                                                : Number(prev.received)),
+                                            0,
+                                          ),
+                                          expiryDate: computeExpiry(
+                                            prev.startingDate || today(),
+                                            created,
+                                          ),
+                                        }));
+                                      } catch (err: any) {
+                                        setError(
+                                          err?.response?.data?.message ||
+                                            "Could not create plan",
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    {createPlan.isPending
+                                      ? "Saving…"
+                                      : "Save plan & use"}
+                                  </button>
+                                  {activePlans.length > 0 ? (
+                                    <button
+                                      type="button"
+                                      className={styles.btnSecondary}
+                                      onClick={() => setShowPlanForm(false)}
+                                    >
+                                      Cancel
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className={styles.btnSecondary}
+                                style={{ marginTop: 8 }}
+                                onClick={() => setShowPlanForm(true)}
+                              >
+                                + Add plan
+                              </button>
+                            )}
                           </div>
                           <div className={styles.field}>
                             <label className={styles.label}>
@@ -851,7 +1130,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                                   }
                                 >
                                   {opt.value === "AUTOPAY" && !companyAutopayOn
-                                    ? `${opt.label} — turn on in Settings`
+                                    ? `${opt.label} — turn on in Payment settings`
                                     : opt.label}
                                 </option>
                               ))}
@@ -859,7 +1138,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                           </div>
                         </div>
 
-                        {/* Notifications — both default on, staff can untick. */}
+                        {/* Email notify — WhatsApp is coming soon. */}
                         <div className={styles.field}>
                           <label className={styles.label}>Notify member</label>
                           <div
@@ -875,20 +1154,16 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 8,
-                                cursor: "pointer",
+                                opacity: 0.55,
+                                cursor: "not-allowed",
                               }}
+                              title="Coming soon"
                             >
-                              <input
-                                type="checkbox"
-                                checked={form.sendWhatsApp}
-                                onChange={(e) =>
-                                  setForm((prev) => ({
-                                    ...prev,
-                                    sendWhatsApp: e.target.checked,
-                                  }))
-                                }
-                              />
-                              WhatsApp
+                              <input type="checkbox" checked={false} disabled />
+                              WhatsApp{" "}
+                              <span style={{ fontSize: 11, opacity: 0.8 }}>
+                                (coming soon)
+                              </span>
                             </label>
                             <label
                               style={{
@@ -915,8 +1190,8 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                           </div>
                           <span className={styles.hint}>
                             {form.paymentMode === "AUTOPAY"
-                              ? "Mandate link member ko bheja jayega — wo UPI app se approve karega. QR bhi milega scan karne ke liye."
-                              : "Welcome message member ko bheja jayega."}
+                              ? "Save ke baad QR dikhega — member scan karke UPI Autopay approve kare. WhatsApp later."
+                              : "Welcome / receipt email optional."}
                             {!form.email
                               ? " Email ke liye member ka email bharo."
                               : ""}
@@ -927,7 +1202,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                           <div className={styles.field}>
                             <span className={styles.hint}>
                               Autopay is off for this gym — turn it on in
-                              Settings → UPI Autopay.
+                              Payment settings → UPI Autopay.
                             </span>
                           </div>
                         ) : null}
@@ -1000,6 +1275,37 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                             ) : null}
                           </div>
                         </div>
+
+                        {form.pending !== "" && Number(form.pending) > 0 ? (
+                          <div
+                            className={styles.field}
+                            style={{
+                              marginTop: 4,
+                              padding: "12px 14px",
+                              border: "1px solid rgba(230,57,70,0.35)",
+                              borderRadius: 8,
+                              background: "rgba(230,57,70,0.06)",
+                            }}
+                          >
+                            <label className={styles.label}>
+                              Due reminder date *
+                            </label>
+                            <input
+                              className={styles.input}
+                              name="dueReminderDate"
+                              type="date"
+                              value={form.dueReminderDate}
+                              onChange={handleChange}
+                              min={today()}
+                              required
+                            />
+                            <span className={styles.hint}>
+                              Required when balance is pending — date they
+                              promised to pay. Used on Partial dues (nearest
+                              first).
+                            </span>
+                          </div>
+                        ) : null}
 
                         <div className={styles.row}>
                           <div className={styles.field}>
@@ -1080,6 +1386,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                         >
                           <option value="GT">GT — Group Training</option>
                           <option value="PT">PT — Personal Training</option>
+                          <option value="NONE">No Trainer</option>
                           <option value="OTHER">Other</option>
                         </select>
                       </div>
@@ -1090,8 +1397,13 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                           name="trainerId"
                           value={form.trainerId}
                           onChange={handleChange}
+                          disabled={form.trainingType === "NONE"}
                         >
-                          <option value="">— Select trainer —</option>
+                          <option value="">
+                            {form.trainingType === "NONE"
+                              ? "— No trainer —"
+                              : "— Select trainer —"}
+                          </option>
                           {(trainers ?? []).map((t) => (
                             <option key={t._id} value={t._id}>
                               {t.name}

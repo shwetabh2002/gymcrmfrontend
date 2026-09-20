@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import styles from "./Users.module.css";
-import { useMembers, useMembersPaged } from "@/services/members/members.hook";
+import { useMembersPaged } from "@/services/members/members.hook";
 import { Member } from "@/services/members/members.api";
 import { useAuth } from "@/lib/context/AuthContext";
 import {
@@ -12,13 +13,20 @@ import {
   canUpdateMembers,
 } from "@/lib/rbac";
 import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
-import { resolveInvoiceTax } from "@/lib/tax";
+import { resolveInvoiceTax, resolveRecordTax } from "@/lib/tax";
 import { MoneyWithGst } from "@/components/MoneyWithGst";
 import { RowActions } from "@/components/RowActions";
 import MemberModal from "./MemberModal";
 import DeleteMemberDialog from "./DeleteMemberDialog";
+import MemberLifecycleModal from "./MemberLifecycleModal";
 import { EASE_OUT_EXPO } from "@/config/motion";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import {
+  FilterBar,
+  FilterField,
+  FilterSearch,
+  FilterSelect,
+} from "@/components/FilterBar/FilterBar";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -74,11 +82,26 @@ export default function UsersPage() {
   const [search, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [trainFilter, setTrainFilter] = useState("ALL");
+  const [duesFilter, setDuesFilter] = useState("ALL");
   /**
    * Typing hits the database, so wait for a pause instead of firing a query per
    * keystroke.
    */
   const debouncedSearch = useDebouncedValue(search, 300);
+
+  const activeFilterCount = [
+    search.trim() !== "",
+    statusFilter !== "ALL",
+    trainFilter !== "ALL",
+    duesFilter !== "ALL",
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearchInput("");
+    setStatusFilter("ALL");
+    setTrainFilter("ALL");
+    setDuesFilter("ALL");
+  };
 
   const {
     data: paged,
@@ -90,6 +113,7 @@ export default function UsersPage() {
     search: debouncedSearch || undefined,
     status: statusFilter,
     trainingType: trainFilter,
+    hasPending: duesFilter === "PENDING" ? "true" : undefined,
   });
 
   const members = paged?.items;
@@ -99,12 +123,13 @@ export default function UsersPage() {
   // Any filter change means the current page number no longer makes sense.
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, statusFilter, trainFilter]);
+  }, [debouncedSearch, statusFilter, trainFilter, duesFilter]);
   const { data: gymSettings } = useGymSettings();
   const { taxPercentage, taxMode } = resolveInvoiceTax(gymSettings);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
   const openCreate = () => {
     setSelected(null);
@@ -117,6 +142,10 @@ export default function UsersPage() {
   const openDelete = (m: Member) => {
     setSelected(m);
     setDeleteOpen(true);
+  };
+  const openView = (m: Member) => {
+    setSelected(m);
+    setViewOpen(true);
   };
 
   // Search and filters are applied by the server, so this page renders the
@@ -135,6 +164,11 @@ export default function UsersPage() {
         onClose={() => setDeleteOpen(false)}
         member={selected}
       />
+      <MemberLifecycleModal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        member={selected}
+      />
 
       <motion.div
         className={styles.pageHeader}
@@ -146,7 +180,13 @@ export default function UsersPage() {
           <p className={styles.eyebrow}>Admin Panel</p>
           <h1 className={styles.pageTitle}>Members</h1>
           <p className={styles.pageDesc}>
-            Manage gym members, plans, and payments.
+            Manage gym members, plans, and payments.{" "}
+            <Link
+              href="/dues"
+              style={{ color: "var(--accent)", textDecoration: "underline" }}
+            >
+              Open partial dues queue
+            </Link>
           </p>
         </div>
         {canCreate && (
@@ -168,38 +208,44 @@ export default function UsersPage() {
             <span className={styles.cardTitleBar} />
             All Members
           </h2>
-          <div className={styles.toolbar}>
-            <div className={styles.searchWrap}>
-              <span className={styles.searchIcon}>⌕</span>
-              <input
-                className={styles.searchInput}
-                placeholder="Search name, ID, phone, trainer…"
-                value={search}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-            </div>
-            <select
-              className={styles.filterSelect}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="ALL">All Status</option>
+        </div>
+        <FilterBar
+          title="Member filters"
+          activeCount={activeFilterCount}
+          onClear={clearFilters}
+        >
+          <FilterField label="Search" grow>
+            <FilterSearch
+              value={search}
+              onChange={setSearchInput}
+              placeholder="Name, ID, phone, trainer…"
+            />
+          </FilterField>
+          <FilterField label="Status">
+            <FilterSelect value={statusFilter} onChange={setStatusFilter}>
+              <option value="ALL">All statuses</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
               <option value="SUSPENDED">Suspended</option>
-            </select>
-            <select
-              className={styles.filterSelect}
-              value={trainFilter}
-              onChange={(e) => setTrainFilter(e.target.value)}
-            >
-              <option value="ALL">All Training</option>
-              <option value="PT">PT</option>
-              <option value="GT">GT</option>
+              <option value="EXPIRED">Expired</option>
+            </FilterSelect>
+          </FilterField>
+          <FilterField label="Training">
+            <FilterSelect value={trainFilter} onChange={setTrainFilter}>
+              <option value="ALL">All types</option>
+              <option value="PT">Personal (PT)</option>
+              <option value="GT">Group (GT)</option>
+              <option value="NONE">None</option>
               <option value="OTHER">Other</option>
-            </select>
-          </div>
-        </div>
+            </FilterSelect>
+          </FilterField>
+          <FilterField label="Balance">
+            <FilterSelect value={duesFilter} onChange={setDuesFilter}>
+              <option value="ALL">All balances</option>
+              <option value="PENDING">Pending dues</option>
+            </FilterSelect>
+          </FilterField>
+        </FilterBar>
 
         <div className={styles.tableWrap}>
           {isLoading && (
@@ -280,7 +326,9 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className={styles.cellMono}>
-                      {m.contactNumber || m.phone || "—"}
+                      {m.contactNumber || m.phone
+                        ? `${m.countryCode || "+91"} ${m.contactNumber || m.phone}`
+                        : "—"}
                     </td>
                     <td className={styles.cellMono}>
                       {m.membershipPlan ?? "—"}
@@ -303,26 +351,55 @@ export default function UsersPage() {
                     <td className={styles.cellMono}>
                       <MoneyWithGst
                         amount={m.amount}
-                        taxPercentage={taxPercentage}
-                        taxMode={taxMode}
+                        {...resolveRecordTax(
+                          { taxPercentage, taxMode },
+                          m,
+                        )}
                       />
                     </td>
                     <td className={`${styles.cellMono} ${styles.cellGreen}`}>
                       <MoneyWithGst
                         amount={m.received}
-                        taxPercentage={taxPercentage}
-                        taxMode={taxMode}
+                        {...resolveRecordTax(
+                          { taxPercentage, taxMode },
+                          m,
+                        )}
                       />
                     </td>
                     <td
                       className={`${styles.cellMono} ${(m.pending ?? 0) > 0 ? styles.cellRed : ""}`}
                     >
                       {(m.pending ?? 0) > 0 ? (
-                        <MoneyWithGst
-                          amount={m.pending}
-                          taxPercentage={taxPercentage}
-                          taxMode={taxMode}
-                        />
+                        <div>
+                          <MoneyWithGst
+                            amount={m.pending}
+                            {...resolveRecordTax(
+                              { taxPercentage, taxMode },
+                              m,
+                            )}
+                          />
+                          {m.dueReminderDate ? (
+                            <div
+                              style={{
+                                fontSize: 10,
+                                color: "var(--text-3)",
+                                marginTop: 2,
+                              }}
+                            >
+                              Due {formatDate(m.dueReminderDate)}
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                fontSize: 10,
+                                color: "var(--text-3)",
+                                marginTop: 2,
+                              }}
+                            >
+                              <Link href="/dues">Set reminder →</Link>
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <span style={{ color: "var(--text-3)" }}>Nil</span>
                       )}
@@ -340,6 +417,10 @@ export default function UsersPage() {
                     <td>
                       <RowActions
                         actions={[
+                          {
+                            label: "View",
+                            onClick: () => openView(m),
+                          },
                           ...(canUpdate
                             ? [{ label: "Edit", onClick: () => openEdit(m) }]
                             : []),

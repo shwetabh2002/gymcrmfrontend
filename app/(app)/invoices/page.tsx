@@ -4,14 +4,16 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import styles from "./Invoices.module.css";
 import {
-  useInvoices,
+  useInvoicesPaged,
   useDeleteInvoice,
 } from "@/services/invoices/invoices.hooks";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { Invoice } from "@/services/invoices/invoices.api";
 import InvoiceTemplate from "./InvoiceTemplate";
 import InvoiceGeneratorModal, {
   InvoiceGeneratorData,
 } from "@/app/(app)/invoices/InvoiceGeneratorModal";
+import InvoiceTaxEditModal from "./InvoiceTaxEditModal";
 import { useInvoiceGenerator } from "@/services/invoices/invoices.generator.hook";
 import { createPortal } from "react-dom";
 import {
@@ -20,6 +22,13 @@ import {
 } from "@/lib/invoice-location";
 import { RowActions } from "@/components/RowActions";
 import { EASE_OUT_EXPO } from "@/config/motion";
+import {
+  FilterBar,
+  FilterField,
+  FilterSearch,
+  FilterSelect,
+  FilterInput,
+} from "@/components/FilterBar/FilterBar";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -68,7 +77,6 @@ function invoiceDocumentDetails(inv: Invoice) {
 }
 
 export default function InvoicesPage() {
-  const { data: invoices, isLoading, isError } = useInvoices();
   const { mutate: deleteInvoice } = useDeleteInvoice();
   const {
     isOpen: invoiceOpen,
@@ -78,16 +86,62 @@ export default function InvoicesPage() {
   } = useInvoiceGenerator();
 
   const [search, setSearch] = useState("");
+  const [taxModeFilter, setTaxModeFilter] = useState("ALL");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [taxEditInvoice, setTaxEditInvoice] = useState<Invoice | null>(null);
   const [mounted, setMounted] = useState(false);
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const total = invoices?.length ?? 0;
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, taxModeFilter]);
+
+  const { data: paged, isLoading, isError } = useInvoicesPaged({
+    page,
+    limit: 50,
+    search: debouncedSearch || undefined,
+    taxMode: taxModeFilter === "ALL" ? undefined : taxModeFilter,
+  });
+
+  const invoices = paged?.items;
+  const pages = paged?.pages ?? 1;
+  const listTotal = paged?.total ?? 0;
+
+  const activeFilterCount = [
+    search.trim() !== "",
+    taxModeFilter !== "ALL",
+    dateFrom !== "",
+    dateTo !== "",
+    amountMin !== "",
+    amountMax !== "",
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setTaxModeFilter("ALL");
+    setDateFrom("");
+    setDateTo("");
+    setAmountMin("");
+    setAmountMax("");
+    setPage(1);
+  };
+
+  // Stats from current page (lightweight); full-ledger totals stay on analytics.
+  const total = listTotal;
   const totalAmount = invoices?.reduce((sum, i) => sum + i.totalAmount, 0) ?? 0;
-  const avgAmount = total > 0 ? Math.round(totalAmount / total) : 0;
+  const avgAmount =
+    (invoices?.length ?? 0) > 0
+      ? Math.round(totalAmount / (invoices?.length ?? 1))
+      : 0;
   const thisMonth =
     invoices?.filter((i) => {
       const invDate = new Date(i.invoiceDate);
@@ -101,16 +155,18 @@ export default function InvoicesPage() {
   const filtered = useMemo(() => {
     if (!invoices) return [];
     return invoices.filter((inv) => {
-      const member = getMember(inv);
-      const q = search.toLowerCase();
-      return (
-        !q ||
-        inv.invoiceNumber.toLowerCase().includes(q) ||
-        member?.name.toLowerCase().includes(q) ||
-        (member?.phone ?? "").includes(q)
-      );
+      const invDay = inv.invoiceDate?.slice(0, 10) ?? "";
+      const matchesFrom = !dateFrom || invDay >= dateFrom;
+      const matchesTo = !dateTo || invDay <= dateTo;
+      const min = amountMin !== "" ? Number(amountMin) : null;
+      const max = amountMax !== "" ? Number(amountMax) : null;
+      const matchesMin =
+        min == null || Number.isNaN(min) || inv.totalAmount >= min;
+      const matchesMax =
+        max == null || Number.isNaN(max) || inv.totalAmount <= max;
+      return matchesFrom && matchesTo && matchesMin && matchesMax;
     });
-  }, [invoices, search]);
+  }, [invoices, dateFrom, dateTo, amountMin, amountMax]);
 
   const STATS = [
     { label: "Total Invoices", val: String(total), sub: "all time" },
@@ -208,18 +264,55 @@ export default function InvoicesPage() {
             <span className={styles.cardTitleBar} />
             All Invoices
           </h2>
-          <div className={styles.toolbar}>
-            <div className={styles.searchWrap}>
-              <span className={styles.searchIcon}>⌕</span>
-              <input
-                className={styles.searchInput}
-                placeholder="Search invoice or member…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
         </div>
+        <FilterBar
+          title="Invoice filters"
+          activeCount={activeFilterCount}
+          onClear={clearFilters}
+        >
+          <FilterField label="Search" grow>
+            <FilterSearch
+              value={search}
+              onChange={setSearch}
+              placeholder="Invoice #, member, phone…"
+            />
+          </FilterField>
+          <FilterField label="GST mode">
+            <FilterSelect value={taxModeFilter} onChange={setTaxModeFilter}>
+              <option value="ALL">All GST modes</option>
+              <option value="included">GST included</option>
+              <option value="excluded">GST excluded</option>
+            </FilterSelect>
+          </FilterField>
+          <FilterField label="From date">
+            <FilterInput
+              type="date"
+              value={dateFrom}
+              onChange={setDateFrom}
+            />
+          </FilterField>
+          <FilterField label="To date">
+            <FilterInput type="date" value={dateTo} onChange={setDateTo} />
+          </FilterField>
+          <FilterField label="Min amount (₹)">
+            <FilterInput
+              type="number"
+              value={amountMin}
+              onChange={setAmountMin}
+              placeholder="0"
+              min={0}
+            />
+          </FilterField>
+          <FilterField label="Max amount (₹)">
+            <FilterInput
+              type="number"
+              value={amountMax}
+              onChange={setAmountMax}
+              placeholder="Any"
+              min={0}
+            />
+          </FilterField>
+        </FilterBar>
 
         <div className={styles.tableWrap}>
           {isLoading && (
@@ -259,7 +352,7 @@ export default function InvoicesPage() {
                     >
                       {invoices?.length === 0
                         ? "No invoices found. Create one to get started."
-                        : "No invoices match your search."}
+                        : "No invoices match these filters."}
                     </td>
                   </tr>
                 )}
@@ -287,7 +380,9 @@ export default function InvoicesPage() {
                         ₹{inv.subtotal.toLocaleString()}
                       </td>
                       <td style={{ color: "#666" }}>
-                        {inv.taxPercentage > 0 ? `${inv.taxPercentage}%` : "—"}
+                        {inv.taxPercentage > 0
+                          ? `${inv.taxPercentage}% ${inv.taxMode === "included" ? "incl." : "excl."}`
+                          : "—"}
                       </td>
                       <td className={styles.cellAmount}>
                         ₹{inv.totalAmount.toLocaleString()}
@@ -301,6 +396,10 @@ export default function InvoicesPage() {
                             {
                               label: "View",
                               onClick: () => setSelectedInvoice(inv),
+                            },
+                            {
+                              label: "Edit GST",
+                              onClick: () => setTaxEditInvoice(inv),
                             },
                             {
                               label: "PDF",
@@ -324,18 +423,32 @@ export default function InvoicesPage() {
 
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
-            {filtered.length !== invoices?.length
-              ? `Showing ${filtered.length} of ${invoices?.length ?? 0} invoices`
-              : `${invoices?.length ?? 0} invoice${invoices?.length !== 1 ? "s" : ""}`}
+            Page {paged?.page ?? page} of {pages} · {listTotal} invoices
+            {filtered.length !== (invoices?.length ?? 0)
+              ? ` · ${filtered.length} on this page after filters`
+              : ""}
           </span>
           <div className={styles.paginationBtns}>
-            <button className={styles.pageBtn} disabled>
+            <button
+              type="button"
+              className={styles.pageBtn}
+              disabled={page <= 1}
+              onClick={() => setPage((x) => Math.max(1, x - 1))}
+            >
               ‹
             </button>
-            <button className={`${styles.pageBtn} ${styles.pageBtnActive}`}>
-              1
+            <button
+              type="button"
+              className={`${styles.pageBtn} ${styles.pageBtnActive}`}
+            >
+              {page}
             </button>
-            <button className={styles.pageBtn} disabled>
+            <button
+              type="button"
+              className={styles.pageBtn}
+              disabled={page >= pages}
+              onClick={() => setPage((x) => x + 1)}
+            >
               ›
             </button>
           </div>
@@ -399,6 +512,12 @@ export default function InvoicesPage() {
           </AnimatePresence>,
           document.body,
         )}
+
+      <InvoiceTaxEditModal
+        open={!!taxEditInvoice}
+        invoice={taxEditInvoice}
+        onClose={() => setTaxEditInvoice(null)}
+      />
     </div>
   );
 }

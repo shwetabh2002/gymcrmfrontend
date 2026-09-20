@@ -51,7 +51,17 @@ export interface RenewalQueueParams {
   includeExpired?: boolean;
   expiredWithinDays?: number;
   status?: RenewalStatusFilter;
+  page?: number;
+  limit?: number;
 }
+
+export type PaginatedRenewals = {
+  items: RenewalQueueItem[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+};
 
 export interface UpdateFollowUpPayload {
   renewalFollowUpStatus?: RenewalFollowUpStatus;
@@ -61,7 +71,11 @@ export interface UpdateFollowUpPayload {
 
 export const renewalsApi = {
   getQueue: (params?: RenewalQueueParams) =>
-    requestService.get<RenewalQueueItem[]>(API_CONFIG.RENEWALS.QUEUE, params),
+    requestService.get<PaginatedRenewals>(API_CONFIG.RENEWALS.QUEUE, {
+      page: 1,
+      limit: 50,
+      ...params,
+    }),
 
   getCounts: (params?: { withinDays?: number; expiredWithinDays?: number }) =>
     requestService.get<RenewalQueueCounts>(API_CONFIG.RENEWALS.QUEUE_COUNTS, params),

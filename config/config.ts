@@ -90,6 +90,11 @@ export const API_CONFIG = {
       `/renewals/${subscriptionId}/follow-up`,
   },
 
+  DUES: {
+    QUEUE: "/dues/queue",
+    REMINDER: (subscriptionId: string) => `/dues/${subscriptionId}/reminder`,
+  },
+
   EMPLOYEES: {
     BASE: "/employees",
     BY_ID: (id: string) => `/employees/${id}`,

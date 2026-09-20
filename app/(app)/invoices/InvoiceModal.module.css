@@ -15,7 +15,7 @@
   z-index: 101;
   background: #111;
   border: 1px solid #2a2a2a;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   padding: 1.75rem;
   width: 560px;
   max-width: calc(100vw - 2rem);
@@ -77,7 +77,7 @@
 .input {
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: #fff;
   font-size: 0.9rem;
   padding: 0.6rem 0.85rem;
@@ -97,7 +97,7 @@
 
 .statusChip {
   padding: 0.4rem 1rem;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -119,7 +119,7 @@
   color: #e63946;
   background: rgba(230, 57, 70, 0.08);
   border: 1px solid rgba(230, 57, 70, 0.2);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0.6rem 0.85rem;
   margin-bottom: 1rem;
 }
@@ -130,28 +130,8 @@
   gap: 0.75rem;
 }
 
-.btnPrimary {
-  background: var(--red, #e63946);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 0.6rem 1.25rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.btnPrimary:hover { opacity: 0.85; }
+.btnPrimary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--red); color: #fff; border: none; padding: 0 18px; min-height: 44px; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 700; letter-spacing: 0; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s, background 0.15s; box-shadow: var(--btn-shadow); }
+.btnPrimary:hover { background: #e65c48; }
 
-.btnSecondary {
-  background: #1e1e1e;
-  color: #ccc;
-  border: 1px solid #2a2a2a;
-  border-radius: 6px;
-  padding: 0.6rem 1.25rem;
-  font-size: 0.88rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btnSecondary:hover { background: #252525; }
+.btnSecondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #fff; color: var(--text); border: 1px solid var(--border-2); padding: 0 16px; min-height: 44px; border-radius: var(--radius-sm); font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.btnSecondary:hover { background: var(--cream); border-color: var(--border-2); color: var(--text); }

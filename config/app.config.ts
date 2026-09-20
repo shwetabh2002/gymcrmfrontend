@@ -26,9 +26,10 @@ export const HTTP_CONFIG = {
 
 /** React Query defaults — one place to tune caching for the whole app. */
 export const QUERY_CONFIG = {
-  staleTimeMs: 5 * 60 * 1_000,
+  /** Short enough that navigating between pages picks up fresh CRM data. */
+  staleTimeMs: 15_000,
   retry: 1,
-  refetchOnWindowFocus: false,
+  refetchOnWindowFocus: true,
   mutationRetry: 0,
 } as const;
 

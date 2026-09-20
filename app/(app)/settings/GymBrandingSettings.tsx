@@ -527,6 +527,11 @@ export default function GymBrandingSettings() {
               ),
             )}
           </select>
+          <p className={styles.formHint} style={{ marginTop: 8 }}>
+            Applies to new memberships &amp; invoices only. Existing members keep
+            the GST mode they were created with. Fix a wrong invoice via
+            Invoices → Edit GST.
+          </p>
         </div>
         <div className={styles.formGroupFull}>
           <label className={styles.formLabel}>Invoice Footer (optional)</label>

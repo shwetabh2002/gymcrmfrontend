@@ -12,14 +12,7 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.eyebrow {
-  margin: 0 0 6px;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #777;
-  font-family: "DM Mono", monospace;
-}
+.eyebrow { font-family: var(--sans); font-size: 11px; letter-spacing: 0.17em; text-transform: uppercase; color: var(--red); display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 800; }
 
 .title {
   margin: 0;

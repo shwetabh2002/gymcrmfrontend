@@ -16,14 +16,17 @@ import {
   EmployeeStatus,
   EmployeeType,
   EMPLOYEE_TYPE_LABELS,
+  EMPLOYEE_TYPE_OPTIONS,
 } from "@/services/employees/employees.api";
 import {
-  ALL_PERMISSION_KEYS,
-  CRUD_ACTION_LABEL,
-  PERMISSION_LABELS,
+  ACCESS_PACKS,
+  MODULE_ACCESS_LEVEL_LABEL,
+  ModuleAccessLevel,
   PERMISSION_MODULES,
   PermissionKey,
-  actionForKey,
+  keysForModuleLevel,
+  levelForModuleKeys,
+  matchAccessPackId,
   normalizePermissions,
   summarizeModuleAccess,
 } from "@/lib/rbac";
@@ -34,6 +37,12 @@ import {
   resolveUploadLimits,
 } from "@/lib/upload";
 import { EASE_OUT_EXPO } from "@/config/motion";
+import {
+  FilterBar,
+  FilterField,
+  FilterSearch,
+  FilterSelect,
+} from "@/components/FilterBar/FilterBar";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -55,6 +64,8 @@ type FormState = {
   permissions: PermissionKey[];
 };
 
+const FRONT_DESK_KEYS = ACCESS_PACKS.find((p) => p.id === "front_desk")!.keys;
+
 const EMPTY: FormState = {
   name: "",
   email: "",
@@ -63,22 +74,32 @@ const EMPTY: FormState = {
   type: "STAFF",
   status: "ACTIVE",
   notes: "",
-  permissions: ["dashboard"],
+  permissions: [...FRONT_DESK_KEYS],
 };
 
 export default function EmployeesPage() {
   const [typeFilter, setTypeFilter] = useState<"ALL" | EmployeeType>("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | EmployeeStatus>(
+    "ALL",
+  );
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<FormState>(EMPTY);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
+  const employeeQuery = useMemo(() => {
+    const params: { type?: EmployeeType; status?: EmployeeStatus } = {};
+    if (typeFilter !== "ALL") params.type = typeFilter;
+    if (statusFilter !== "ALL") params.status = statusFilter;
+    return Object.keys(params).length ? params : undefined;
+  }, [typeFilter, statusFilter]);
+
   const {
     data: employees,
     isLoading,
     isError,
-  } = useEmployees(typeFilter === "ALL" ? undefined : { type: typeFilter });
+  } = useEmployees(employeeQuery);
   const createEmp = useCreateEmployee();
   const updateEmp = useUpdateEmployee();
   const deleteEmp = useDeleteEmployee();
@@ -93,9 +114,22 @@ export default function EmployeesPage() {
       (e) =>
         e.name.toLowerCase().includes(q) ||
         (e.phone ?? "").includes(q) ||
-        (e.email ?? "").toLowerCase().includes(q),
+        (e.email ?? "").toLowerCase().includes(q) ||
+        (e.role ?? "").toLowerCase().includes(q),
     );
   }, [employees, search]);
+
+  const activeFilterCount = [
+    search.trim() !== "",
+    typeFilter !== "ALL",
+    statusFilter !== "ALL",
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setTypeFilter("ALL");
+    setStatusFilter("ALL");
+  };
 
   const activeCount = (employees ?? []).filter(
     (e) => e.status === "ACTIVE",
@@ -123,29 +157,36 @@ export default function EmployeesPage() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const togglePerm = (key: PermissionKey) => {
-    setForm((prev) => ({
-      ...prev,
-      permissions: prev.permissions.includes(key)
-        ? prev.permissions.filter((p) => p !== key)
-        : [...prev.permissions, key],
-    }));
-  };
-
-  const toggleModule = (keys: PermissionKey[]) => {
+  const setModuleLevel = (
+    moduleKeys: PermissionKey[],
+    level: ModuleAccessLevel,
+  ) => {
     setForm((prev) => {
-      const allOn = keys.every((k) => prev.permissions.includes(k));
-      if (allOn) {
-        return {
-          ...prev,
-          permissions: prev.permissions.filter((p) => !keys.includes(p)),
-        };
-      }
+      const without = prev.permissions.filter((p) => !moduleKeys.includes(p));
+      const nextKeys = keysForModuleLevel(moduleKeys, level);
       return {
         ...prev,
-        permissions: [...new Set([...prev.permissions, ...keys])],
+        permissions: [...new Set([...without, ...nextKeys])],
       };
     });
+  };
+
+  const applyPack = (packId: string) => {
+    const pack = ACCESS_PACKS.find((p) => p.id === packId);
+    if (!pack) return;
+    setForm((prev) => ({ ...prev, permissions: [...pack.keys] }));
+  };
+
+  const setEmployeeType = (type: EmployeeType) => {
+    const suggested =
+      type === "TRAINER"
+        ? ACCESS_PACKS.find((p) => p.id === "trainer")!.keys
+        : ACCESS_PACKS.find((p) => p.id === "front_desk")!.keys;
+    setForm((prev) => ({
+      ...prev,
+      type,
+      permissions: [...suggested],
+    }));
   };
 
   const startEdit = (emp: Employee) => {
@@ -158,7 +199,7 @@ export default function EmployeesPage() {
       email: emp.email ?? "",
       password: "",
       phone: emp.phone ?? "",
-      type: emp.type === "TRAINER" || emp.type === "SALES" ? emp.type : "STAFF",
+      type: emp.type === "TRAINER" ? "TRAINER" : "STAFF",
       status: emp.status,
       notes: emp.notes ?? "",
       permissions: perms.length ? perms : ["dashboard"],
@@ -284,9 +325,8 @@ export default function EmployeesPage() {
           <p className={styles.eyebrow}>Team</p>
           <h1 className={styles.pageTitle}>Employees</h1>
           <p className={styles.pageDesc}>
-            Add staff and choose exactly which CRM areas they can use. Role
-            (Staff / Trainer / Sales) is only a label — access is whatever you
-            tick below.
+            Add Staff or Trainer. Pick a simple access pack (or tweak areas
+            below) — everything is saved on their login.
           </p>
         </div>
       </motion.div>
@@ -307,9 +347,9 @@ export default function EmployeesPage() {
           <span className={styles.statVal}>{activeCount}</span>
         </div>
         <div className={styles.statCell}>
-          <span className={styles.statLabel}>Staff / Trainer / Sales</span>
+          <span className={styles.statLabel}>Staff / Trainer</span>
           <span className={styles.statVal}>
-            {byType("STAFF")} / {byType("TRAINER")} / {byType("SALES")}
+            {byType("STAFF")} / {byType("TRAINER")}
           </span>
         </div>
       </motion.div>
@@ -367,23 +407,28 @@ export default function EmployeesPage() {
                   placeholder="Full name"
                 />
               </label>
-              <label className={styles.field}>
-                <span>Role (label)</span>
-                <select
-                  value={form.type}
-                  onChange={(e) =>
-                    setForm({ ...form, type: e.target.value as EmployeeType })
-                  }
-                >
-                  {(Object.keys(EMPLOYEE_TYPE_LABELS) as EmployeeType[]).map(
-                    (t) => (
-                      <option key={t} value={t}>
-                        {EMPLOYEE_TYPE_LABELS[t]}
-                      </option>
-                    ),
-                  )}
-                </select>
-              </label>
+              <div className={`${styles.field} ${styles.fieldFull}`}>
+                <span>Job type</span>
+                <div className={styles.typeRow}>
+                  {EMPLOYEE_TYPE_OPTIONS.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      className={`${styles.typeCard} ${
+                        form.type === t ? styles.typeCardOn : ""
+                      }`}
+                      onClick={() => setEmployeeType(t)}
+                    >
+                      <strong>{EMPLOYEE_TYPE_LABELS[t]}</strong>
+                      <span>
+                        {t === "STAFF"
+                          ? "Front desk / ops"
+                          : "Coaching on the floor"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <label className={styles.field}>
                 <span>Email (login)</span>
                 <input
@@ -442,115 +487,74 @@ export default function EmployeesPage() {
 
             <div className={styles.accessBlock}>
               <div className={styles.accessHead}>
-                <h3>CRM access</h3>
+                <h3>What can they use in the CRM?</h3>
                 <p>
-                  Grant View / Create / Update / Delete per module. Role label
-                  does not decide access.
+                  Pick one pack below. Saved on this employee in the database.
+                  You can fine-tune areas if needed.
                 </p>
               </div>
 
-              <div className={styles.permQuick}>
-                <button
-                  type="button"
-                  className={styles.chipBtn}
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      permissions: [...ALL_PERMISSION_KEYS],
-                    })
-                  }
-                >
-                  Select all
-                </button>
-                <button
-                  type="button"
-                  className={styles.chipBtn}
-                  onClick={() => setForm({ ...form, permissions: [] })}
-                >
-                  Unselect all
-                </button>
+              <div className={styles.packGrid}>
+                {ACCESS_PACKS.map((pack) => {
+                  const on = matchAccessPackId(form.permissions) === pack.id;
+                  return (
+                    <button
+                      key={pack.id}
+                      type="button"
+                      className={`${styles.packCard} ${on ? styles.packCardOn : ""}`}
+                      onClick={() => applyPack(pack.id)}
+                    >
+                      <strong>{pack.label}</strong>
+                      <span>{pack.blurb}</span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className={styles.crudTable}>
-                <div className={`${styles.crudRow} ${styles.crudHead}`}>
-                  <span>Module</span>
-                  <span>View</span>
-                  <span>Create</span>
-                  <span>Update</span>
-                  <span>Delete</span>
-                  <span />
-                </div>
+              {matchAccessPackId(form.permissions) === "custom" ? (
+                <p className={styles.customHint}>
+                  Custom mix — set View only / Edit / Full per area:
+                </p>
+              ) : (
+                <p className={styles.customHint}>
+                  Fine-tune: View only (read) vs add/edit vs full delete:
+                </p>
+              )}
+
+              <div className={styles.areaList}>
                 {PERMISSION_MODULES.map((mod) => {
-                  const allOn = mod.keys.every((k) =>
-                    form.permissions.includes(k),
-                  );
+                  const level = levelForModuleKeys(mod.keys, form.permissions);
                   return (
-                    <div key={mod.id} className={styles.crudRow}>
-                      <span className={styles.crudModule}>{mod.label}</span>
-                      {(["view", "create", "update", "delete"] as const).map(
-                        (action) => {
-                          if (mod.id === "dashboard") {
-                            if (action !== "view") {
-                              return (
-                                <span
-                                  key={action}
-                                  className={styles.crudEmpty}
-                                />
-                              );
-                            }
-                            const key = "dashboard" as PermissionKey;
-                            const on = form.permissions.includes(key);
-                            return (
-                              <label
-                                key={action}
-                                className={`${styles.crudCheck} ${on ? styles.permOn : ""}`}
-                                title={CRUD_ACTION_LABEL.access}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={on}
-                                  onChange={() => togglePerm(key)}
-                                />
-                                <span className={styles.crudCheckLabel}>
-                                  Access
-                                </span>
-                              </label>
-                            );
-                          }
-                          const key = mod.keys.find(
-                            (k) => actionForKey(k) === action,
-                          );
-                          if (!key) {
-                            return (
-                              <span key={action} className={styles.crudEmpty} />
-                            );
-                          }
-                          const on = form.permissions.includes(key);
-                          return (
-                            <label
-                              key={action}
-                              className={`${styles.crudCheck} ${on ? styles.permOn : ""}`}
-                              title={PERMISSION_LABELS[key]}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={on}
-                                onChange={() => togglePerm(key)}
-                              />
-                              <span className={styles.crudCheckLabel}>
-                                {CRUD_ACTION_LABEL[action]}
-                              </span>
-                            </label>
-                          );
-                        },
-                      )}
-                      <button
-                        type="button"
-                        className={styles.chipBtn}
-                        onClick={() => toggleModule(mod.keys)}
+                    <div
+                      key={mod.id}
+                      className={`${styles.areaRow} ${
+                        level !== "none" ? styles.areaOn : ""
+                      }`}
+                    >
+                      <span className={styles.areaLabel}>{mod.label}</span>
+                      <select
+                        className={styles.areaSelect}
+                        value={level}
+                        aria-label={`${mod.label} access level`}
+                        onChange={(e) =>
+                          setModuleLevel(
+                            mod.keys,
+                            e.target.value as ModuleAccessLevel,
+                          )
+                        }
                       >
-                        {allOn ? "Clear" : "All"}
-                      </button>
+                        {(
+                          mod.id === "dashboard"
+                            ? (["none", "view"] as ModuleAccessLevel[])
+                            : (["none", "view", "edit", "full"] as ModuleAccessLevel[])
+                        ).map((lv) => (
+                          <option key={lv} value={lv}>
+                            {mod.id === "dashboard" && lv === "view"
+                              ? "Access"
+                              : MODULE_ACCESS_LEVEL_LABEL[lv]}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   );
                 })}
@@ -586,31 +590,45 @@ export default function EmployeesPage() {
               <span className={styles.cardTitleBar} />
               Directory
             </h2>
-            <div className={styles.toolbar}>
-              <input
-                className={styles.searchInput}
-                placeholder="Search…"
+          </div>
+          <FilterBar
+            title="Employee filters"
+            activeCount={activeFilterCount}
+            onClear={clearFilters}
+          >
+            <FilterField label="Search" grow>
+              <FilterSearch
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={setSearch}
+                placeholder="Name, phone, email, role…"
               />
-              <select
-                className={styles.filterSelect}
+            </FilterField>
+            <FilterField label="Type">
+              <FilterSelect
                 value={typeFilter}
-                onChange={(e) =>
-                  setTypeFilter(e.target.value as "ALL" | EmployeeType)
+                onChange={(v) => setTypeFilter(v as "ALL" | EmployeeType)}
+              >
+                <option value="ALL">All types</option>
+                {EMPLOYEE_TYPE_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {EMPLOYEE_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </FilterSelect>
+            </FilterField>
+            <FilterField label="Status">
+              <FilterSelect
+                value={statusFilter}
+                onChange={(v) =>
+                  setStatusFilter(v as "ALL" | EmployeeStatus)
                 }
               >
-                <option value="ALL">All roles</option>
-                {(Object.keys(EMPLOYEE_TYPE_LABELS) as EmployeeType[]).map(
-                  (t) => (
-                    <option key={t} value={t}>
-                      {EMPLOYEE_TYPE_LABELS[t]}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
-          </div>
+                <option value="ALL">All statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+              </FilterSelect>
+            </FilterField>
+          </FilterBar>
 
           <div className={styles.tableWrap}>
             {isLoading && <p className={styles.empty}>Loading…</p>}

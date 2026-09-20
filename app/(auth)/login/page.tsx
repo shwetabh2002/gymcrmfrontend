@@ -80,11 +80,27 @@ export default function LoginPage() {
         ),
       );
     } catch (err: any) {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Login failed. Please check your credentials.",
-      );
+      const status = err.response?.status;
+      const raw = err.response?.data?.message;
+      const apiMessage = Array.isArray(raw) ? raw.join(", ") : raw;
+
+      if (!err.response) {
+        setError(
+          "Cannot reach the server. Check that the API is running and try again.",
+        );
+      } else if (status === 401) {
+        setError(
+          apiMessage === "Invalid credentials"
+            ? "Invalid email or password. User not found or wrong password."
+            : apiMessage || "Invalid email or password.",
+        );
+      } else if (status === 429) {
+        setError("Too many login attempts. Wait a moment and try again.");
+      } else {
+        setError(
+          apiMessage || err.message || "Login failed. Please try again.",
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -101,20 +117,22 @@ export default function LoginPage() {
         <div className={styles.visualTop}>
           <span className={styles.brandName}>
             <span className={styles.brandDot} />
-            Control Centre
+            GymFlow
           </span>
         </div>
 
         <div className={styles.visualCenter}>
+          <p className={styles.tagline} style={{ color: "var(--lime)", marginBottom: 20 }}>
+            Gym operations OS
+          </p>
           <h2 className={styles.visualHeadline}>
-            Secure
+            Run your gym,
             <br />
-            <em>Admin</em>
-            <br />
-            Access
+            <em>without</em> the busywork.
           </h2>
           <p className={styles.visualSub}>
-            // restricted — authorized use only
+            Members, dues, renewals, and invoices — one calm workspace for the
+            whole floor.
           </p>
         </div>
 
@@ -136,15 +154,13 @@ export default function LoginPage() {
             animate="visible"
           >
             <motion.p className={styles.tagline} variants={item}>
-              Admin Portal
+              Welcome back
             </motion.p>
             <motion.h1 className={styles.formTitle} variants={item}>
-              Sign in to your
-              <br />
-              workspace
+              Your gym, in focus.
             </motion.h1>
             <motion.p className={styles.formDesc} variants={item}>
-              Enter your credentials to access the dashboard.
+              Sign in to continue to your GymFlow workspace.
             </motion.p>
           </motion.div>
 

@@ -83,14 +83,37 @@ export interface CreateInvoicePayload {
 export interface UpdateInvoicePayload {
   items?: InvoiceItem[];
   taxPercentage?: number;
+  taxMode?: "included" | "excluded";
   invoiceDate?: string;
   dueDate?: string;
   notes?: string;
 }
 
+export type InvoiceListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  taxMode?: string;
+};
+
+export type PaginatedInvoices = {
+  items: Invoice[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+};
+
 export const invoicesApi = {
   getInvoices: () =>
     requestService.get<Invoice[]>(API_CONFIG.INVOICES.BASE),
+
+  getInvoicesPaged: (params: InvoiceListParams) =>
+    requestService.get<PaginatedInvoices>(API_CONFIG.INVOICES.BASE, {
+      page: 1,
+      limit: 50,
+      ...params,
+    }),
 
   getInvoiceById: (id: string) =>
     requestService.get<Invoice>(API_CONFIG.INVOICES.BY_ID(id)),

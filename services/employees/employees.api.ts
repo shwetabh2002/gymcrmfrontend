@@ -9,8 +9,11 @@ export type EmployeeStatus = "ACTIVE" | "INACTIVE";
 export const EMPLOYEE_TYPE_LABELS: Record<EmployeeType, string> = {
   STAFF: "Staff",
   TRAINER: "Trainer",
-  SALES: "Sales",
+  SALES: "Sales", // legacy — not offered on create form
 };
+
+/** Types offered when adding / editing an employee in the CRM UI */
+export const EMPLOYEE_TYPE_OPTIONS: EmployeeType[] = ["STAFF", "TRAINER"];
 
 export interface Employee {
   _id: string;

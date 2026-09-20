@@ -1,8 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { invoicesApi, CreateInvoicePayload, UpdateInvoicePayload } from "./invoices.api";
+import { invoicesApi, CreateInvoicePayload, UpdateInvoicePayload, InvoiceListParams } from "./invoices.api";
 
 export const useInvoices = () =>
   useQuery({ queryKey: ["invoices"], queryFn: invoicesApi.getInvoices });
+
+export const useInvoicesPaged = (params: InvoiceListParams) =>
+  useQuery({
+    queryKey: ["invoices", "paged", params],
+    queryFn: () => invoicesApi.getInvoicesPaged(params),
+    placeholderData: (prev) => prev,
+  });
 
 export const useInvoiceById = (id: string) =>
   useQuery({

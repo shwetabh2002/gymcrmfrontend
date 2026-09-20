@@ -174,6 +174,63 @@ export function actionForKey(key: PermissionKey): CrudAction | "access" {
   return "access";
 }
 
+/** Simple levels for the employee form — maps to real permission keys in DB. */
+export type ModuleAccessLevel = "none" | "view" | "edit" | "full";
+
+export const MODULE_ACCESS_LEVEL_LABEL: Record<ModuleAccessLevel, string> = {
+  none: "No access",
+  view: "View only",
+  edit: "View + add/edit",
+  full: "Full (incl. delete)",
+};
+
+export function keysForModuleLevel(
+  keys: PermissionKey[],
+  level: ModuleAccessLevel,
+): PermissionKey[] {
+  if (level === "none") return [];
+  if (keys.length === 1 && keys[0] === "dashboard") {
+    return ["dashboard"];
+  }
+  const view = keys.filter((k) => actionForKey(k) === "view");
+  const edit = keys.filter((k) =>
+    ["view", "create", "update"].includes(actionForKey(k)),
+  );
+  if (level === "view") return view;
+  if (level === "edit") return edit;
+  return [...keys];
+}
+
+export function levelForModuleKeys(
+  moduleKeys: PermissionKey[],
+  selected: PermissionKey[],
+): ModuleAccessLevel {
+  if (moduleKeys.length === 1 && moduleKeys[0] === "dashboard") {
+    return selected.includes("dashboard") ? "view" : "none";
+  }
+  const has = (action: CrudAction | "access") =>
+    moduleKeys.some(
+      (k) => actionForKey(k) === action && selected.includes(k),
+    );
+  if (!has("view") && !has("create") && !has("update") && !has("delete")) {
+    return "none";
+  }
+  if (has("delete") || moduleKeys.every((k) => selected.includes(k))) {
+    // treat full set OR any delete as full when all non-delete also present
+    const withoutDelete = moduleKeys.filter((k) => actionForKey(k) !== "delete");
+    if (
+      has("delete") &&
+      withoutDelete.every((k) => selected.includes(k))
+    ) {
+      return "full";
+    }
+    if (moduleKeys.every((k) => selected.includes(k))) return "full";
+  }
+  if (has("create") || has("update")) return "edit";
+  if (has("view")) return "view";
+  return "none";
+}
+
 export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   dashboard: "Dashboard",
   members_view: "View members",
@@ -317,6 +374,43 @@ const SALES_DEFAULTS: PermissionKey[] = [
   "invoices_create",
 ];
 
+/** Simple packs for the employee form — stored as customPermissions in DB. */
+export const ACCESS_PACKS: {
+  id: string;
+  label: string;
+  blurb: string;
+  keys: PermissionKey[];
+}[] = [
+  {
+    id: "front_desk",
+    label: "Front desk",
+    blurb: "Add members, take payments, renewals & invoices",
+    keys: [...SALES_DEFAULTS],
+  },
+  {
+    id: "trainer",
+    label: "Trainer",
+    blurb: "See members, plans & follow-ups — no payment edits",
+    keys: [...TRAINER_DEFAULTS],
+  },
+  {
+    id: "full",
+    label: "Full CRM",
+    blurb: "Everything this gym admin can do (except platform)",
+    keys: [...ALL_PERMISSION_KEYS],
+  },
+];
+
+export function matchAccessPackId(
+  permissions: PermissionKey[],
+): string | "custom" {
+  const sorted = [...permissions].sort().join(",");
+  for (const pack of ACCESS_PACKS) {
+    if ([...pack.keys].sort().join(",") === sorted) return pack.id;
+  }
+  return "custom";
+}
+
 export function isAdminRole(role?: string | null) {
   return !!role && ADMIN_ROLES.has(role);
 }
@@ -359,6 +453,7 @@ export function hasPermission(
 const ROUTE_PERMISSION: Record<string, PermissionKey> = {
   "/dashboard": "dashboard",
   "/renewals": "renewals_view",
+  "/dues": "payments_view",
   "/users": "members_view",
   "/employees": "employees_view",
   "/billing": "payments_view",
@@ -368,6 +463,7 @@ const ROUTE_PERMISSION: Record<string, PermissionKey> = {
   "/invoices": "invoices_view",
   "/locations": "locations_view",
   "/settings": "settings_view",
+  "/payment-settings": "settings_view",
   "/profile": "dashboard",
 };
 
@@ -400,6 +496,14 @@ export function canAccessRoute(
   }
 
   if (href === "/settings" || href.startsWith("/settings")) {
+    return (
+      hasPermission(effective, "settings_view") ||
+      hasPermission(effective, "settings_update") ||
+      hasPermission(effective, "members_create")
+    );
+  }
+
+  if (href === "/payment-settings" || href.startsWith("/payment-settings")) {
     return (
       hasPermission(effective, "settings_view") ||
       hasPermission(effective, "settings_update") ||
@@ -522,12 +626,14 @@ export function navItemsForRole(
       : []),
     { href: "/dashboard", label: "Dashboard", icon: "⊞" },
     { href: "/renewals", label: "Expiry Follow-ups", icon: "↻" },
+    { href: "/dues", label: "Partial dues", icon: "₹" },
     { href: "/users", label: "Members", icon: "◎" },
     { href: "/employees", label: "Employees", icon: "♟" },
     { href: "/locations", label: "Locations", icon: "⌖" },
     { href: "/billing", label: "Memberships & Payments", icon: "▤" },
     { href: "/plans", label: "Plans", icon: "◇" },
     { href: "/invoices", label: "Invoices", icon: "▣" },
+    { href: "/payment-settings", label: "Payment settings", icon: "₹" },
     { href: "/settings", label: "Gym settings", icon: "⚙" },
     { href: "/profile", label: "Profile", icon: "◉" },
   ];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Plans.module.css";
 import { usePlans } from "@/services/plans/plans.hook";
@@ -9,6 +9,12 @@ import PlanModal from "./PlanModal";
 import DeletePlanDialog from "./DeletePlanDialog";
 import { RowActions } from "@/components/RowActions";
 import { EASE_OUT_EXPO } from "@/config/motion";
+import {
+  FilterBar,
+  FilterField,
+  FilterSearch,
+  FilterSelect,
+} from "@/components/FilterBar/FilterBar";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -35,6 +41,37 @@ export default function PlansPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selected, setSelected] = useState<Plan | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [durationFilter, setDurationFilter] = useState("ALL");
+
+  const filtered = useMemo(() => {
+    const list = plans ?? [];
+    const q = search.toLowerCase().trim();
+    return list.filter((p) => {
+      const matchesSearch =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        String(p.price).includes(q);
+      const matchesStatus =
+        statusFilter === "ALL" || p.status === statusFilter;
+      const matchesDuration =
+        durationFilter === "ALL" || p.durationType === durationFilter;
+      return matchesSearch && matchesStatus && matchesDuration;
+    });
+  }, [plans, search, statusFilter, durationFilter]);
+
+  const activeFilterCount = [
+    search.trim() !== "",
+    statusFilter !== "ALL",
+    durationFilter !== "ALL",
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+    setDurationFilter("ALL");
+  };
 
   const openCreate = () => {
     setSelected(null);
@@ -188,7 +225,7 @@ export default function PlansPage() {
                     actions={[
                       { label: "Edit", onClick: () => openEdit(plan) },
                       {
-                        label: "Delete",
+                        label: "Archive",
                         onClick: () => openDelete(plan),
                         tone: "danger",
                       },
@@ -213,22 +250,36 @@ export default function PlansPage() {
             <span className={styles.cardTitleBar} />
             All Plans
           </h2>
-          <div className={styles.toolbar}>
-            <div className={styles.searchWrap}>
-              <span className={styles.searchIcon}>⌕</span>
-              <input
-                className={styles.searchInput}
-                placeholder="Search plans…"
-              />
-            </div>
-            <select className={styles.filterSelect}>
-              <option>All Status</option>
-              <option>ACTIVE</option>
-              <option>INACTIVE</option>
-              <option>ARCHIVED</option>
-            </select>
-          </div>
         </div>
+        <FilterBar
+          title="Plan filters"
+          activeCount={activeFilterCount}
+          onClear={clearFilters}
+        >
+          <FilterField label="Search" grow>
+            <FilterSearch
+              value={search}
+              onChange={setSearch}
+              placeholder="Plan name or price…"
+            />
+          </FilterField>
+          <FilterField label="Status">
+            <FilterSelect value={statusFilter} onChange={setStatusFilter}>
+              <option value="ALL">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="ARCHIVED">Archived</option>
+            </FilterSelect>
+          </FilterField>
+          <FilterField label="Duration type">
+            <FilterSelect value={durationFilter} onChange={setDurationFilter}>
+              <option value="ALL">All durations</option>
+              <option value="DAYS">Days</option>
+              <option value="MONTHS">Months</option>
+              <option value="YEARS">Years</option>
+            </FilterSelect>
+          </FilterField>
+        </FilterBar>
 
         <div className={styles.tableWrap}>
           {isLoading && <p style={{ padding: "1rem" }}>Loading…</p>}
@@ -239,6 +290,12 @@ export default function PlansPage() {
           )}
 
           {!isLoading && !isError && (
+            <>
+              {filtered.length === 0 ? (
+                <p style={{ padding: "1.5rem 22px", color: "var(--text-2)", fontSize: 13 }}>
+                  No plans match these filters.
+                </p>
+              ) : (
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -251,7 +308,7 @@ export default function PlansPage() {
                 </tr>
               </thead>
               <tbody>
-                {plans?.map((plan) => (
+                {filtered.map((plan) => (
                   <tr key={plan._id}>
                     <td className={styles.cellName}>{plan.name}</td>
                     <td className={styles.cellMono}>
@@ -273,7 +330,7 @@ export default function PlansPage() {
                         actions={[
                           { label: "Edit", onClick: () => openEdit(plan) },
                           {
-                            label: "Delete",
+                            label: "Archive",
                             onClick: () => openDelete(plan),
                             tone: "danger",
                           },
@@ -284,12 +341,18 @@ export default function PlansPage() {
                 ))}
               </tbody>
             </table>
+              )}
+            </>
           )}
         </div>
 
         <div className={styles.pagination}>
           <span className={styles.paginationInfo}>
-            Showing {plans?.length ?? 0} plans
+            Showing {filtered.length}
+            {filtered.length !== (plans?.length ?? 0)
+              ? ` of ${plans?.length ?? 0}`
+              : ""}{" "}
+            plans
           </span>
           <div className={styles.paginationBtns}>
             <button className={styles.pageBtn}>‹</button>

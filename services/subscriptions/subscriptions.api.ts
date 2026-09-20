@@ -23,11 +23,14 @@ export interface MemberSubscription {
   planId: string | PopulatedPlan;
   startDate: string;
   expiryDate: string;
-  subscriptionStatus: "ACTIVE" | "EXPIRED" | "CANCELLED";
+  subscriptionStatus: "ACTIVE" | "EXPIRED" | "ENDED" | "CANCELLED" | "EXPIRING_SOON";
   planPrice: number;
   totalPaid: number;
   pendingAmount: number;
   paymentStatus: "UNPAID" | "PARTIALLY_PAID" | "FULLY_PAID";
+  /** GST snapshot at assignment — later gym settings must not rewrite this cycle */
+  taxPercentage?: number | null;
+  taxMode?: "included" | "excluded" | string | null;
   initialPaymentId?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -41,12 +44,14 @@ export interface CreateMemberSubscriptionPayload {
   paymentMode?: PaymentMode;
   replaceActive?: boolean;
   expiryDate?: string;
+  /** Required when initialPayment < plan price */
+  dueReminderDate?: string;
 }
 
 export interface UpdateMemberSubscriptionPayload {
   startDate?: string;
   expiryDate?: string;
-  subscriptionStatus?: "ACTIVE" | "EXPIRED" | "CANCELLED";
+  subscriptionStatus?: "ACTIVE" | "EXPIRED" | "ENDED" | "CANCELLED" | "EXPIRING_SOON";
   planPrice?: number;
   totalPaid?: number;
   pendingAmount?: number;
@@ -69,7 +74,7 @@ export type SubscriptionListParams = {
   page?: number;
   limit?: number;
   search?: string;
-  /** ALL | ACTIVE | EXPIRING_SOON | EXPIRED | CANCELLED */
+  /** ALL | ACTIVE | EXPIRING_SOON | EXPIRED | ENDED | CANCELLED */
   status?: string;
 };
 

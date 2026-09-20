@@ -1,7 +1,7 @@
 .footer {
-  height: 36px;
+  height: 40px;
   flex-shrink: 0;
-  background: var(--surface);
+  background: transparent;
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -9,18 +9,15 @@
   padding: 0 28px;
 }
 
-.left {
-  font-family: var(--mono);
-  font-size: 9px;
+.left, .right {
+  font-family: var(--sans);
+  font-size: 11px;
   color: var(--text-3);
-  letter-spacing: 0.1em;
+  letter-spacing: 0;
+  font-weight: 500;
 }
 
 .right {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-3);
-  letter-spacing: 0.08em;
   display: flex;
   align-items: center;
   gap: 10px;

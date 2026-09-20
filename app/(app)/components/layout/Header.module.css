@@ -1,92 +1,102 @@
 .header {
-  height: 52px;
+  min-height: 72px;
   flex-shrink: 0;
-  background: var(--surface);
+  background: rgba(246, 247, 248, 0.9);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 28px;
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 10;
 }
 
-/* ─── Left breadcrumb ─────────────────────────────────────── */
 .left {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-3);
+  gap: 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .slash {
   color: var(--text-3);
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 .page {
-  color: var(--text-2);
+  color: var(--text);
+  font-weight: 700;
 }
 
-/* ─── Right controls ──────────────────────────────────────── */
 .right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .status {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-3);
-  letter-spacing: 0.06em;
+  gap: 7px;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text-2);
+  font-weight: 600;
+  letter-spacing: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
 }
 
 .statusDot {
-  width: 5px;
-  height: 5px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #27ae60;
+  background: #36a36a;
   animation: statusPulse 2.5s ease-in-out infinite;
 }
 
 @keyframes statusPulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
+  50% { opacity: 0.35; }
 }
 
-/* ─── Logout button ───────────────────────────────────────── */
 .logoutBtn {
   display: flex;
   align-items: center;
   gap: 7px;
-  background: rgba(192, 57, 43, 0.06);
-  color: #c0392b;
-  border: 1px solid rgba(192, 57, 43, 0.18);
-  padding: 6px 13px;
-  border-radius: 5px;
+  background: #fff5f3;
+  color: #ba4638;
+  border: 1px solid #f1c9c4;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
   font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  min-height: 42px;
 }
 
 .logoutBtn:hover {
-  background: #c0392b;
-  border-color: #c0392b;
+  background: var(--red);
+  border-color: var(--red);
   color: #fff;
 }
 
 .logoutIcon {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
 }

@@ -49,15 +49,15 @@ export default function DeletePlanDialog({ open, onClose, plan }: Props) {
             transition={{ duration: 0.3, ease: EASE_OUT_EXPO }}
           >
             <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Delete Plan</h2>
+              <h2 className={styles.modalTitle}>Archive Plan</h2>
               <button className={styles.closeBtn} onClick={onClose}>
                 ✕
               </button>
             </div>
 
             <p className={styles.deleteMsg}>
-              Are you sure you want to delete <strong>{plan.name}</strong>? This
-              action cannot be undone.
+              Archive <strong>{plan.name}</strong>? The plan stays in your list
+              with status <strong>ARCHIVED</strong> — nothing else changes.
             </p>
 
             <div className={styles.modalFooter}>
@@ -69,7 +69,7 @@ export default function DeletePlanDialog({ open, onClose, plan }: Props) {
                 onClick={handleDelete}
                 disabled={isPending}
               >
-                {isPending ? "Deleting…" : "Yes, Delete"}
+                {isPending ? "Archiving…" : "Yes, Archive"}
               </button>
             </div>
           </motion.div>

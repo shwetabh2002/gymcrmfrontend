@@ -38,7 +38,7 @@ export interface GymSettings {
   invoiceTerms?: string | null;
   /** Per-gym UPI Autopay feature flag (default off) */
   autopayEnabled?: boolean;
-  /** Mandate the member approves: upi | emandate | card | nach */
+  /** Mandate method: currently UPI Autopay only */
   autopayMethod?: string;
   /** Per-debit ceiling = plan price × this (headroom for price rises) */
   autopayMandateMultiplier?: number;

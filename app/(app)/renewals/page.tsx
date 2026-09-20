@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import styles from "./Renewals.module.css";
@@ -16,6 +16,13 @@ import {
 } from "@/services/renewals/renewals.api";
 import { RowActions } from "@/components/RowActions";
 import { EASE_OUT_EXPO } from "@/config/motion";
+import {
+  FilterBar,
+  FilterChip,
+  FilterField,
+  FilterSearch,
+  FilterSelect,
+} from "@/components/FilterBar/FilterBar";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
@@ -68,23 +75,49 @@ function daysLabel(days: number) {
 export default function RenewalsPage() {
   const [statusFilter, setStatusFilter] = useState<RenewalStatusFilter>("OPEN");
   const [withinDays, setWithinDays] = useState(7);
+  const [includeExpired, setIncludeExpired] = useState(true);
+  const [expiredWithinDays, setExpiredWithinDays] = useState(30);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [noteItem, setNoteItem] = useState<RenewalQueueItem | null>(null);
   const [noteText, setNoteText] = useState("");
 
   const queueParams = {
     withinDays,
-    includeExpired: true,
-    expiredWithinDays: 30,
+    includeExpired,
+    expiredWithinDays: includeExpired ? expiredWithinDays : 0,
     status: statusFilter,
+    page,
+    limit: 50,
   };
 
-  const { data: queue, isLoading, isError } = useRenewalQueue(queueParams);
+  const { data: queuePage, isLoading, isError } = useRenewalQueue(queueParams);
+  const queue = queuePage?.items;
   const { data: counts } = useRenewalCounts({
     withinDays,
-    expiredWithinDays: 30,
+    expiredWithinDays: includeExpired ? expiredWithinDays : 0,
   });
   const updateFollowUp = useUpdateFollowUp();
+
+  useEffect(() => {
+    setPage(1);
+  }, [withinDays, includeExpired, expiredWithinDays, statusFilter]);
+
+  const activeFilterCount = [
+    search.trim() !== "",
+    statusFilter !== "OPEN",
+    withinDays !== 7,
+    !includeExpired,
+    includeExpired && expiredWithinDays !== 30,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("OPEN");
+    setWithinDays(7);
+    setIncludeExpired(true);
+    setExpiredWithinDays(30);
+  };
 
   const filtered = useMemo(() => {
     if (!queue) return [];
@@ -97,6 +130,9 @@ export default function RenewalsPage() {
         (item.email ?? "").toLowerCase().includes(q),
     );
   }, [queue, search]);
+
+  const pages = queuePage?.pages ?? 1;
+  const total = queuePage?.total ?? 0;
 
   const stats = [
     {
@@ -254,22 +290,42 @@ export default function RenewalsPage() {
             <span className={styles.cardTitleBar} />
             Work Queue
           </h2>
-          <div className={styles.toolbar}>
-            <div className={styles.searchWrap}>
-              <span className={styles.searchIcon}>⌕</span>
-              <input
-                className={styles.searchInput}
-                placeholder="Search member, phone, email…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+        </div>
+        <FilterBar
+          title="Renewal filters"
+          activeCount={activeFilterCount}
+          onClear={clearFilters}
+          chips={
+            <>
+              <FilterChip
+                label="Include expired"
+                active={includeExpired}
+                onClick={() => setIncludeExpired((v) => !v)}
               />
-            </div>
-            <select
-              className={styles.filterSelect}
+              <FilterChip
+                label="Open only"
+                active={statusFilter === "OPEN"}
+                onClick={() => setStatusFilter("OPEN")}
+              />
+              <FilterChip
+                label="All statuses"
+                active={statusFilter === "ALL"}
+                onClick={() => setStatusFilter("ALL")}
+              />
+            </>
+          }
+        >
+          <FilterField label="Search" grow>
+            <FilterSearch
+              value={search}
+              onChange={setSearch}
+              placeholder="Member, phone, email…"
+            />
+          </FilterField>
+          <FilterField label="Follow-up status">
+            <FilterSelect
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as RenewalStatusFilter)
-              }
+              onChange={(v) => setStatusFilter(v as RenewalStatusFilter)}
             >
               <option value="OPEN">Open only</option>
               <option value="ALL">All statuses</option>
@@ -278,19 +334,35 @@ export default function RenewalsPage() {
                   {s}
                 </option>
               ))}
-            </select>
-            <select
-              className={styles.filterSelect}
-              value={withinDays}
-              onChange={(e) => setWithinDays(Number(e.target.value))}
+            </FilterSelect>
+          </FilterField>
+          <FilterField label="Expiring within">
+            <FilterSelect
+              value={String(withinDays)}
+              onChange={(v) => setWithinDays(Number(v))}
             >
               <option value={3}>Next 3 days</option>
               <option value={7}>Next 7 days</option>
               <option value={14}>Next 14 days</option>
               <option value={30}>Next 30 days</option>
-            </select>
-          </div>
-        </div>
+              <option value={60}>Next 60 days</option>
+            </FilterSelect>
+          </FilterField>
+          {includeExpired ? (
+            <FilterField label="Expired within">
+              <FilterSelect
+                value={String(expiredWithinDays)}
+                onChange={(v) => setExpiredWithinDays(Number(v))}
+              >
+                <option value={7}>Last 7 days</option>
+                <option value={14}>Last 14 days</option>
+                <option value={30}>Last 30 days</option>
+                <option value={60}>Last 60 days</option>
+                <option value={90}>Last 90 days</option>
+              </FilterSelect>
+            </FilterField>
+          ) : null}
+        </FilterBar>
 
         <div className={styles.tableWrap}>
           {isLoading && (
@@ -428,6 +500,31 @@ export default function RenewalsPage() {
             </table>
           )}
         </div>
+        {total > 0 ? (
+          <div className={styles.pagination}>
+            <span className={styles.paginationInfo}>
+              Page {queuePage?.page ?? page} of {pages} · {total} renewals
+            </span>
+            <div className={styles.paginationBtns}>
+              <button
+                type="button"
+                className={styles.pageNav}
+                disabled={page <= 1}
+                onClick={() => setPage((x) => Math.max(1, x - 1))}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                className={styles.pageNav}
+                disabled={page >= pages}
+                onClick={() => setPage((x) => x + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
       </motion.div>
     </div>
   );

@@ -7,7 +7,8 @@ import {
   useCreateMemberSubscription,
   useDeleteMemberSubscription,
 } from "@/services/subscriptions/subscriptions.hook";
-import { useMembers } from "@/services/members/members.hook";
+import { useMembersPaged, useMemberById } from "@/services/members/members.hook";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { usePlans } from "@/services/plans/plans.hook";
 import { MemberSubscription } from "@/services/subscriptions/subscriptions.api";
 import { Member } from "@/services/members/members.api";
@@ -42,13 +43,11 @@ interface MemberComboboxProps {
   members: Member[];
   value: string;
   onChange: (id: string) => void;
+  onQueryChange?: (q: string) => void;
   disabled?: boolean;
 }
 
-function MemberCombobox({
-  members,
-  value,
-  onChange,
+function MemberCombobox({ members, value, onChange, onQueryChange,
   disabled,
 }: MemberComboboxProps) {
   const [open, setOpen] = useState(false);
@@ -158,7 +157,7 @@ function MemberCombobox({
               className={styles.comboboxSearchInput}
               placeholder={`Search ${members.length} members…`}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); onQueryChange?.(e.target.value); }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   setOpen(false);
@@ -308,7 +307,14 @@ function ModalFooter({
 
 /* ─── Create Subscription Modal ───────────────────────────────── */
 export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
-  const { data: members, isLoading: membersLoading } = useMembers();
+  const [memberSearch, setMemberSearch] = useState("");
+  const debouncedMemberSearch = useDebouncedValue(memberSearch, 250);
+  const { data: membersPage, isLoading: membersLoading } = useMembersPaged({
+    page: 1,
+    limit: 40,
+    search: debouncedMemberSearch || undefined,
+    status: "ACTIVE",
+  });
   const { data: plans, isLoading: plansLoading } = usePlans();
   const { mutate: create, isPending } = useCreateMemberSubscription();
 
@@ -319,9 +325,20 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
   });
   const [error, setError] = useState("");
 
-  const selectedMember = members?.find((m) => m._id === form.memberId);
-  const assignableMembers =
-    members?.filter((m) => m.memberStatus === "ACTIVE") ?? [];
+  const { data: selectedMemberDetail } = useMemberById(form.memberId || "");
+  const assignableMembers = (() => {
+    const items = membersPage?.items ?? [];
+    if (
+      selectedMemberDetail &&
+      !items.some((m) => m._id === selectedMemberDetail._id)
+    ) {
+      return [selectedMemberDetail, ...items];
+    }
+    return items;
+  })();
+  const selectedMember =
+    assignableMembers.find((m) => m._id === form.memberId) ??
+    selectedMemberDetail;
   const activePlans = plans?.filter((p) => p.status === "ACTIVE") ?? [];
   const memberHasActiveSub = !!selectedMember?.currentSubscriptionId;
 
@@ -374,6 +391,7 @@ export function CreateSubscriptionModal({ onClose }: { onClose: () => void }) {
             <MemberCombobox
               members={assignableMembers}
               value={form.memberId}
+              onQueryChange={setMemberSearch}
               onChange={(id) => {
                 setForm((p) => ({ ...p, memberId: id }));
                 setError("");

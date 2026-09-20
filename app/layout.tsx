@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
+
+export const metadata: Metadata = {
+  title: "GymFlow CRM",
+  description: "A calm operating system for your gym — members, dues, renewals, invoices.",
+};
 
 export default function RootLayout({
   children,

@@ -47,6 +47,25 @@ export function resolveInvoiceTax(settings?: TaxSettingsLike): {
   return { taxPercentage, taxMode };
 }
 
+/**
+ * Prefer a document/subscription tax snapshot so historical rows keep the GST
+ * mode they were created under. Fall back to live gym settings for legacy rows.
+ */
+export function resolveRecordTax(
+  live: { taxPercentage: number; taxMode: InvoiceTaxMode },
+  snap?: {
+    taxPercentage?: number | null;
+    taxMode?: string | null;
+  } | null,
+): { taxPercentage: number; taxMode: InvoiceTaxMode } {
+  const taxPercentage =
+    typeof snap?.taxPercentage === "number"
+      ? snap.taxPercentage
+      : live.taxPercentage;
+  const taxMode = isInvoiceTaxMode(snap?.taxMode) ? snap.taxMode : live.taxMode;
+  return { taxPercentage, taxMode };
+}
+
 export function computeTaxBreakdown(
   priceConfigured: number,
   taxPercentage: number,

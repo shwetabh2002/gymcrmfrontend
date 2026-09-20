@@ -7,8 +7,9 @@ import {
   useCreatePayment,
   useUploadPaymentProof,
 } from "@/services/payments/payments.hooks";
-import { useMemberSubscriptions } from "@/services/subscriptions/subscriptions.hook";
-import { useMembers } from "@/services/members/members.hook";
+import { useMemberSubscriptionsByMember } from "@/services/subscriptions/subscriptions.hook";
+import { useMembersPaged, useMemberById } from "@/services/members/members.hook";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import {
   PaymentMode,
   CreatePaymentPayload,
@@ -27,6 +28,7 @@ interface MemberComboboxProps {
   members: Member[];
   value: string;
   onChange: (id: string) => void;
+  onQueryChange?: (q: string) => void;
 }
 
 function highlight(text: string | undefined | null, query: string) {
@@ -45,7 +47,7 @@ function highlight(text: string | undefined | null, query: string) {
   );
 }
 
-function MemberCombobox({ members, value, onChange }: MemberComboboxProps) {
+function MemberCombobox({ members, value, onChange, onQueryChange }: MemberComboboxProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -151,7 +153,7 @@ function MemberCombobox({ members, value, onChange }: MemberComboboxProps) {
               className={styles.comboboxSearchInput}
               placeholder={`Search ${members.length} members by name or contact…`}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); onQueryChange?.(e.target.value); }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   setOpen(false);
@@ -298,8 +300,14 @@ function ModalFooter({
 
 /* ─── Record Payment Modal ────────────────────────────────────── */
 export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
-  const { data: members } = useMembers();
-  const { data: subs } = useMemberSubscriptions();
+  const [memberSearch, setMemberSearch] = useState("");
+  const debouncedMemberSearch = useDebouncedValue(memberSearch, 250);
+  const { data: membersPage } = useMembersPaged({
+    page: 1,
+    limit: 40,
+    search: debouncedMemberSearch || undefined,
+    status: "ACTIVE",
+  });
   const { mutateAsync: create, isPending } = useCreatePayment();
   const { mutateAsync: uploadProof, isPending: uploadingProof } =
     useUploadPaymentProof();
@@ -316,18 +324,28 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
 
-  const activeMembers = members ?? [];
+  const { data: selectedMemberDetail } = useMemberById(form.memberId || "");
+  const { data: memberSubsRaw } = useMemberSubscriptionsByMember(
+    form.memberId || "",
+  );
+
+  const activeMembers = useMemo(() => {
+    const items = membersPage?.items ?? [];
+    if (
+      selectedMemberDetail &&
+      !items.some((m) => m._id === selectedMemberDetail._id)
+    ) {
+      return [selectedMemberDetail, ...items];
+    }
+    return items;
+  }, [membersPage?.items, selectedMemberDetail]);
   const busy = isPending || uploadingProof;
 
   const memberSubs = useMemo(() => {
-    if (!subs || !form.memberId) return [];
-    return subs.filter((s) => {
-      if (s.subscriptionStatus !== "ACTIVE") return false;
-      const id =
-        typeof s.memberId === "object" ? (s.memberId as any)?._id : s.memberId;
-      return id === form.memberId;
-    });
-  }, [subs, form.memberId]);
+    return (memberSubsRaw ?? []).filter(
+      (s) => s.subscriptionStatus === "ACTIVE",
+    );
+  }, [memberSubsRaw]);
 
   const selectedSub = memberSubs.find((s) => s._id === form.subscriptionId);
 
@@ -417,15 +435,59 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
             </option>
             {memberSubs.map((s) => {
               const plan = typeof s.planId === "object" ? s.planId : null;
+              const start = s.startDate
+                ? new Date(s.startDate).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "—";
+              const end = s.expiryDate
+                ? new Date(s.expiryDate).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "—";
               return (
                 <option key={s._id} value={s._id}>
-                  {plan?.name ?? "—"} · pending ₹
+                  {plan?.name ?? "—"} · {start} → {end} · pending ₹
                   {s.pendingAmount.toLocaleString()}
                 </option>
               );
             })}
           </select>
         </Field>
+
+        {selectedSub ? (
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--text-2)",
+              lineHeight: 1.5,
+              marginTop: -4,
+            }}
+          >
+            Subscribed{" "}
+            {selectedSub.startDate
+              ? new Date(selectedSub.startDate).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"}{" "}
+            · Valid till{" "}
+            {selectedSub.expiryDate
+              ? new Date(selectedSub.expiryDate).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"}{" "}
+            · Paid ₹{selectedSub.totalPaid.toLocaleString()} / ₹
+            {selectedSub.planPrice.toLocaleString()}
+          </div>
+        ) : null}
 
         <div className={styles.twoCol}>
           <Field
