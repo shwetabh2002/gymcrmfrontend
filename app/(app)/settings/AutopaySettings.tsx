@@ -13,6 +13,7 @@ import {
 } from "@/services/payments/provider.api";
 import profile from "../profile/Profile.module.css";
 import styles from "./AutopaySettings.module.css";
+import ComingSoonCard from "./ComingSoonCard";
 
 type Step = {
   id: string;
@@ -139,6 +140,16 @@ export default function AutopaySettings() {
 
   const infraReady = enabled && !!rzp?.connected;
   const busy = !canEdit || update.isPending;
+  const unlocked = settings?.featureAutopayUnlocked === true;
+
+  if (!isLoading && !unlocked) {
+    return (
+      <ComingSoonCard
+        title="UPI Autopay"
+        description="Autopay is locked for this gym. Platform admin can unlock it per gym when you are ready to go live with recurring UPI mandates."
+      />
+    );
+  }
 
   return (
     <section className={`${profile.card} ${styles.wrap}`}>

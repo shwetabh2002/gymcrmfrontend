@@ -40,12 +40,43 @@ export type PlatformPlan = {
   maxBranches: number | null;
   maxMembers: number | null;
   isRecommended: boolean;
+  /** Sales-led — gym submits inquiry instead of self-serve switch. */
+  isContactSales?: boolean;
   pricing: {
     monthlyPerBranch: number;
     yearlyPerBranch: number;
     yearlyMonthsCharged: number;
     yearlySavingMonths: number;
   };
+};
+
+export type CustomInquiryPayload = {
+  contactName: string;
+  contactPhone: string;
+  contactEmail?: string;
+  branchCount: number;
+  approxMembers?: number;
+  needs?: string[];
+  currentSoftware?: string;
+  message?: string;
+};
+
+export type PlatformInquiry = {
+  id: string;
+  companyId: string;
+  companyName: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string | null;
+  branchCount: number;
+  approxMembers: number | null;
+  needs: string[];
+  currentSoftware: string | null;
+  message: string | null;
+  status: "NEW" | "CONTACTED" | "CLOSED";
+  adminNotes: string | null;
+  contactedAt: string | null;
+  createdAt: string;
 };
 
 export type PlatformInvoice = {
@@ -106,6 +137,12 @@ export const subscriptionApi = {
     requestService.post<BillingSnapshot, Record<string, never>>(
       API_CONFIG.SUBSCRIPTION.RESUME,
       {},
+    ),
+
+  submitCustomInquiry: (payload: CustomInquiryPayload) =>
+    requestService.post<PlatformInquiry, CustomInquiryPayload>(
+      API_CONFIG.SUBSCRIPTION.CUSTOM_INQUIRY,
+      payload,
     ),
 };
 
@@ -168,5 +205,20 @@ export const platformApi = {
     requestService.post<Record<string, number>, Record<string, never>>(
       API_CONFIG.PLATFORM.RUN_BILLING,
       {},
+    ),
+
+  inquiries: (status?: string) =>
+    requestService.get<PlatformInquiry[]>(
+      API_CONFIG.PLATFORM.INQUIRIES,
+      status && status !== "ALL" ? { status } : undefined,
+    ),
+
+  updateInquiry: (
+    id: string,
+    payload: { status: "NEW" | "CONTACTED" | "CLOSED"; adminNotes?: string },
+  ) =>
+    requestService.patch<PlatformInquiry, typeof payload>(
+      API_CONFIG.PLATFORM.INQUIRY(id),
+      payload,
     ),
 };

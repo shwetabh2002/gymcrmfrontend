@@ -153,7 +153,9 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     status: "ACTIVE",
   });
   const { data: settings } = useGymSettings();
-  const companyAutopayOn = settings?.autopayEnabled === true;
+  const companyAutopayOn =
+    settings?.featureAutopayUnlocked === true &&
+    settings?.autopayEnabled === true;
   const uploadLimits = resolveUploadLimits(settings?.upload);
   const { taxPercentage, taxMode } = resolveInvoiceTax(settings);
 
@@ -287,7 +289,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     setProofFile(null);
     setProofPreview(null);
     setLinkCopied(false);
-  }, [existing, open, user?.locationId, locations, settings?.autopayEnabled]);
+  }, [existing, open, user?.locationId, locations, settings?.autopayEnabled, settings?.featureAutopayUnlocked]);
 
   const onPhotoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

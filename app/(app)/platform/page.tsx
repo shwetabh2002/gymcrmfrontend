@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
-import { platformApi } from "@/services/subscription/subscription.api";
+import {
+  platformApi,
+  type PlatformInquiry,
+} from "@/services/subscription/subscription.api";
 import { useAuth } from "@/lib/context/AuthContext";
 import { formatMoney } from "@/config/countries";
 import { EASE_OUT_EXPO } from "@/config/motion";
@@ -51,8 +54,26 @@ export default function PlatformPage() {
     queryFn: () => platformApi.companies(statusFilter),
     enabled: isSuperAdmin,
   });
+  const { data: inquiries, isLoading: inquiriesLoading } = useQuery({
+    queryKey: ["platform", "inquiries"],
+    queryFn: () => platformApi.inquiries(),
+    enabled: isSuperAdmin,
+  });
 
   const money = (amount: number) => formatMoney(amount, "IN");
+
+  const markInquiry = async (
+    row: PlatformInquiry,
+    status: "CONTACTED" | "CLOSED",
+  ) => {
+    try {
+      await platformApi.updateInquiry(row.id, { status });
+      toast.success(status === "CONTACTED" ? "Marked contacted" : "Closed");
+      queryClient.invalidateQueries({ queryKey: ["platform", "inquiries"] });
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Update failed");
+    }
+  };
 
   const runBilling = async () => {
     setBusy(true);
@@ -200,6 +221,149 @@ export default function PlatformPage() {
           </div>
         </section>
       ) : null}
+
+
+      {/* Custom plan leads — sales follow-up. */}
+      <section className={styles.card} style={{ marginTop: 20 }}>
+        <div className={styles.cardHeader}>
+          <h2 className={styles.cardTitle}>
+            <span className={styles.cardTitleBar} />
+            Custom plan requests
+          </h2>
+          <span className={styles.cardBadge}>
+            {(inquiries ?? []).filter((i) => i.status === "NEW").length} new
+          </span>
+        </div>
+        <div style={{ padding: "12px 22px 22px" }}>
+          {inquiriesLoading ? (
+            <p style={{ color: "var(--text-2)" }}>Loading…</p>
+          ) : !(inquiries ?? []).length ? (
+            <p style={{ color: "var(--text-2)", margin: 0 }}>
+              No Custom requests yet. When a gym taps Talk to us, it shows here.
+            </p>
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              {(inquiries ?? []).map((row) => (
+                <div
+                  key={row.id}
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    padding: "12px 14px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 700 }}>
+                        {row.companyName}
+                      </p>
+                      <p
+                        style={{
+                          margin: "4px 0 0",
+                          fontSize: "0.85rem",
+                          color: "var(--text-2)",
+                        }}
+                      >
+                        {row.contactName} · {row.contactPhone}
+                        {row.contactEmail ? ` · ${row.contactEmail}` : ""}
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: 10,
+                        letterSpacing: "0.06em",
+                        color:
+                          row.status === "NEW"
+                            ? "#1b4fd8"
+                            : row.status === "CONTACTED"
+                              ? "#b26a00"
+                              : "#6b7280",
+                      }}
+                    >
+                      {row.status}
+                    </span>
+                  </div>
+                  <p
+                    style={{
+                      margin: "10px 0 0",
+                      fontSize: "0.85rem",
+                      color: "var(--text-1)",
+                    }}
+                  >
+                    {row.branchCount} branch
+                    {row.branchCount === 1 ? "" : "es"}
+                    {row.approxMembers != null
+                      ? ` · ~${row.approxMembers} members`
+                      : ""}
+                    {row.needs?.length ? ` · ${row.needs.join(", ")}` : ""}
+                  </p>
+                  {row.currentSoftware ? (
+                    <p
+                      style={{
+                        margin: "4px 0 0",
+                        fontSize: "0.8rem",
+                        color: "var(--text-2)",
+                      }}
+                    >
+                      Current software: {row.currentSoftware}
+                    </p>
+                  ) : null}
+                  {row.message ? (
+                    <p
+                      style={{
+                        margin: "6px 0 0",
+                        fontSize: "0.85rem",
+                        color: "var(--text-2)",
+                      }}
+                    >
+                      {row.message}
+                    </p>
+                  ) : null}
+                  <p
+                    style={{
+                      margin: "8px 0 0",
+                      fontSize: "0.75rem",
+                      color: "var(--text-3)",
+                    }}
+                  >
+                    {row.createdAt
+                      ? new Date(row.createdAt).toLocaleString()
+                      : ""}
+                  </p>
+                  {row.status !== "CLOSED" ? (
+                    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                      {row.status === "NEW" ? (
+                        <button
+                          type="button"
+                          className={styles.btnPrimary}
+                          onClick={() => markInquiry(row, "CONTACTED")}
+                        >
+                          Mark contacted
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className={styles.btnSecondary}
+                        onClick={() => markInquiry(row, "CLOSED")}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className={styles.card} style={{ marginTop: 20 }}>
         <div className={styles.cardHeader}>

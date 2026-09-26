@@ -7,6 +7,7 @@ import AutopaySettings from "../settings/AutopaySettings";
 import RazorpaySettings from "../settings/RazorpaySettings";
 import WhatsAppSettings from "../settings/WhatsAppSettings";
 import EmailTemplateSettings from "../settings/EmailTemplateSettings";
+import PaymentFeatureUnlocks from "../settings/PaymentFeatureUnlocks";
 import styles from "../profile/Profile.module.css";
 
 export default function PaymentSettingsPage() {
@@ -44,6 +45,7 @@ export default function PaymentSettingsPage() {
         </div>
       </motion.div>
 
+      <PaymentFeatureUnlocks />
       <AutopaySettings />
       <RazorpaySettings />
       <WhatsAppSettings />

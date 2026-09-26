@@ -16,6 +16,7 @@ import { useBranding } from "@/lib/context/BrandingContext";
 import PaymentQr from "@/components/PaymentQr";
 import { EASE_OUT_EXPO } from "@/config/motion";
 import styles from "../../profile/Profile.module.css";
+import CustomPlanInquiryForm from "./CustomPlanInquiryForm";
 
 const STATUS_LABEL: Record<string, { text: string; tone: string }> = {
   TRIALING: { text: "Free trial", tone: "#1b4fd8" },
@@ -33,6 +34,12 @@ const FEATURE_LABEL: Record<string, string> = {
   STAFF_RBAC: "Staff accounts & permissions",
 };
 
+const BASIC_FEATURES = [
+  "Members, plans & dues",
+  "Cash / UPI / online payments",
+  "GST invoices",
+];
+
 export default function SubscriptionPage() {
   const { user } = useAuth();
   const branding = useBranding();
@@ -41,6 +48,7 @@ export default function SubscriptionPage() {
 
   const [busy, setBusy] = useState(false);
   const [mandate, setMandate] = useState<MandateStart | null>(null);
+  const [showCustomForm, setShowCustomForm] = useState(false);
 
   const { data: sub, isLoading } = useQuery({
     queryKey: ["subscription"],
@@ -330,17 +338,23 @@ export default function SubscriptionPage() {
                     fontWeight: 700,
                   }}
                 >
-                  {money(plan.pricePerBranch)}
-                  <span
-                    style={{
-                      fontSize: "0.8rem",
-                      fontWeight: 400,
-                      color: "var(--text-2)",
-                    }}
-                  >
-                    {" "}
-                    / branch / month
-                  </span>
+                  {plan.isContactSales ? (
+                    "Custom"
+                  ) : (
+                    <>
+                      {money(plan.pricePerBranch)}
+                      <span
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 400,
+                          color: "var(--text-2)",
+                        }}
+                      >
+                        {" "}
+                        / branch / month
+                      </span>
+                    </>
+                  )}
                 </p>
                 {plan.description ? (
                   <p
@@ -361,28 +375,58 @@ export default function SubscriptionPage() {
                     color: "var(--text-2)",
                   }}
                 >
+                  {BASIC_FEATURES.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
                   {plan.features.map((f) => (
                     <li key={f}>{FEATURE_LABEL[f] ?? f}</li>
                   ))}
                   <li>
                     {plan.maxBranches
                       ? `Up to ${plan.maxBranches} branch${plan.maxBranches === 1 ? "" : "es"}`
-                      : "Unlimited branches"}
+                      : "Branches by agreement"}
                   </li>
                 </ul>
-                <button
-                  type="button"
-                  className={current ? styles.btnSecondary : styles.btnPrimary}
-                  disabled={busy || current || !canEdit}
-                  onClick={() => choosePlan(plan.code)}
-                  style={{ width: "100%" }}
-                >
-                  {current ? "Current plan" : `Switch to ${plan.name}`}
-                </button>
+                {plan.isContactSales ? (
+                  <button
+                    type="button"
+                    className={styles.btnPrimary}
+                    disabled={!canEdit}
+                    onClick={() => setShowCustomForm(true)}
+                    style={{ width: "100%" }}
+                  >
+                    Talk to us
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={current ? styles.btnSecondary : styles.btnPrimary}
+                    disabled={busy || current || !canEdit}
+                    onClick={() => choosePlan(plan.code)}
+                    style={{ width: "100%" }}
+                  >
+                    {current ? "Current plan" : `Switch to ${plan.name}`}
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
+
+        {showCustomForm ? (
+          <div
+            style={{
+              padding: "0 22px 22px",
+              borderTop: "1px solid var(--border)",
+              paddingTop: 16,
+            }}
+          >
+            <h3 style={{ margin: "0 0 12px", fontSize: "1rem" }}>
+              Custom plan request
+            </h3>
+            <CustomPlanInquiryForm canEdit={canEdit} />
+          </div>
+        ) : null}
       </section>
 
       {/* ── Billing history ── */}

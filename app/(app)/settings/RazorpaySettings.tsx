@@ -9,10 +9,16 @@ import {
   ProviderStatus,
 } from "@/services/payments/provider.api";
 import styles from "../profile/Profile.module.css";
+import ComingSoonCard from "./ComingSoonCard";
+import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
 
 export default function RazorpaySettings() {
   const { user } = useAuth();
   const canEdit = canEditGymSettings(user?.role, user?.permissions);
+  const { data: gymSettings, isLoading: gymLoading } = useGymSettings(
+    !!user?.companyId,
+  );
+  const unlocked = gymSettings?.featureRazorpayUnlocked === true;
   const [status, setStatus] = useState<ProviderStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,8 +41,9 @@ export default function RazorpaySettings() {
   };
 
   useEffect(() => {
+    if (!unlocked) return;
     load();
-  }, []);
+  }, [unlocked]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -133,6 +140,23 @@ export default function RazorpaySettings() {
       setBusy(false);
     }
   };
+
+  if (gymLoading) {
+    return (
+      <section className={styles.card} style={{ marginTop: 20 }}>
+        <p style={{ padding: 16, color: "var(--text-3)" }}>Loading…</p>
+      </section>
+    );
+  }
+
+  if (!unlocked) {
+    return (
+      <ComingSoonCard
+        title="Payments — Razorpay"
+        description="Razorpay connect is locked for this gym. Platform admin can unlock it per gym when you are ready to take online payments."
+      />
+    );
+  }
 
   return (
     <section className={styles.card} style={{ marginTop: 20 }}>

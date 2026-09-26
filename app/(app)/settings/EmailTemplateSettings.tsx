@@ -10,6 +10,10 @@ import {
   EmailTemplateRow,
 } from "@/services/email-templates/email-templates.api";
 import styles from "../profile/Profile.module.css";
+import ComingSoonCard from "./ComingSoonCard";
+import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
+import { useQuery } from "@tanstack/react-query";
+import { subscriptionApi } from "@/services/subscription/subscription.api";
 
 /**
  * Settings → Emails.
@@ -21,6 +25,17 @@ import styles from "../profile/Profile.module.css";
 export default function EmailTemplateSettings() {
   const { user } = useAuth();
   const canEdit = canEditGymSettings(user?.role, user?.permissions);
+  const { data: gymSettings, isLoading: gymLoading } = useGymSettings(
+    !!user?.companyId,
+  );
+  const { data: sub, isLoading: subLoading } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: subscriptionApi.mine,
+    enabled: !!user?.companyId,
+  });
+  const unlocked =
+    gymSettings?.featureEmailTemplatesUnlocked === true ||
+    (sub?.features ?? []).includes("EMAIL_TEMPLATES");
 
   const [rows, setRows] = useState<EmailTemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,8 +61,9 @@ export default function EmailTemplateSettings() {
   };
 
   useEffect(() => {
+    if (!unlocked) return;
     load();
-  }, []);
+  }, [unlocked]);
 
   const openEditor = (row: EmailTemplateRow) => {
     setOpenType(row.type);
@@ -119,6 +135,23 @@ export default function EmailTemplateSettings() {
       setBusy(false);
     }
   };
+
+  if (gymLoading || subLoading) {
+    return (
+      <section className={styles.card} style={{ marginTop: 20 }}>
+        <p style={{ padding: 16, color: "var(--text-3)" }}>Loading…</p>
+      </section>
+    );
+  }
+
+  if (!unlocked) {
+    return (
+      <ComingSoonCard
+        title="Emails"
+        description="Custom email templates are locked for this gym. Platform admin can unlock them per gym when you are ready to edit member-facing mail copy."
+      />
+    );
+  }
 
   return (
     <section className={styles.card} style={{ marginTop: 20 }}>

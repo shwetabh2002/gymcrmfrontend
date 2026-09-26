@@ -44,6 +44,11 @@ export interface GymSettings {
   autopayMandateMultiplier?: number;
   /** How long the mandate stays valid, in months */
   autopayMandateValidityMonths?: number;
+  /** Platform unlock (SUPER_ADMIN). Locked = Coming soon for this gym. */
+  featureAutopayUnlocked?: boolean;
+  featureRazorpayUnlocked?: boolean;
+  featureWhatsappUnlocked?: boolean;
+  featureEmailTemplatesUnlocked?: boolean;
   countryCode?: string;
   countryName?: string;
   currency?: string;
@@ -88,6 +93,10 @@ export interface UpdateGymSettingsPayload {
   autopayMethod?: string;
   autopayMandateMultiplier?: number;
   autopayMandateValidityMonths?: number;
+  featureAutopayUnlocked?: boolean;
+  featureRazorpayUnlocked?: boolean;
+  featureWhatsappUnlocked?: boolean;
+  featureEmailTemplatesUnlocked?: boolean;
   countryCode?: string;
 }
 
