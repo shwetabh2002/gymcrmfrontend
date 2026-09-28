@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/context/AuthContext";
 import { getDefaultRoute } from "@/lib/rbac";
@@ -16,8 +16,11 @@ function CallbackInner() {
   const router = useRouter();
   const { login } = useAuth();
   const [error, setError] = useState("");
+  const ran = useRef(false);
 
   useEffect(() => {
+    if (ran.current) return;
+    ran.current = true;
     try {
       const params = parseHash();
       const accessToken = params.get("accessToken");

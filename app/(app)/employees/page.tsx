@@ -141,7 +141,10 @@ export default function EmployeesPage() {
     setForm(EMPTY);
     setEditing(null);
     setPhotoFile(null);
-    setPhotoPreview(null);
+    setPhotoPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return null;
+    });
   };
 
   const onPhotoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,7 +157,10 @@ export default function EmployeesPage() {
       return;
     }
     setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
   };
 
   const setModuleLevel = (
@@ -205,7 +211,10 @@ export default function EmployeesPage() {
       permissions: perms.length ? perms : ["dashboard"],
     });
     setPhotoFile(null);
-    setPhotoPreview(emp.photoUrl ?? null);
+    setPhotoPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return emp.photoUrl ?? null;
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

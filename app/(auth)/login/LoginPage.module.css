@@ -306,7 +306,8 @@
   color: var(--text-2);
   font-weight: 600;
 }
-.metaLeft { color: var(--text-3); }
+.metaLeft { color: var(--text-3); text-decoration: none; }
+.metaLeft:hover { color: var(--text-1); }
 .metaStatus { display: inline-flex; align-items: center; gap: 7px; }
 .statusDot {
   width: 7px;

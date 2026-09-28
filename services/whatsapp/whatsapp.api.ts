@@ -10,7 +10,7 @@ export type WhatsAppStatus = {
   paymentTemplate: string | null;
   connectedAt: string | null;
   mockAvailable: boolean;
-  /** True only when messages leave on their own (Cloud API / mock). */
+  /** True only when messages leave on their own (Cloud API). */
   autoSendReady: boolean;
   /** True for click-to-chat: connected, but staff must press Send. */
   manualSendOnly?: boolean;
@@ -21,12 +21,6 @@ export type WhatsAppStatus = {
 export const whatsappApi = {
   getStatus: () =>
     requestService.get<WhatsAppStatus>(API_CONFIG.WHATSAPP.STATUS),
-
-  connectMock: () =>
-    requestService.post<WhatsAppStatus, Record<string, never>>(
-      API_CONFIG.WHATSAPP.MOCK,
-      {},
-    ),
 
   /** Gym's own number, staff taps Send — no Meta setup needed. */
   connectClickToChat: (senderNumber: string) =>

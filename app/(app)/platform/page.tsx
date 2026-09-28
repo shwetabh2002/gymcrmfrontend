@@ -7,7 +7,9 @@ import { motion } from "framer-motion";
 import {
   platformApi,
   type PlatformInquiry,
+  type PlatformCompanyRow,
 } from "@/services/subscription/subscription.api";
+import { companiesApi } from "@/services/companies/companies.api";
 import { useAuth } from "@/lib/context/AuthContext";
 import { formatMoney } from "@/config/countries";
 import { EASE_OUT_EXPO } from "@/config/motion";
@@ -37,10 +39,13 @@ const STATUS_TONE: Record<string, string> = {
  * API refuses them anyway.
  */
 export default function PlatformPage() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQ, setSearchQ] = useState("");
   const [busy, setBusy] = useState(false);
+  const [rowBusy, setRowBusy] = useState<string | null>(null);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
@@ -50,14 +55,20 @@ export default function PlatformPage() {
     enabled: isSuperAdmin,
   });
   const { data: companies, isLoading } = useQuery({
-    queryKey: ["platform", "companies", statusFilter],
-    queryFn: () => platformApi.companies(statusFilter),
+    queryKey: ["platform", "companies", statusFilter, searchQ],
+    queryFn: () => platformApi.companies(statusFilter, searchQ),
     enabled: isSuperAdmin,
   });
   const { data: inquiries, isLoading: inquiriesLoading } = useQuery({
     queryKey: ["platform", "inquiries"],
     queryFn: () => platformApi.inquiries(),
     enabled: isSuperAdmin,
+  });
+  const { data: activityFeed } = useQuery({
+    queryKey: ["platform", "activity", user?.companyId],
+    queryFn: () => platformApi.activity(user?.companyId || undefined, 40),
+    enabled: isSuperAdmin && !!user?.companyId,
+    refetchInterval: 60_000,
   });
 
   const money = (amount: number) => formatMoney(amount, "IN");
@@ -72,6 +83,38 @@ export default function PlatformPage() {
       queryClient.invalidateQueries({ queryKey: ["platform", "inquiries"] });
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Update failed");
+    }
+  };
+
+  const runSearch = () => setSearchQ(searchInput.trim());
+
+  const extendTrial = async (row: PlatformCompanyRow, days: number) => {
+    setRowBusy(row.companyId);
+    try {
+      await platformApi.extendTrial(row.companyId, { days });
+      toast.success(`Trial +${days} days for ${row.companyName}`);
+      queryClient.invalidateQueries({ queryKey: ["platform"] });
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Could not extend trial");
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const openGym = async (row: PlatformCompanyRow) => {
+    setRowBusy(row.companyId);
+    try {
+      const session = await companiesApi.select(row.companyId);
+      login(
+        session.tokens.accessToken,
+        session.tokens.refreshToken,
+        session.user,
+      );
+      toast.success(`Switched to ${row.companyName}`);
+      window.location.href = "/payment-settings";
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Could not open gym");
+      setRowBusy(null);
     }
   };
 
@@ -371,25 +414,59 @@ export default function PlatformPage() {
             <span className={styles.cardTitleBar} />
             Gyms
           </h2>
-          <select
-            className={styles.formInput}
-            style={{ maxWidth: 180 }}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            {STATUS_FILTERS.map((s) => (
-              <option key={s} value={s}>
-                {s === "ALL" ? "All statuses" : s}
-              </option>
-            ))}
-          </select>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                runSearch();
+              }}
+              style={{ display: "flex", gap: 8 }}
+            >
+              <input
+                className={styles.formInput}
+                style={{ minWidth: 220 }}
+                placeholder="Search name, email, phone…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <button type="submit" className={styles.btnSecondary}>
+                Search
+              </button>
+              {searchQ ? (
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchQ("");
+                  }}
+                >
+                  Clear
+                </button>
+              ) : null}
+            </form>
+            <select
+              className={styles.formInput}
+              style={{ maxWidth: 180 }}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              {STATUS_FILTERS.map((s) => (
+                <option key={s} value={s}>
+                  {s === "ALL" ? "All statuses" : s}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div style={{ padding: "12px 22px 22px", overflowX: "auto" }}>
           {isLoading ? (
             <p style={{ color: "var(--text-2)" }}>Loading…</p>
           ) : !companies?.length ? (
-            <p style={{ color: "var(--text-2)" }}>No gyms in this state.</p>
+            <p style={{ color: "var(--text-2)" }}>
+              {searchQ ? "No gyms match that search." : "No gyms in this state."}
+            </p>
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -399,11 +476,8 @@ export default function PlatformPage() {
                   </th>
                   <th style={{ fontSize: "0.75rem" }}>Status</th>
                   <th style={{ fontSize: "0.75rem" }}>Plan</th>
-                  <th style={{ fontSize: "0.75rem" }}>Branches</th>
                   <th style={{ fontSize: "0.75rem" }}>Trial / renews</th>
-                  <th style={{ fontSize: "0.75rem", textAlign: "right" }}>
-                    Last charge
-                  </th>
+                  <th style={{ fontSize: "0.75rem" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -417,7 +491,9 @@ export default function PlatformPage() {
                       <div
                         style={{ fontSize: "0.78rem", color: "var(--text-2)" }}
                       >
-                        {[c.city, c.phone].filter(Boolean).join(" · ") || "—"}
+                        {[c.adminEmail, c.phone, c.city]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
                       </div>
                     </td>
                     <td
@@ -432,21 +508,13 @@ export default function PlatformPage() {
                     </td>
                     <td style={{ fontSize: "0.85rem" }}>
                       {c.planCode}
-                      {!c.mandateApproved ? (
-                        <span
-                          style={{
-                            color: "var(--text-2)",
-                            fontSize: "0.75rem",
-                          }}
-                        >
-                          {" "}
-                          · no mandate
-                        </span>
-                      ) : null}
+                      <span style={{ color: "var(--text-2)", fontSize: "0.75rem" }}>
+                        {" "}
+                        · {c.branches} br
+                      </span>
                     </td>
-                    <td style={{ fontSize: "0.85rem" }}>{c.branches}</td>
                     <td style={{ fontSize: "0.85rem" }}>
-                      {c.status === "TRIALING"
+                      {c.status === "TRIALING" || c.status === "READ_ONLY"
                         ? c.trialEndsAt
                           ? new Date(c.trialEndsAt).toLocaleDateString()
                           : "—"
@@ -454,13 +522,121 @@ export default function PlatformPage() {
                           ? new Date(c.currentPeriodEnd).toLocaleDateString()
                           : "—"}
                     </td>
-                    <td style={{ textAlign: "right", fontSize: "0.85rem" }}>
-                      {c.lastAmount ? money(c.lastAmount) : "—"}
+                    <td>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          disabled={rowBusy === c.companyId}
+                          onClick={() => extendTrial(c, 7)}
+                          style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                        >
+                          +7d trial
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          disabled={rowBusy === c.companyId}
+                          onClick={() => extendTrial(c, 14)}
+                          style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                        >
+                          +14d
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.btnPrimary}
+                          disabled={rowBusy === c.companyId}
+                          onClick={() => openGym(c)}
+                          style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                        >
+                          Open
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+      </section>
+
+      <section className={styles.card} style={{ marginTop: 20 }}>
+        <div className={styles.cardHeader}>
+          <h2 className={styles.cardTitle}>
+            <span className={styles.cardTitleBar} />
+            Activity log
+          </h2>
+          <span className={styles.cardBadge}>
+            {!user?.companyId
+              ? "SELECT GYM"
+              : activityFeed?.available
+                ? `THIS GYM · ${activityFeed.retentionDays ?? 30}d`
+                : !activityFeed?.enabled
+                  ? "SERVER OFF"
+                  : activityFeed?.entitled === false
+                    ? "LOCKED"
+                    : "GYM OFF"}
+          </span>
+        </div>
+        <div style={{ padding: "12px 22px 22px" }}>
+          {!user?.companyId ? (
+            <p style={{ margin: 0, color: "var(--text-2)", fontSize: "0.9rem" }}>
+              Select a gym in the switcher to see that gym&apos;s activity only.
+              Logs are never mixed across gyms.
+            </p>
+          ) : !activityFeed?.enabled ? (
+            <p style={{ margin: 0, color: "var(--text-2)", fontSize: "0.9rem" }}>
+              Server master is off. Set{" "}
+              <code style={{ fontFamily: "var(--mono)" }}>
+                ACTIVITY_LOGS_ENABLED=true
+              </code>
+              , then unlock/plan + gym ON under Payment settings → Platform
+              unlocks.
+            </p>
+          ) : activityFeed.entitled === false ? (
+            <p style={{ margin: 0, color: "var(--text-2)", fontSize: "0.9rem" }}>
+              <strong>{user.companyName || "This gym"}</strong> is not entitled
+              yet. Unlock Activity log under Platform unlocks, or put the gym on
+              a plan that includes it — then turn the gym switch ON.
+            </p>
+          ) : !activityFeed.available ? (
+            <p style={{ margin: 0, color: "var(--text-2)", fontSize: "0.9rem" }}>
+              Entitled, but gym switch is OFF for{" "}
+              <strong>{user.companyName || "this gym"}</strong>. Turn it ON under
+              Payment settings → Platform unlocks (Gym switch — Activity log).
+            </p>
+          ) : !(activityFeed.items ?? []).length ? (
+            <p style={{ margin: 0, color: "var(--text-2)" }}>
+              No activity for this gym in the last{" "}
+              {activityFeed.retentionDays ?? 30} days.
+            </p>
+          ) : (
+            <div style={{ display: "grid", gap: 8 }}>
+              {activityFeed.items.map((a) => (
+                <div
+                  key={a.id}
+                  style={{
+                    padding: "8px 0",
+                    borderTop: "1px solid var(--border)",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  <div style={{ fontWeight: 600, color: "var(--text-1)" }}>
+                    {a.summary}
+                  </div>
+                  <div style={{ color: "var(--text-2)", marginTop: 2 }}>
+                    {[a.actorName, a.actorEmail, a.actorRole]
+                      .filter(Boolean)
+                      .join(" · ")}{" "}
+                    · {a.action}
+                    {a.createdAt
+                      ? ` · ${new Date(a.createdAt).toLocaleString()}`
+                      : ""}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </section>

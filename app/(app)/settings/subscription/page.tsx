@@ -32,6 +32,7 @@ const FEATURE_LABEL: Record<string, string> = {
   EMAIL_TEMPLATES: "Custom email templates",
   MULTI_BRANCH: "Unlimited branches",
   STAFF_RBAC: "Staff accounts & permissions",
+  ACTIVITY_LOGS: "Activity log (time-retained)",
 };
 
 const BASIC_FEATURES = [
@@ -72,6 +73,12 @@ export default function SubscriptionPage() {
 
   const choosePlan = async (planCode: string) => {
     if (!canEdit) return;
+    if (!sub?.canWrite) {
+      toast.error(
+        "Set up billing first to restore access — switching plans alone will not unlock the account",
+      );
+      return;
+    }
     setBusy(true);
     try {
       await subscriptionApi.changePlan(planCode);
@@ -197,9 +204,10 @@ export default function SubscriptionPage() {
 
           {!sub.canWrite ? (
             <p style={{ gridColumn: "1 / -1", color: "#b3261e", margin: 0 }}>
-              This account is read-only. Everything you added is still here and
-              still readable — pick a plan below to add members and take
-              payments again.
+              This account is read-only. Your data is safe and still readable.
+              Set up billing (or resume if you already have a mandate) to add
+              members and take payments again — switching plans alone will not
+              restore access.
             </p>
           ) : null}
         </div>
@@ -207,7 +215,27 @@ export default function SubscriptionPage() {
         {/* Billing setup — the same UPI Autopay flow gyms use on their members. */}
         {canEdit ? (
           <div className={styles.formActions} style={{ padding: "0 22px 22px" }}>
-            {!sub.mandateApproved ? (
+            {!sub.canWrite ? (
+              sub.mandateApproved ? (
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  disabled={busy}
+                  onClick={resume}
+                >
+                  Resume subscription
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  disabled={busy}
+                  onClick={startBilling}
+                >
+                  Set up billing
+                </button>
+              )
+            ) : !sub.mandateApproved ? (
               <button
                 type="button"
                 className={styles.btnPrimary}
@@ -401,11 +429,15 @@ export default function SubscriptionPage() {
                   <button
                     type="button"
                     className={current ? styles.btnSecondary : styles.btnPrimary}
-                    disabled={busy || current || !canEdit}
+                    disabled={busy || current || !canEdit || !sub.canWrite}
                     onClick={() => choosePlan(plan.code)}
                     style={{ width: "100%" }}
                   >
-                    {current ? "Current plan" : `Switch to ${plan.name}`}
+                    {current
+                      ? "Current plan"
+                      : !sub.canWrite
+                        ? "Set up billing first"
+                        : `Switch to ${plan.name}`}
                   </button>
                 )}
               </div>

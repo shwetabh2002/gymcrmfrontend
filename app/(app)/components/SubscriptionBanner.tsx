@@ -91,8 +91,8 @@ function resolveTone(data: {
           ? "Subscription cancelled"
           : "Your trial has ended",
       detail:
-        "Your data is safe and still readable. Pick a plan to add members and take payments again.",
-      cta: "Choose a plan",
+        "Your data is safe and still readable. Set up billing to add members and take payments again.",
+      cta: "Set up billing",
       background: "#fdeaea",
       color: "#b3261e",
       border: "#f5c2c0",

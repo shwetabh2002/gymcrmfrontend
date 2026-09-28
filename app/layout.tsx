@@ -3,8 +3,9 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "GymFlow CRM",
-  description: "A calm operating system for your gym — members, dues, renewals, invoices.",
+  title: "GymFlow",
+  description:
+    "Gym membership software — renewals, payments, and members in one place.",
 };
 
 export default function RootLayout({

@@ -285,9 +285,15 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     }
     setError("");
     setPhotoFile(null);
-    setPhotoPreview(existing?.photoUrl ?? null);
+    setPhotoPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return existing?.photoUrl ?? null;
+    });
     setProofFile(null);
-    setProofPreview(null);
+    setProofPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return null;
+    });
     setLinkCopied(false);
   }, [existing, open, user?.locationId, locations, settings?.autopayEnabled, settings?.featureAutopayUnlocked]);
 
@@ -302,7 +308,10 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     }
     setError("");
     setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
   };
 
   const onProofPick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -316,7 +325,10 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     }
     setError("");
     setProofFile(file);
-    setProofPreview(URL.createObjectURL(file));
+    setProofPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
   };
 
   const applyPlan = (planId: string, startingDate?: string) => {

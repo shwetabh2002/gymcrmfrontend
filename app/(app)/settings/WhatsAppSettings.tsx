@@ -8,6 +8,8 @@ import styles from "../profile/Profile.module.css";
 import toast from "react-hot-toast";
 import ComingSoonCard from "./ComingSoonCard";
 import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
+import { useQuery } from "@tanstack/react-query";
+import { subscriptionApi } from "@/services/subscription/subscription.api";
 
 export default function WhatsAppSettings() {
   const { user } = useAuth();
@@ -15,7 +17,14 @@ export default function WhatsAppSettings() {
   const { data: gymSettings, isLoading: gymLoading } = useGymSettings(
     !!user?.companyId,
   );
-  const unlocked = gymSettings?.featureWhatsappUnlocked === true;
+  const { data: sub } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: subscriptionApi.mine,
+    enabled: !!user?.companyId,
+  });
+  const unlocked =
+    gymSettings?.featureWhatsappUnlocked === true ||
+    (sub?.features ?? []).includes("WHATSAPP_CLOUD");
   const [status, setStatus] = useState<WhatsAppStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -42,18 +51,6 @@ export default function WhatsAppSettings() {
     if (!unlocked) return;
     load();
   }, [unlocked]);
-
-  const connectMock = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      setStatus(await whatsappApi.connectMock());
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "Mock connect failed");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const connectClickToChat = async () => {
     setBusy(true);
@@ -259,16 +256,6 @@ export default function WhatsAppSettings() {
                 >
                   Connect Cloud API
                 </button>
-                {status?.mockAvailable ? (
-                  <button
-                    type="button"
-                    className={styles.btnSecondary}
-                    disabled={busy}
-                    onClick={connectMock}
-                  >
-                    Use Mock auto-send (dev)
-                  </button>
-                ) : null}
               </div>
             </>
           ) : null}

@@ -10,7 +10,6 @@ export type ProviderStatus = {
   connectedAt: string | null;
   partnerOAuthAvailable: boolean;
   mockAvailable: boolean;
-  /** development | production — decides whether Mock is offered at all. */
   environment?: string;
   /** URL the gym pastes into its own Razorpay dashboard. */
   webhookUrl?: string;
@@ -18,7 +17,7 @@ export type ProviderStatus = {
   webhookSecretSet?: boolean;
   /** True for OAuth gyms — the partner-level webhook covers them. */
   webhookOwnedByPlatform?: boolean;
-  /** Real UPI Autopay mandates need live credentials, not the mock. */
+  /** Real UPI Autopay mandates need live credentials. */
   mandateCapable?: boolean;
 };
 
@@ -56,8 +55,8 @@ export type CheckoutSession = {
   shareUrl: string | null;
   qrData: string | null;
   whatsappUrl: string | null;
-  /** wa_me = fallback only; mock/cloud_api = auto-sent to member phone */
-  whatsappMode?: "wa_me" | "cloud_api" | "mock";
+  /** wa_me = share link; cloud_api = auto-sent to member phone */
+  whatsappMode?: "wa_me" | "cloud_api";
   whatsappSent?: boolean;
   whatsappToPhone?: string | null;
   emailSent?: boolean;
@@ -108,12 +107,6 @@ export const paymentProviderApi = {
     requestService.post<ProviderStatus, typeof payload>(
       API_CONFIG.PAYMENTS.PROVIDER_API_KEYS,
       payload,
-    ),
-
-  connectMock: () =>
-    requestService.post<ProviderStatus, Record<string, never>>(
-      API_CONFIG.PAYMENTS.PROVIDER_MOCK,
-      {},
     ),
 
   disconnect: () =>

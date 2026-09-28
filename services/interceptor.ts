@@ -152,6 +152,7 @@ export const setupInterceptors = (apiClient: AxiosInstance) => {
                 Authorization: `Bearer ${refreshToken}`,
                 "Content-Type": "application/json",
               },
+              timeout: 15_000,
             }
           );
 

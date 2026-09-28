@@ -1,0 +1,50 @@
+/* Scoped marketing shell — does not override CRM :root tokens. */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap");
+
+.mkt {
+  --mkt-bg: #0c0d0f;
+  --mkt-bg-2: #14161a;
+  --mkt-ink: #f3f1eb;
+  --mkt-muted: #9a968c;
+  --mkt-line: rgba(243, 241, 235, 0.12);
+  --mkt-accent: #e23d2b;
+  --mkt-accent-2: #ff6b4a;
+  --sans: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --display: var(--sans);
+  --bg: var(--mkt-bg);
+  --ink: var(--mkt-ink);
+  --muted: var(--mkt-muted);
+  --line: var(--mkt-line);
+  --accent: var(--mkt-accent);
+  --accent-2: var(--mkt-accent-2);
+
+  min-height: 100vh;
+  margin: 0;
+  background: var(--mkt-bg);
+  color: var(--mkt-ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mkt a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mkt button,
+.mkt input,
+.mkt select,
+.mkt textarea {
+  font: inherit;
+}
+
+.mkt h1,
+.mkt h2,
+.mkt h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}

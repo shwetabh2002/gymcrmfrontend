@@ -11,6 +11,8 @@ import {
 import styles from "../profile/Profile.module.css";
 import ComingSoonCard from "./ComingSoonCard";
 import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
+import { useQuery } from "@tanstack/react-query";
+import { subscriptionApi } from "@/services/subscription/subscription.api";
 
 export default function RazorpaySettings() {
   const { user } = useAuth();
@@ -18,7 +20,15 @@ export default function RazorpaySettings() {
   const { data: gymSettings, isLoading: gymLoading } = useGymSettings(
     !!user?.companyId,
   );
-  const unlocked = gymSettings?.featureRazorpayUnlocked === true;
+  const { data: sub } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: subscriptionApi.mine,
+    enabled: !!user?.companyId,
+  });
+  const unlocked =
+    gymSettings?.featureRazorpayUnlocked === true ||
+    gymSettings?.featureAutopayUnlocked === true ||
+    (sub?.features ?? []).includes("AUTOPAY");
   const [status, setStatus] = useState<ProviderStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -110,22 +120,6 @@ export default function RazorpaySettings() {
     }
   };
 
-  const connectMock = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      const s = await paymentProviderApi.connectMock();
-      setStatus(s);
-      toast.success("Mock Razorpay connected (development only)");
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || "Mock connect failed";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const disconnect = async () => {
     setBusy(true);
     try {
@@ -175,7 +169,7 @@ export default function RazorpaySettings() {
       >
         Connect this gym&apos;s Razorpay account so Online / UPI Autopay
         settlements go to their bank. Prefer Partner OAuth in production; API
-        keys or Mock for local testing.
+        keys for direct key-based connection.
       </p>
 
       {loading ? (
@@ -266,16 +260,6 @@ export default function RazorpaySettings() {
                 >
                   Connect API keys
                 </button>
-                {status?.mockAvailable ? (
-                  <button
-                    type="button"
-                    className={styles.btnSecondary}
-                    disabled={busy}
-                    onClick={connectMock}
-                  >
-                    Use Mock (dev)
-                  </button>
-                ) : null}
               </div>
             </>
           ) : null}
@@ -286,7 +270,7 @@ export default function RazorpaySettings() {
               <p style={{ color: "var(--text-1)", margin: "0 0 4px" }}>
                 {status.mandateCapable
                   ? "Live — members can approve a real UPI Autopay mandate."
-                  : "Mock connection: members get a simulated link. Connect OAuth or API keys for real mandates."}
+                  : "Not mandate-ready yet — connect OAuth or live API keys for real UPI Autopay."}
               </p>
             </div>
           ) : null}

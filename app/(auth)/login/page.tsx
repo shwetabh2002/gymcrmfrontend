@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/context/AuthContext";
 import { adminLogin } from "@/services/admin/admin.api";
 import { motion, AnimatePresence, Variants, Easing } from "framer-motion";
 import { getDefaultRoute } from "@/lib/rbac";
 import styles from "./LoginPage.module.css";
 import { EASE_OUT_EXPO } from "@/config/motion";
+import { MARKETING_LINKS } from "@/lib/marketing-links";
 
 /* ─── Framer Motion variants ──────────────────────────────── */
 // custom cubic‑bezier easing; cast to satisfy framer-motion's typings
@@ -248,7 +250,9 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className={styles.meta}>
-            <span className={styles.metaLeft}>v2.4.1 · admin</span>
+            <Link href={MARKETING_LINKS.signup} className={styles.metaLeft}>
+              New gym? Create workspace
+            </Link>
             <span className={styles.metaStatus}>
               <span className={styles.statusDot} />
               Systems operational

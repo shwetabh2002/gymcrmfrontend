@@ -14,6 +14,8 @@ import {
 import profile from "../profile/Profile.module.css";
 import styles from "./AutopaySettings.module.css";
 import ComingSoonCard from "./ComingSoonCard";
+import { useQuery } from "@tanstack/react-query";
+import { subscriptionApi } from "@/services/subscription/subscription.api";
 
 type Step = {
   id: string;
@@ -28,6 +30,11 @@ export default function AutopaySettings() {
   const { user } = useAuth();
   const canEdit = canEditGymSettings(user?.role, user?.permissions);
   const { data: settings, isLoading } = useGymSettings(!!user?.companyId);
+  const { data: sub } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: subscriptionApi.mine,
+    enabled: !!user?.companyId,
+  });
   const update = useUpdateGymSettings();
   const [enabled, setEnabled] = useState(false);
   const [error, setError] = useState("");
@@ -108,7 +115,7 @@ export default function AutopaySettings() {
       id: "rzp",
       title: "Connect Razorpay",
       detail:
-        "Scroll to Payments — Razorpay on this page. Connect OAuth / API keys (or Mock for local).",
+        "Scroll to Payments — Razorpay on this page. Connect OAuth or API keys.",
       done: !!rzp?.connected,
       kind: "live",
     },
@@ -140,7 +147,9 @@ export default function AutopaySettings() {
 
   const infraReady = enabled && !!rzp?.connected;
   const busy = !canEdit || update.isPending;
-  const unlocked = settings?.featureAutopayUnlocked === true;
+  const unlocked =
+    settings?.featureAutopayUnlocked === true ||
+    (sub?.features ?? []).includes("AUTOPAY");
 
   if (!isLoading && !unlocked) {
     return (
@@ -280,8 +289,8 @@ export default function AutopaySettings() {
               </div>
               {rzp?.connected && rzp?.mandateCapable === false ? (
                 <p className={styles.toggleHint} style={{ paddingTop: 10 }}>
-                  Razorpay is on the Mock connection — members get a simulated
-                  link. Connect OAuth or API keys for real mandates.
+                  Razorpay is connected but not mandate-ready — use OAuth or
+                  live API keys for real UPI Autopay.
                 </p>
               ) : null}
             </div>

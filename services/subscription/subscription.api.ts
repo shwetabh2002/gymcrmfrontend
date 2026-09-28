@@ -173,6 +173,8 @@ export type PlatformCompanyRow = {
   companyName: string;
   city: string | null;
   phone: string | null;
+  adminEmail?: string | null;
+  adminName?: string | null;
   signedUpAt: string | null;
   status: string;
   planCode: string;
@@ -189,15 +191,63 @@ export type PlatformCompanyRow = {
   cancelledAt: string | null;
 };
 
+export type PlatformActivityFeed = {
+  enabled: boolean;
+  available?: boolean;
+  featureUnlocked?: boolean;
+  planIncludes?: boolean;
+  entitled?: boolean;
+  gymEnabled?: boolean;
+  retentionDays?: number;
+  companyId?: string | null;
+  needsGym?: boolean;
+  items: Array<{
+    id: string;
+    companyId: string;
+    actorId: string | null;
+    actorName: string;
+    actorEmail?: string | null;
+    actorRole?: string | null;
+    action: string;
+    entityType: string;
+    entityId: string | null;
+    summary: string;
+    httpMethod?: string | null;
+    httpPath?: string | null;
+    statusCode?: number | null;
+    metadata: Record<string, unknown>;
+    createdAt: string;
+  }>;
+};
+
 export const platformApi = {
   overview: () =>
     requestService.get<PlatformOverview>(API_CONFIG.PLATFORM.OVERVIEW),
 
-  companies: (status?: string) =>
+  companies: (status?: string, q?: string) =>
     requestService.get<PlatformCompanyRow[]>(
       API_CONFIG.PLATFORM.COMPANIES,
-      status && status !== "ALL" ? { status } : undefined,
+      {
+        ...(status && status !== "ALL" ? { status } : {}),
+        ...(q?.trim() ? { q: q.trim() } : {}),
+      },
     ),
+
+  extendTrial: (
+    companyId: string,
+    payload: { days?: number; until?: string } = { days: 7 },
+  ) =>
+    requestService.post<BillingSnapshot, { days?: number; until?: string }>(
+      API_CONFIG.PLATFORM.EXTEND_TRIAL(companyId),
+      payload,
+    ),
+
+  activity: (companyId?: string, limit = 50) =>
+    requestService.get<PlatformActivityFeed>(API_CONFIG.PLATFORM.ACTIVITY, {
+      ...(companyId ? { companyId } : {}),
+      limit,
+    }),
+
 
   plans: () => requestService.get<PlatformPlan[]>(API_CONFIG.PLATFORM.PLANS),
 

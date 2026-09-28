@@ -57,7 +57,6 @@ export const API_CONFIG = {
     PROVIDER: "/payment-provider",
     PROVIDER_CONNECT: "/payment-provider/razorpay/connect",
     PROVIDER_API_KEYS: "/payment-provider/razorpay/api-keys",
-    PROVIDER_MOCK: "/payment-provider/razorpay/mock",
     PROVIDER_DISCONNECT: "/payment-provider/razorpay/disconnect",
     PROVIDER_WEBHOOK_SECRET: "/payment-provider/razorpay/webhook-secret",
     AUTOPAY_RUN: "/autopay/run",
@@ -108,7 +107,6 @@ export const API_CONFIG = {
 
   WHATSAPP: {
     STATUS: "/whatsapp",
-    MOCK: "/whatsapp/mock",
     CLOUD: "/whatsapp/cloud",
     CLICK_TO_CHAT: "/whatsapp/click-to-chat",
     DISCONNECT: "/whatsapp/disconnect",
@@ -129,10 +127,18 @@ export const API_CONFIG = {
   PLATFORM: {
     OVERVIEW: "/platform/overview",
     COMPANIES: "/platform/companies",
+    EXTEND_TRIAL: (companyId: string) =>
+      `/platform/companies/${companyId}/extend-trial`,
+    ACTIVITY: "/platform/activity",
     PLANS: "/platform/plans",
     INQUIRIES: "/platform/inquiries",
     INQUIRY: (id: string) => `/platform/inquiries/${id}`,
     RUN_BILLING: "/platform/billing/run",
+  },
+
+  ACTIVITY_LOGS: {
+    BASE: "/activity-logs",
+    STATUS: "/activity-logs/status",
   },
 
   EMAIL_TEMPLATES: {

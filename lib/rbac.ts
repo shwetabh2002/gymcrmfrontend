@@ -464,6 +464,7 @@ const ROUTE_PERMISSION: Record<string, PermissionKey> = {
   "/locations": "locations_view",
   "/settings": "settings_view",
   "/payment-settings": "settings_view",
+  "/activity-logs": "settings_view",
   "/profile": "dashboard",
 };
 
@@ -635,6 +636,7 @@ export function navItemsForRole(
     { href: "/invoices", label: "Invoices", icon: "▣" },
     { href: "/payment-settings", label: "Payment settings", icon: "₹" },
     { href: "/settings", label: "Gym settings", icon: "⚙" },
+    { href: "/activity-logs", label: "Activity log", icon: "☰" },
     { href: "/profile", label: "Profile", icon: "◉" },
   ];
   return all.filter((item) => canAccessRoute(role, item.href, permissions));

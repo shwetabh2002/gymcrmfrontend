@@ -360,7 +360,10 @@ export function RecordPaymentModal({ onClose }: { onClose: () => void }) {
     }
     setError("");
     setProofFile(file);
-    setProofPreview(URL.createObjectURL(file));
+    setProofPreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
   };
 
   const handleSubmit = async () => {

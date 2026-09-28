@@ -27,7 +27,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         user.role === "SUPER_ADMIN" &&
         !user.companyId &&
         pathname !== "/companies" &&
-        !pathname.startsWith("/companies")
+        !pathname.startsWith("/companies") &&
+        pathname !== "/platform" &&
+        !pathname.startsWith("/platform")
       ) {
         router.replace("/companies");
         return;

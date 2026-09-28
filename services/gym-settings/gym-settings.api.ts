@@ -49,6 +49,11 @@ export interface GymSettings {
   featureRazorpayUnlocked?: boolean;
   featureWhatsappUnlocked?: boolean;
   featureEmailTemplatesUnlocked?: boolean;
+  featureActivityLogsUnlocked?: boolean;
+  /** Gym dynamic on/off (after entitlement). */
+  activityLogsEnabled?: boolean;
+  /** Days activity rows are kept (paid feature). */
+  activityLogRetentionDays?: number;
   countryCode?: string;
   countryName?: string;
   currency?: string;
@@ -97,6 +102,11 @@ export interface UpdateGymSettingsPayload {
   featureRazorpayUnlocked?: boolean;
   featureWhatsappUnlocked?: boolean;
   featureEmailTemplatesUnlocked?: boolean;
+  featureActivityLogsUnlocked?: boolean;
+  /** Gym dynamic on/off (after entitlement). */
+  activityLogsEnabled?: boolean;
+  /** Days activity rows are kept (paid feature). */
+  activityLogRetentionDays?: number;
   countryCode?: string;
 }
 
