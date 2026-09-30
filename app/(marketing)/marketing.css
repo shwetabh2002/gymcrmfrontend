@@ -1,37 +1,41 @@
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Sora:wght@400;500;600;700&display=swap");
 
-/* Scoped marketing shell — does not override CRM :root tokens. */
 .mkt {
-  --mkt-paper: #eceef1;
-  --mkt-paper-2: #f6f7f8;
-  --mkt-ink: #0e1114;
-  --mkt-ink-soft: #2c323a;
-  --mkt-muted: #5c6570;
-  --mkt-line: rgba(14, 17, 20, 0.1);
-  --mkt-signal: #e11d12;
-  --mkt-signal-deep: #b9140c;
-  --mkt-deep: #070809;
-  --mkt-hero-ink: #f7f8f9;
-  --mkt-hero-muted: rgba(247, 248, 249, 0.78);
+  --paper: #f2f3f5;
+  --paper-2: #ffffff;
+  --ink: #101214;
+  --ink-2: #3a4048;
+  --mute: #6a727c;
+  --hairline: rgba(16, 18, 20, 0.1);
+  --signal: #dc2626;
+  --signal-2: #b91c1c;
+  --deep: #0b0c0e;
+  --hero-ink: #f8fafc;
+  --hero-mute: rgba(248, 250, 252, 0.82);
   --sans: "Sora", system-ui, -apple-system, sans-serif;
   --display: "Bricolage Grotesque", "Sora", system-ui, sans-serif;
 
-  --bg: var(--mkt-paper);
-  --ink: var(--mkt-ink);
-  --muted: var(--mkt-muted);
-  --line: var(--mkt-line);
-  --accent: var(--mkt-signal);
-  --accent-2: var(--mkt-signal-deep);
+  /* legacy aliases used by signup */
+  --mkt-bg: var(--paper);
+  --mkt-ink: var(--ink);
+  --mkt-muted: var(--mute);
+  --mkt-line: var(--hairline);
+  --mkt-accent: var(--signal);
+  --mkt-accent-2: var(--signal-2);
+  --bg: var(--paper);
+  --accent: var(--signal);
+  --accent-2: var(--signal-2);
+  --muted: var(--mute);
+  --line: var(--hairline);
 
   min-height: 100dvh;
   margin: 0;
-  background: var(--mkt-paper);
-  color: var(--mkt-ink);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
   overflow-x: clip;
 }
 
@@ -52,16 +56,15 @@
 .mkt h3 {
   font-family: var(--display);
   font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1.05;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .mkt *,
   .mkt *::before,
   .mkt *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
   }
 }

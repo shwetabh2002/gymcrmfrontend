@@ -5,21 +5,26 @@ import { motion, useReducedMotion } from "framer-motion";
 import styles from "./page.module.css";
 import { MARKETING_LINKS } from "@/lib/marketing-links";
 
-const FEATURES = [
+/**
+ * GymFlow marketing home
+ * ──────────────────────
+ * Audience: gym owners / front-desk leads who need renewals + dues under control.
+ * First viewport job: brand recognition + one promise + clear signup/login.
+ * Below fold: prove the daily ops story, then ask again.
+ */
+
+const PILLARS = [
   {
-    n: "01",
-    title: "Renewal radar",
-    body: "Who’s expiring this week, who promised to come back, who went silent — on one screen before the month slips.",
+    title: "Catch renewals early",
+    body: "See who expires this week, who said they’d renew, and who went quiet — before the month closes.",
   },
   {
-    n: "02",
-    title: "Payments that stick",
-    body: "Cash, UPI, card. Every rupee tagged to a member and a staffer, with dues you can actually chase.",
+    title: "Know every rupee",
+    body: "Cash, UPI, or card. Each payment tied to a member and the staffer who took it, with dues you can chase.",
   },
   {
-    n: "03",
-    title: "Staff, on a leash",
-    body: "Trainers sell. Front desk collects. Owners see everything. Permissions keep the chaos out of your books.",
+    title: "Staff without chaos",
+    body: "Trainers sell. Desk collects. You see everything. Permissions keep the books clean.",
   },
 ] as const;
 
@@ -28,153 +33,143 @@ const ease = [0.22, 1, 0.36, 1] as const;
 export default function HomePage() {
   const reduce = useReducedMotion();
 
-  const rise = (delay = 0) =>
+  const enter = (delay = 0) =>
+    reduce
+      ? undefined
+      : {
+          initial: { opacity: 0, y: 22 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.75, delay, ease },
+        };
+
+  const inView = (delay = 0) =>
     reduce
       ? undefined
       : {
           initial: { opacity: 0, y: 28 },
-          animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.85, delay, ease },
-        };
-
-  const reveal = (delay = 0) =>
-    reduce
-      ? undefined
-      : {
-          initial: { opacity: 0, y: 36 },
           whileInView: { opacity: 1, y: 0 },
-          viewport: { once: true, margin: "-12% 0px" },
-          transition: { duration: 0.8, delay, ease },
+          viewport: { once: true, amount: 0.35 },
+          transition: { duration: 0.7, delay, ease },
         };
 
   return (
     <main className={styles.page}>
-      {/* ── First viewport: brand + line + CTAs + full-bleed media ── */}
-      <section className={styles.hero} aria-label="GymFlow">
-        <div className={styles.heroMedia} aria-hidden>
-          <div className={styles.heroImage} />
-          <div className={styles.heroShade} />
-          <div className={styles.heroVignette} />
-          <div className={styles.heroGrain} />
-          <div className={styles.heroRule} />
+      {/* ── Viewport 1: one composition ── */}
+      <section className={styles.hero}>
+        <div className={styles.heroStage} aria-hidden>
+          <div className={styles.heroPhoto} />
+          <div className={styles.heroScrim} />
         </div>
 
-        <motion.header className={styles.nav} {...rise(0)}>
-          <Link className={styles.brand} href={MARKETING_LINKS.home}>
+        <motion.header className={styles.nav} {...enter(0)}>
+          <Link href={MARKETING_LINKS.home} className={styles.navBrand}>
             GymFlow
           </Link>
-          <div className={styles.navActions}>
-            <Link className={styles.navGhost} href={MARKETING_LINKS.login}>
+          <nav className={styles.navRight} aria-label="Account">
+            <Link href={MARKETING_LINKS.login} className={styles.navLink}>
               Staff login
             </Link>
-            <Link className={styles.navCta} href={MARKETING_LINKS.signup}>
+            <Link href={MARKETING_LINKS.signup} className={styles.btnSolid}>
               Start free
             </Link>
-          </div>
+          </nav>
         </motion.header>
 
-        <div className={styles.heroBottom}>
-          <motion.div className={styles.heroCopy} {...rise(0.12)}>
-            <h1 className={styles.logoMark}>
-              <span className={styles.logoWord}>Gym</span>
-              <span className={styles.logoWordAccent}>Flow</span>
-            </h1>
-            <p className={styles.lede}>
-              Renewals collected before they slip. Payments, follow-ups, and
-              staff — one gym, one workspace.
-            </p>
-            <div className={styles.ctaRow}>
-              <Link className={styles.ctaPrimary} href={MARKETING_LINKS.signup}>
-                Create your gym
-              </Link>
-              <Link className={styles.ctaSecondary} href={MARKETING_LINKS.login}>
-                I already have an account
-              </Link>
-            </div>
-          </motion.div>
-
-          <motion.p className={styles.heroAside} {...rise(0.28)} aria-hidden>
-            Membership OS
-            <br />
-            for real gyms
+        <div className={styles.heroContent}>
+          <motion.p className={styles.heroKicker} {...enter(0.08)}>
+            For gym owners who hate chasing renewals
           </motion.p>
-        </div>
-      </section>
-
-      {/* ── Split: product truth + photo ── */}
-      <section className={styles.split} aria-labelledby="split-heading">
-        <motion.div className={styles.splitCopy} {...reveal(0)}>
-          <p className={styles.eyebrow}>Front desk, finally quiet</p>
-          <h2 id="split-heading" className={styles.splitTitle}>
-            Run the floor like you run the lifts — deliberate, logged, done.
-          </h2>
-          <p className={styles.splitBody}>
-            Spreadsheets lose renewals. WhatsApp threads lose who paid. GymFlow
-            keeps members, dues, and staff action in one place so the shift
-            ends clean.
-          </p>
-        </motion.div>
-        <motion.div
-          className={styles.splitMedia}
-          aria-hidden
-          {...reveal(0.12)}
-        >
-          <div className={styles.splitImage} />
-          <div className={styles.splitFrame} />
-        </motion.div>
-      </section>
-
-      {/* ── Features: large editorial rhythm ── */}
-      <section className={styles.features} aria-label="What you get">
-        <motion.div className={styles.featuresHead} {...reveal(0)}>
-          <p className={styles.eyebrow}>What stays on the desk</p>
-          <h2 className={styles.featuresTitle}>Three jobs. No fluff.</h2>
-        </motion.div>
-        <ol className={styles.featureList}>
-          {FEATURES.map((f, i) => (
-            <motion.li
-              key={f.n}
-              className={styles.featureRow}
-              {...reveal(0.08 * i)}
-            >
-              <span className={styles.featureN}>{f.n}</span>
-              <div className={styles.featureText}>
-                <h3 className={styles.featureName}>{f.title}</h3>
-                <p className={styles.featureBody}>{f.body}</p>
-              </div>
-            </motion.li>
-          ))}
-        </ol>
-      </section>
-
-      {/* ── Atmosphere band ── */}
-      <section className={styles.band} aria-labelledby="band-heading">
-        <div className={styles.bandMedia} aria-hidden>
-          <div className={styles.bandImage} />
-          <div className={styles.bandShade} />
-        </div>
-        <motion.div className={styles.bandCopy} {...reveal(0)}>
-          <h2 id="band-heading" className={styles.bandTitle}>
-            Built for India gym ops —
-            <span> UPI, GST, multi-branch when you grow.</span>
-          </h2>
-        </motion.div>
-      </section>
-
-      {/* ── Close ── */}
-      <section className={styles.closing} aria-labelledby="closing-heading">
-        <motion.div {...reveal(0)}>
-          <h2 id="closing-heading" className={styles.closingTitle}>
-            Your gym. Online before the next rush.
-          </h2>
-          <p className={styles.closingBody}>
-            Free to start. Invite staff when the floor is ready.
-          </p>
-          <div className={styles.closingActions}>
-            <Link className={styles.ctaPrimaryDark} href={MARKETING_LINKS.signup}>
+          <motion.h1 className={styles.heroBrand} {...enter(0.14)}>
+            GymFlow
+          </motion.h1>
+          <motion.p className={styles.heroPromise} {...enter(0.22)}>
+            Collect renewals before they slip. Track payments, follow-ups, and
+            staff — one gym, one workspace.
+          </motion.p>
+          <motion.div className={styles.heroActions} {...enter(0.3)}>
+            <Link href={MARKETING_LINKS.signup} className={styles.btnSolid}>
               Create your gym
             </Link>
-            <Link className={styles.ctaGhostDark} href={MARKETING_LINKS.login}>
+            <Link href={MARKETING_LINKS.login} className={styles.btnQuiet}>
+              I already have an account
+            </Link>
+          </motion.div>
+        </div>
+
+        <motion.div className={styles.scrollHint} {...enter(0.45)} aria-hidden>
+          <span />
+          Scroll
+        </motion.div>
+      </section>
+
+      {/* ── Why it exists ── */}
+      <section className={styles.why} aria-labelledby="why-title">
+        <motion.div className={styles.whyInner} {...inView(0)}>
+          <p className={styles.sectionLabel}>Why GymFlow</p>
+          <h2 id="why-title" className={styles.whyTitle}>
+            The front desk should feel calm at close of day.
+          </h2>
+          <p className={styles.whyBody}>
+            Spreadsheets miss renewals. Chat threads lose who paid. GymFlow
+            keeps members, money, and follow-ups in one place so your team
+            finishes the shift knowing what’s done.
+          </p>
+        </motion.div>
+      </section>
+
+      {/* ── Visual story ── */}
+      <section className={styles.story} aria-labelledby="story-title">
+        <motion.div className={styles.storyCopy} {...inView(0)}>
+          <p className={styles.sectionLabel}>On the floor</p>
+          <h2 id="story-title" className={styles.storyTitle}>
+            Built for how Indian gyms actually run.
+          </h2>
+          <p className={styles.storyBody}>
+            UPI and cash in the same ledger. GST-ready invoices. Multiple
+            branches when you grow. Permissions so trainers only see what they
+            need.
+          </p>
+        </motion.div>
+        <motion.figure className={styles.storyFigure} {...inView(0.1)}>
+          <div className={styles.storyPhoto} role="img" aria-label="Gym training floor" />
+        </motion.figure>
+      </section>
+
+      {/* ── Three pillars ── */}
+      <section className={styles.pillars} aria-labelledby="pillars-title">
+        <motion.div className={styles.pillarsHead} {...inView(0)}>
+          <p className={styles.sectionLabel}>What you get</p>
+          <h2 id="pillars-title" className={styles.pillarsTitle}>
+            Three things your desk does every day.
+          </h2>
+        </motion.div>
+        <ul className={styles.pillarList}>
+          {PILLARS.map((item, i) => (
+            <motion.li key={item.title} className={styles.pillar} {...inView(0.08 * (i + 1))}>
+              <span className={styles.pillarIndex}>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <h3 className={styles.pillarTitle}>{item.title}</h3>
+              <p className={styles.pillarBody}>{item.body}</p>
+            </motion.li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ── Final ask ── */}
+      <section className={styles.finale} aria-labelledby="finale-title">
+        <motion.div className={styles.finaleInner} {...inView(0)}>
+          <h2 id="finale-title" className={styles.finaleTitle}>
+            Open your gym workspace today.
+          </h2>
+          <p className={styles.finaleBody}>
+            Free to start. Add staff when the floor is ready.
+          </p>
+          <div className={styles.finaleActions}>
+            <Link href={MARKETING_LINKS.signup} className={styles.btnSolid}>
+              Create your gym
+            </Link>
+            <Link href={MARKETING_LINKS.login} className={styles.btnOnDark}>
               Staff login
             </Link>
           </div>
@@ -182,11 +177,11 @@ export default function HomePage() {
       </section>
 
       <footer className={styles.footer}>
-        <Link className={styles.footerBrand} href={MARKETING_LINKS.home}>
+        <Link href={MARKETING_LINKS.home} className={styles.footerBrand}>
           GymFlow
         </Link>
-        <p className={styles.footerTag}>Membership software for gyms</p>
-        <div className={styles.footerLinks}>
+        <p className={styles.footerMeta}>Membership software for gyms</p>
+        <div className={styles.footerNav}>
           <Link href={MARKETING_LINKS.login}>Staff login</Link>
           <Link href={MARKETING_LINKS.signup}>Start free</Link>
         </div>
