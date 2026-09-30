@@ -315,7 +315,7 @@
   padding:
     clamp(48px, 8vw, 80px)
     max(20px, env(safe-area-inset-right))
-    clamp(56px, 8vw, 88px)
+    clamp(40px, 6vw, 64px)
     max(20px, env(safe-area-inset-left));
   background:
     radial-gradient(ellipse 80% 50% at 50% 0%, rgba(220, 38, 38, 0.18), transparent 55%),
@@ -351,43 +351,69 @@
   padding-bottom: 12px;
 }
 
-/* ═══════════════ STATEMENT ═══════════════ */
+/* ═══════════════ STATEMENT — stays in the dark run ═══════════════ */
 
 .statement {
-  background: #f3f1ec;
+  position: relative;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 40%, rgba(220, 38, 38, 0.14), transparent 60%),
+    linear-gradient(180deg, #0b0c0e 0%, #070809 100%);
+  color: #f8fafc;
   padding:
-    clamp(72px, 12vw, 140px)
+    clamp(64px, 10vw, 120px)
     max(24px, env(safe-area-inset-right))
-    clamp(72px, 12vw, 140px)
+    clamp(80px, 12vw, 140px)
     max(24px, env(safe-area-inset-left));
+  /* Soft handoff into the light act below */
+  border-bottom: none;
+}
+
+.statement::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: min(28vh, 180px);
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(243, 241, 236, 0.08) 45%,
+    rgba(243, 241, 236, 0.35) 75%,
+    #f3f1ec 100%
+  );
 }
 
 .statementText {
+  position: relative;
+  z-index: 1;
   margin: 0 auto;
   max-width: 14ch;
   text-align: center;
   font-size: clamp(2.4rem, 8vw, 5.5rem);
   line-height: 0.98;
   letter-spacing: -0.05em;
-  color: #101214;
+  color: #fff;
   text-wrap: balance;
 }
 
 .statementText em {
   font-style: normal;
-  color: #dc2626;
+  color: #f87171;
 }
 
-/* ═══════════════ PILLARS ═══════════════ */
+/* ═══════════════ PILLARS — light act, ramped from dark ═══════════════ */
 
 .pillars {
-  background: #fff;
+  background:
+    linear-gradient(180deg, #f3f1ec 0%, #fff 32%);
   padding:
-    clamp(64px, 10vw, 110px)
+    clamp(48px, 7vw, 72px)
     max(24px, env(safe-area-inset-right))
     clamp(56px, 8vw, 96px)
     max(24px, env(safe-area-inset-left));
-  border-top: 1px solid rgba(16, 18, 20, 0.08);
+  border-top: none;
 }
 
 .pillarsHead {
