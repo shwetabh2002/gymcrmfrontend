@@ -158,15 +158,23 @@ export default function HomePage() {
             usually live in WhatsApp, Excel, and someone’s memory.
           </p>
         </motion.div>
-        <motion.div {...inView(0.08)}>
-          <FeatureMoments />
-        </motion.div>
+        <FeatureMoments />
       </section>
 
-      {/* 5 — India / reality */}
+      {/* 4 — India / reality */}
       <section className={styles.reality} aria-labelledby="reality-title">
         <div className={styles.realityMedia} aria-hidden>
-          <div className={styles.realityPhoto} />
+          <motion.div
+            className={styles.realityPhoto}
+            {...(reduce
+              ? {}
+              : {
+                  initial: { scale: 1.08 },
+                  whileInView: { scale: 1 },
+                  viewport: { once: true, amount: 0.35 },
+                  transition: { duration: 1.2, ease },
+                })}
+          />
           <div className={styles.realityScrim} />
         </div>
         <motion.div className={styles.realityCopy} {...inView(0)}>
@@ -178,23 +186,43 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* 6 — Close */}
+      {/* 5 — Close */}
       <section className={styles.finale} aria-labelledby="finale-title">
-        <motion.div className={styles.finaleInner} {...inView(0)}>
+        <motion.div
+          className={styles.finaleInner}
+          {...(reduce
+            ? {}
+            : {
+                initial: { opacity: 0, y: 32 },
+                whileInView: { opacity: 1, y: 0 },
+                viewport: { once: true, amount: 0.4 },
+                transition: { duration: 0.75, ease },
+              })}
+        >
           <h2 id="finale-title" className={styles.finaleTitle}>
             Your gym online before the evening rush.
           </h2>
           <p className={styles.finaleBody}>
             Start free. Invite staff when the floor is ready.
           </p>
-          <div className={styles.finaleActions}>
+          <motion.div
+            className={styles.finaleActions}
+            {...(reduce
+              ? {}
+              : {
+                  initial: { opacity: 0, y: 12 },
+                  whileInView: { opacity: 1, y: 0 },
+                  viewport: { once: true },
+                  transition: { duration: 0.55, delay: 0.15, ease },
+                })}
+          >
             <Link href={MARKETING_LINKS.signup} className={styles.btnSolidLg}>
               Create your gym
             </Link>
             <Link href={MARKETING_LINKS.login} className={styles.btnOnDark}>
               Staff login
             </Link>
-          </div>
+          </motion.div>
         </motion.div>
       </section>
 

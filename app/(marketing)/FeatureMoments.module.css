@@ -65,6 +65,13 @@
     0 0 0 1px rgba(0, 0, 0, 0.18);
   overflow: hidden;
   padding: 16px 16px 14px;
+  transition: box-shadow 0.3s ease;
+}
+
+.visual:hover .panel {
+  box-shadow:
+    0 32px 64px rgba(0, 0, 0, 0.48),
+    0 0 0 1px rgba(220, 38, 38, 0.2);
 }
 
 .panelHead {
