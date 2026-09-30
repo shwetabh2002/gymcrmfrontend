@@ -60,17 +60,8 @@ export default function HomePage() {
 
   return (
     <main className={styles.page}>
-      {/* 1 — Immersive brand moment */}
-      <section className={styles.hero} ref={heroRef}>
-        <div className={styles.heroStage} aria-hidden>
-          <motion.div
-            className={styles.heroPhoto}
-            style={reduce ? undefined : { y: photoY, scale: photoScale }}
-          />
-          <div className={styles.heroScrim} />
-          <div className={styles.heroGlow} />
-        </div>
-
+      {/* 1 — Split hero: brand stage + image (no text-on-photo fight) */}
+      <section className={styles.hero} ref={heroRef} aria-label="GymFlow">
         <motion.header className={styles.nav} {...enter(0)}>
           <Link href={MARKETING_LINKS.home} className={styles.navBrand}>
             GymFlow
@@ -85,35 +76,52 @@ export default function HomePage() {
           </nav>
         </motion.header>
 
-        <div className={styles.heroContent}>
-          <motion.p className={styles.heroKicker} {...enter(0.1)}>
-            Membership software for serious gyms
-          </motion.p>
-          <motion.h1 className={styles.heroBrand} {...enter(0.18)}>
-            GymFlow
-          </motion.h1>
-          <motion.p className={styles.heroPromise} {...enter(0.28)}>
-            Renewals collected before they slip. Payments, follow-ups, and staff
-            — one workspace for the whole floor.
-          </motion.p>
-          <motion.div className={styles.heroActions} {...enter(0.38)}>
-            <Link href={MARKETING_LINKS.signup} className={styles.btnSolidLg}>
-              Create your gym
-            </Link>
-            <Link href={MARKETING_LINKS.login} className={styles.btnQuiet}>
-              I already have an account
-            </Link>
-          </motion.div>
-        </div>
+        <div className={styles.heroGrid}>
+          <div className={styles.heroCopy}>
+            <motion.p className={styles.heroKicker} {...enter(0.08)}>
+              Membership software for serious gyms
+            </motion.p>
+            <motion.h1 className={styles.heroBrand} {...enter(0.15)}>
+              Gym<span className={styles.heroBrandAccent}>Flow</span>
+            </motion.h1>
+            <motion.p className={styles.heroPromise} {...enter(0.24)}>
+              Renewals collected before they slip. Payments, follow-ups, and
+              staff — one workspace for the whole floor.
+            </motion.p>
+            <motion.div className={styles.heroActions} {...enter(0.32)}>
+              <Link href={MARKETING_LINKS.signup} className={styles.btnSolidLg}>
+                Create your gym
+              </Link>
+              <Link href={MARKETING_LINKS.login} className={styles.btnQuietLight}>
+                I already have an account
+              </Link>
+            </motion.div>
+            <motion.a
+              href="#desk"
+              className={styles.scrollHint}
+              {...enter(0.42)}
+            >
+              <span className={styles.scrollLine} />
+              See the desk
+            </motion.a>
+          </div>
 
-        <motion.div className={styles.scrollHint} {...enter(0.55)} aria-hidden>
-          <span className={styles.scrollLine} />
-          See the desk
-        </motion.div>
+          <div className={styles.heroVisual} aria-hidden>
+            <motion.div
+              className={styles.heroPhoto}
+              style={reduce ? undefined : { y: photoY, scale: photoScale }}
+            />
+            <div className={styles.heroVisualShade} />
+          </div>
+        </div>
       </section>
 
       {/* 2 — Product money shot */}
-      <section className={styles.product} aria-labelledby="product-title">
+      <section
+        className={styles.product}
+        id="desk"
+        aria-labelledby="product-title"
+      >
         <motion.div className={styles.productIntro} {...inView(0)}>
           <p className={styles.sectionLabel}>The desk</p>
           <h2 id="product-title" className={styles.productTitle}>
