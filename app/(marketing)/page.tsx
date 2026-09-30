@@ -36,16 +36,21 @@ export default function HomePage() {
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const photoY = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
-  const photoScale = useTransform(scrollYProgress, [0, 1], [1.05, 1.16]);
+
+  // Soft drift — enough presence, no jarring jump into the desk
+  const photoY = useTransform(scrollYProgress, [0, 1], ["0%", "12%"]);
+  const photoScale = useTransform(scrollYProgress, [0, 1], [1.06, 1.12]);
+  const copyOpacity = useTransform(scrollYProgress, [0, 0.55], [1, 0]);
+  const copyY = useTransform(scrollYProgress, [0, 0.55], ["0%", "-8%"]);
+  const glowOpacity = useTransform(scrollYProgress, [0, 0.7], [0.9, 0.35]);
 
   const enter = (delay = 0) =>
     reduce
       ? undefined
       : {
-          initial: { opacity: 0, y: 26 },
+          initial: { opacity: 0, y: 28 },
           animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.85, delay, ease },
+          transition: { duration: 0.9, delay, ease },
         };
 
   const inView = (delay = 0) =>
@@ -60,8 +65,21 @@ export default function HomePage() {
 
   return (
     <main className={styles.page}>
-      {/* 1 — Split hero: brand stage + image (no text-on-photo fight) */}
+      {/* 1 — Dark cinematic hero → bleeds into desk */}
       <section className={styles.hero} ref={heroRef} aria-label="GymFlow">
+        <div className={styles.heroMedia} aria-hidden>
+          <motion.div
+            className={styles.heroPhoto}
+            style={reduce ? undefined : { y: photoY, scale: photoScale }}
+          />
+          <div className={styles.heroGrade} />
+          <motion.div
+            className={styles.heroGlow}
+            style={reduce ? undefined : { opacity: glowOpacity }}
+          />
+          <div className={styles.heroFade} />
+        </div>
+
         <motion.header className={styles.nav} {...enter(0)}>
           <Link href={MARKETING_LINKS.home} className={styles.navBrand}>
             GymFlow
@@ -76,47 +94,42 @@ export default function HomePage() {
           </nav>
         </motion.header>
 
-        <div className={styles.heroGrid}>
-          <div className={styles.heroCopy}>
-            <motion.p className={styles.heroKicker} {...enter(0.08)}>
-              Membership software for serious gyms
-            </motion.p>
-            <motion.h1 className={styles.heroBrand} {...enter(0.15)}>
-              Gym<span className={styles.heroBrandAccent}>Flow</span>
-            </motion.h1>
-            <motion.p className={styles.heroPromise} {...enter(0.24)}>
-              Renewals collected before they slip. Payments, follow-ups, and
-              staff — one workspace for the whole floor.
-            </motion.p>
-            <motion.div className={styles.heroActions} {...enter(0.32)}>
-              <Link href={MARKETING_LINKS.signup} className={styles.btnSolidLg}>
-                Create your gym
-              </Link>
-              <Link href={MARKETING_LINKS.login} className={styles.btnQuietLight}>
-                I already have an account
-              </Link>
-            </motion.div>
-            <motion.a
-              href="#desk"
-              className={styles.scrollHint}
-              {...enter(0.42)}
-            >
-              <span className={styles.scrollLine} />
-              See the desk
-            </motion.a>
-          </div>
-
-          <div className={styles.heroVisual} aria-hidden>
-            <motion.div
-              className={styles.heroPhoto}
-              style={reduce ? undefined : { y: photoY, scale: photoScale }}
-            />
-            <div className={styles.heroVisualShade} />
-          </div>
-        </div>
+        <motion.div
+          className={styles.heroContent}
+          style={
+            reduce ? undefined : { opacity: copyOpacity, y: copyY }
+          }
+        >
+          <motion.p className={styles.heroKicker} {...enter(0.08)}>
+            Membership software for serious gyms
+          </motion.p>
+          <motion.h1 className={styles.heroBrand} {...enter(0.14)}>
+            Gym<span className={styles.heroBrandAccent}>Flow</span>
+          </motion.h1>
+          <motion.p className={styles.heroPromise} {...enter(0.24)}>
+            Renewals collected before they slip. Payments, follow-ups, and
+            staff — one workspace for the whole floor.
+          </motion.p>
+          <motion.div className={styles.heroActions} {...enter(0.32)}>
+            <Link href={MARKETING_LINKS.signup} className={styles.btnSolidLg}>
+              Create your gym
+            </Link>
+            <Link href={MARKETING_LINKS.login} className={styles.btnQuiet}>
+              I already have an account
+            </Link>
+          </motion.div>
+          <motion.a
+            href="#desk"
+            className={styles.scrollHint}
+            {...enter(0.42)}
+          >
+            <span className={styles.scrollPulse} />
+            See the desk
+          </motion.a>
+        </motion.div>
       </section>
 
-      {/* 2 — Product money shot */}
+      {/* 2 — Product money shot (same dark + red language) */}
       <section
         className={styles.product}
         id="desk"
