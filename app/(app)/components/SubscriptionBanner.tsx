@@ -8,9 +8,8 @@ import { useAuth } from "@/lib/context/AuthContext";
 /**
  * Tells a gym where it stands with us, on every screen.
  *
- * Silent while the trial has room and nothing is wrong — a banner that is always
- * there stops being read. It appears in the last days of a trial, when a payment
- * has failed, and once the account has gone read-only.
+ * Shown for the whole trial (days left + pay CTA), when payment fails, and
+ * once the account is read-only. Silent only while the subscription is healthy ACTIVE.
  */
 export default function SubscriptionBanner() {
   const { user, isAuthenticated } = useAuth();
@@ -112,19 +111,26 @@ function resolveTone(data: {
     };
   }
 
-  if (data.status === "TRIALING" && (data.trialDaysLeft ?? 99) <= 5) {
+  if (data.status === "TRIALING") {
     const days = data.trialDaysLeft ?? 0;
+    const urgent = days <= 5;
     return {
       title:
         days <= 0
           ? "Your trial ends today"
-          : `${days} day${days === 1 ? "" : "s"} left in your trial`,
-      detail: `You are on ${data.planName}. Add a payment method to keep going without a break.`,
-      cta: "Set up billing",
-      background: "#eef4ff",
-      color: "#1b4fd8",
-      border: "#cddcfb",
+          : `Free trial · ${days} day${days === 1 ? "" : "s"} left`,
+      detail: urgent
+        ? `You are on ${data.planName}. Set up billing now so nothing stops when the trial ends.`
+        : `You are on ${data.planName}. You can pick a plan and pay anytime before the trial ends.`,
+      cta: "View plan & pay",
+      background: urgent ? "#fff4e0" : "#eef4ff",
+      color: urgent ? "#b26a00" : "#1b4fd8",
+      border: urgent ? "#f2d9a8" : "#cddcfb",
     };
+  }
+
+  if (data.status === "ACTIVE") {
+    return null;
   }
 
   return null;

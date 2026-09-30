@@ -10,11 +10,15 @@ export type BillingSnapshot = {
   currency: string;
   trialEndsAt: string | null;
   trialDaysLeft: number | null;
+  currentPeriodStart?: string | null;
   currentPeriodEnd: string | null;
   branches: number;
   pricePerBranch: number;
   /** What the next charge will be at today's branch count. */
   nextAmount: number;
+  lastAmount?: number | null;
+  lastChargeAt?: string | null;
+  billingMode?: "ONE_TIME" | "AUTOPAY" | null;
   features: string[];
   maxBranches: number | null;
   maxMembers: number | null;
@@ -85,6 +89,7 @@ export type PlatformInvoice = {
   planCode: string;
   branches: number;
   subtotal: number;
+  taxPercentage?: number;
   taxAmount: number;
   totalAmount: number;
   currency: string;
@@ -93,16 +98,42 @@ export type PlatformInvoice = {
   periodEnd: string;
   paidAt: string | null;
   failureReason: string | null;
+  razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
+  paymentMethod?: string | null;
+  paymentInstrument?: string | null;
+  payMode?: string | null;
+  providerStatus?: string | null;
+  billTo?: {
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    city?: string | null;
+  };
 };
 
 export type MandateStart = {
-  shareUrl: string;
-  qrData: string;
+  /** Hosted Razorpay link — used for Autopay mandate setup. */
+  shareUrl: string | null;
+  qrData: string | null;
   amount: number;
   currency: string;
   branches: number;
   planCode: string;
   expiresAt: string;
+  mode?: "one_time" | "autopay";
+  /** One-time pay uses Checkout.js modal instead of a redirect. */
+  checkout?: boolean;
+  orderId?: string;
+  keyId?: string;
+  amountPaise?: number;
+  chargeId?: string;
+  description?: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
 };
 
 export const subscriptionApi = {
@@ -120,12 +151,23 @@ export const subscriptionApi = {
       { planCode, interval },
     ),
 
-  /** Returns the UPI Autopay link the gym owner approves to start paying. */
-  startMandate: () =>
-    requestService.post<MandateStart, Record<string, never>>(
+  /** one_time = Checkout modal; autopay = hosted UPI mandate link */
+  startMandate: (mode: "one_time" | "autopay" = "one_time") =>
+    requestService.post<MandateStart, { mode: "one_time" | "autopay" }>(
       API_CONFIG.SUBSCRIPTION.MANDATE,
-      {},
+      { mode },
     ),
+
+  verifyCheckout: (payload: {
+    orderId: string;
+    paymentId: string;
+    signature: string;
+    chargeId?: string;
+  }) =>
+    requestService.post<
+      { ok: boolean; handled?: string },
+      typeof payload
+    >(API_CONFIG.SUBSCRIPTION.VERIFY_CHECKOUT, payload),
 
   cancel: (reason?: string) =>
     requestService.post<BillingSnapshot, { reason?: string }>(
@@ -231,6 +273,11 @@ export const platformApi = {
         ...(status && status !== "ALL" ? { status } : {}),
         ...(q?.trim() ? { q: q.trim() } : {}),
       },
+    ),
+
+  companyInvoices: (companyId: string) =>
+    requestService.get<PlatformInvoice[]>(
+      API_CONFIG.PLATFORM.COMPANY_INVOICES(companyId),
     ),
 
   extendTrial: (

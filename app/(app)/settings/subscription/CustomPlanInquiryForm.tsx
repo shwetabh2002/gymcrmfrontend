@@ -6,7 +6,7 @@ import {
   subscriptionApi,
   type CustomInquiryPayload,
 } from "@/services/subscription/subscription.api";
-import styles from "../profile/Profile.module.css";
+import styles from "../../profile/Profile.module.css";
 
 const NEED_OPTIONS = [
   { id: "multi_branch", label: "Multiple branches" },

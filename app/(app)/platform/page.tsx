@@ -8,10 +8,12 @@ import {
   platformApi,
   type PlatformInquiry,
   type PlatformCompanyRow,
+  type PlatformInvoice,
 } from "@/services/subscription/subscription.api";
 import { companiesApi } from "@/services/companies/companies.api";
 import { useAuth } from "@/lib/context/AuthContext";
 import { formatMoney } from "@/config/countries";
+import { downloadPaidPlatformInvoice } from "@/lib/downloadPlatformInvoice";
 import { EASE_OUT_EXPO } from "@/config/motion";
 import styles from "../profile/Profile.module.css";
 
@@ -46,6 +48,9 @@ export default function PlatformPage() {
   const [searchQ, setSearchQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [rowBusy, setRowBusy] = useState<string | null>(null);
+  const [invoiceGym, setInvoiceGym] = useState<PlatformCompanyRow | null>(null);
+  const [gymInvoices, setGymInvoices] = useState<PlatformInvoice[] | null>(null);
+  const [invoicesBusy, setInvoicesBusy] = useState(false);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
@@ -115,6 +120,21 @@ export default function PlatformPage() {
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Could not open gym");
       setRowBusy(null);
+    }
+  };
+
+  const openInvoices = async (row: PlatformCompanyRow) => {
+    setInvoiceGym(row);
+    setInvoicesBusy(true);
+    setGymInvoices(null);
+    try {
+      const rows = await platformApi.companyInvoices(row.companyId);
+      setGymInvoices(rows);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Could not load invoices");
+      setInvoiceGym(null);
+    } finally {
+      setInvoicesBusy(false);
     }
   };
 
@@ -544,6 +564,15 @@ export default function PlatformPage() {
                         </button>
                         <button
                           type="button"
+                          className={styles.btnSecondary}
+                          disabled={rowBusy === c.companyId}
+                          onClick={() => openInvoices(c)}
+                          style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                        >
+                          Invoices
+                        </button>
+                        <button
+                          type="button"
                           className={styles.btnPrimary}
                           disabled={rowBusy === c.companyId}
                           onClick={() => openGym(c)}
@@ -560,6 +589,118 @@ export default function PlatformPage() {
           )}
         </div>
       </section>
+
+      {invoiceGym ? (
+        <section className={styles.card} style={{ marginTop: 20 }}>
+          <div className={styles.cardHeader}>
+            <h2 className={styles.cardTitle}>
+              <span className={styles.cardTitleBar} />
+              Invoices · {invoiceGym.companyName}
+            </h2>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={() => {
+                setInvoiceGym(null);
+                setGymInvoices(null);
+              }}
+            >
+              Close
+            </button>
+          </div>
+          <div style={{ padding: "12px 22px 22px", overflowX: "auto" }}>
+            {invoicesBusy ? (
+              <p style={{ color: "var(--text-2)" }}>Loading invoices…</p>
+            ) : !gymInvoices?.length ? (
+              <p style={{ color: "var(--text-2)", margin: 0 }}>
+                No platform charges for this gym yet.
+              </p>
+            ) : (
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", color: "var(--text-2)" }}>
+                    <th style={{ padding: "6px 0", fontSize: "0.75rem" }}>
+                      Invoice
+                    </th>
+                    <th style={{ fontSize: "0.75rem" }}>Period</th>
+                    <th style={{ fontSize: "0.75rem" }}>Payment</th>
+                    <th style={{ fontSize: "0.75rem" }}>Status</th>
+                    <th style={{ fontSize: "0.75rem", textAlign: "right" }}>
+                      Amount
+                    </th>
+                    <th style={{ fontSize: "0.75rem", textAlign: "right" }}>
+                      PDF
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gymInvoices.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      style={{ borderTop: "1px solid var(--border)" }}
+                    >
+                      <td
+                        style={{
+                          padding: "8px 0",
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        {inv.invoiceNumber}
+                      </td>
+                      <td style={{ fontSize: "0.85rem" }}>
+                        {new Date(inv.periodStart).toLocaleDateString()} –{" "}
+                        {new Date(inv.periodEnd).toLocaleDateString()}
+                      </td>
+                      <td
+                        style={{
+                          fontSize: "0.8rem",
+                          fontFamily: "var(--mono)",
+                        }}
+                      >
+                        {inv.razorpayPaymentId || "—"}
+                      </td>
+                      <td style={{ fontSize: "0.85rem" }}>{inv.status}</td>
+                      <td style={{ textAlign: "right", fontWeight: 600 }}>
+                        {money(inv.totalAmount)}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        {inv.status === "PAID" ? (
+                          <button
+                            type="button"
+                            className={styles.btnSecondary}
+                            style={{
+                              padding: "4px 10px",
+                              fontSize: "0.8rem",
+                            }}
+                            onClick={() => {
+                              try {
+                                downloadPaidPlatformInvoice(inv, {
+                                  name: invoiceGym.companyName,
+                                  email: invoiceGym.adminEmail,
+                                  phone: invoiceGym.phone,
+                                  city: invoiceGym.city,
+                                });
+                                toast.success("Invoice downloaded");
+                              } catch {
+                                toast.error("Could not download invoice");
+                              }
+                            }}
+                          >
+                            Download
+                          </button>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       <section className={styles.card} style={{ marginTop: 20 }}>
         <div className={styles.cardHeader}>

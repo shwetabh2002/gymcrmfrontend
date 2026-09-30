@@ -14,6 +14,8 @@ import { canEditGymSettings } from "@/lib/rbac";
 import { formatMoney } from "@/config/countries";
 import { useBranding } from "@/lib/context/BrandingContext";
 import PaymentQr from "@/components/PaymentQr";
+import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
+import { downloadPaidPlatformInvoice } from "@/lib/downloadPlatformInvoice";
 import { EASE_OUT_EXPO } from "@/config/motion";
 import styles from "../../profile/Profile.module.css";
 import CustomPlanInquiryForm from "./CustomPlanInquiryForm";
@@ -50,6 +52,7 @@ export default function SubscriptionPage() {
   const [busy, setBusy] = useState(false);
   const [mandate, setMandate] = useState<MandateStart | null>(null);
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [pickPayMode, setPickPayMode] = useState(false);
 
   const { data: sub, isLoading } = useQuery({
     queryKey: ["subscription"],
@@ -67,9 +70,21 @@ export default function SubscriptionPage() {
   const money = (amount: number) =>
     formatMoney(amount, branding.country?.code ?? "IN");
 
-  const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["subscription"] });
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+    await queryClient.refetchQueries({ queryKey: ["subscription"] });
   };
+
+  const isPaidActive = sub?.status === "ACTIVE";
+  const needsBillingSetup =
+    !!sub &&
+    (!sub.canWrite ||
+      sub.status === "TRIALING" ||
+      sub.status === "PAST_DUE" ||
+      sub.status === "READ_ONLY");
+
+  const formatDate = (value: string | null | undefined) =>
+    value ? new Date(value).toLocaleDateString() : "—";
 
   const choosePlan = async (planCode: string) => {
     if (!canEdit) return;
@@ -91,11 +106,73 @@ export default function SubscriptionPage() {
     }
   };
 
-  const startBilling = async () => {
+  const askPayMode = () => {
     if (!canEdit) return;
+    setPickPayMode(true);
+  };
+
+  const startBilling = async (mode: "one_time" | "autopay") => {
+    if (!canEdit) return;
+    setPickPayMode(false);
     setBusy(true);
     try {
-      setMandate(await subscriptionApi.startMandate());
+      const result = await subscriptionApi.startMandate(mode);
+
+      // One-time: Razorpay Checkout modal on this page (Orders API + checkout.js).
+      if (
+        mode === "one_time" &&
+        result.checkout &&
+        result.orderId &&
+        result.keyId &&
+        result.amountPaise
+      ) {
+        setMandate(null);
+        try {
+          const paid = await openRazorpayCheckout({
+            keyId: result.keyId,
+            orderId: result.orderId,
+            amountPaise: result.amountPaise,
+            currency: result.currency || "INR",
+            name: "GymFlow",
+            description: result.description,
+            prefill: result.prefill,
+            notes: {
+              chargeId: result.chargeId || "",
+              planCode: result.planCode,
+            },
+          });
+          await subscriptionApi.verifyCheckout({
+            orderId: paid.razorpay_order_id,
+            paymentId: paid.razorpay_payment_id,
+            signature: paid.razorpay_signature,
+            chargeId: result.chargeId,
+          });
+          await refresh();
+          toast.success("Payment received — your plan is active");
+        } catch (payErr: any) {
+          if (payErr?.message === "Payment cancelled") {
+            toast("Payment cancelled");
+          } else {
+            toast.error(
+              payErr?.response?.data?.message ||
+                payErr?.message ||
+                "Payment failed",
+            );
+          }
+        }
+        return;
+      }
+
+      // Autopay still uses Razorpay’s hosted mandate / auth link.
+      setMandate(result);
+      if (result.shareUrl) {
+        window.open(result.shareUrl, "_blank", "noopener,noreferrer");
+      }
+      toast.success(
+        mode === "autopay"
+          ? "Autopay page opened — approve the mandate"
+          : "Payment page opened — pay this period",
+      );
     } catch (e: any) {
       toast.error(e?.response?.data?.message || "Could not start billing");
     } finally {
@@ -174,20 +251,24 @@ export default function SubscriptionPage() {
           </div>
           <div>
             <label className={styles.formLabel}>
-              {sub.status === "TRIALING" ? "Trial ends" : "Next renewal"}
+              {sub.status === "TRIALING"
+                ? "Trial ends"
+                : sub.status === "ACTIVE"
+                  ? "Active until"
+                  : "Next renewal"}
             </label>
             <p style={{ color: "var(--text-1)", margin: 0 }}>
               {sub.status === "TRIALING"
                 ? sub.trialEndsAt
-                  ? `${new Date(sub.trialEndsAt).toLocaleDateString()} · ${sub.trialDaysLeft} day${sub.trialDaysLeft === 1 ? "" : "s"} left`
+                  ? `${formatDate(sub.trialEndsAt)} · ${sub.trialDaysLeft} day${sub.trialDaysLeft === 1 ? "" : "s"} left`
                   : "—"
-                : sub.currentPeriodEnd
-                  ? new Date(sub.currentPeriodEnd).toLocaleDateString()
-                  : "—"}
+                : formatDate(sub.currentPeriodEnd)}
             </p>
           </div>
           <div>
-            <label className={styles.formLabel}>Next charge</label>
+            <label className={styles.formLabel}>
+              {sub.status === "ACTIVE" ? "Next charge" : "Amount due"}
+            </label>
             <p style={{ color: "var(--text-1)", margin: 0 }}>
               {money(sub.nextAmount)}{" "}
               <span style={{ color: "var(--text-2)", fontSize: "0.85rem" }}>
@@ -195,6 +276,27 @@ export default function SubscriptionPage() {
               </span>
             </p>
           </div>
+          <div>
+            <label className={styles.formLabel}>Billing</label>
+            <p style={{ color: "var(--text-1)", margin: 0 }}>
+              {sub.mandateApproved || sub.billingMode === "AUTOPAY"
+                ? "Autopay on"
+                : sub.status === "ACTIVE" || sub.billingMode === "ONE_TIME"
+                  ? "One-time (pay each period)"
+                  : "Not set up yet"}
+            </p>
+          </div>
+          {sub.status === "ACTIVE" && sub.lastAmount != null ? (
+            <div>
+              <label className={styles.formLabel}>Last payment</label>
+              <p style={{ color: "var(--text-1)", margin: 0 }}>
+                {money(sub.lastAmount)}
+                {sub.lastChargeAt
+                  ? ` · ${formatDate(sub.lastChargeAt)}`
+                  : ""}
+              </p>
+            </div>
+          ) : null}
 
           {sub.lastFailureReason ? (
             <p style={{ gridColumn: "1 / -1", color: "#b26a00", margin: 0 }}>
@@ -210,11 +312,32 @@ export default function SubscriptionPage() {
               restore access.
             </p>
           ) : null}
+
+          {isPaidActive ? (
+            <p
+              style={{
+                gridColumn: "1 / -1",
+                margin: 0,
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "#eef8f1",
+                color: "#1b7f43",
+                border: "1px solid #b7e0c2",
+                fontSize: "0.92rem",
+              }}
+            >
+              <strong>{sub.planName}</strong> is active
+              {sub.currentPeriodEnd
+                ? ` through ${formatDate(sub.currentPeriodEnd)}`
+                : ""}
+              . You can keep using the CRM; renew or switch plans anytime.
+            </p>
+          ) : null}
         </div>
 
-        {/* Billing setup — the same UPI Autopay flow gyms use on their members. */}
+        {/* Billing actions */}
         {canEdit ? (
-          <div className={styles.formActions} style={{ padding: "0 22px 22px" }}>
+          <div className={styles.formActions} style={{ padding: "0 22px 22px", gap: 10 }}>
             {!sub.canWrite ? (
               sub.mandateApproved ? (
                 <button
@@ -230,60 +353,171 @@ export default function SubscriptionPage() {
                   type="button"
                   className={styles.btnPrimary}
                   disabled={busy}
-                  onClick={startBilling}
+                  onClick={askPayMode}
                 >
                   Set up billing
                 </button>
               )
-            ) : !sub.mandateApproved ? (
+            ) : needsBillingSetup ? (
               <button
                 type="button"
                 className={styles.btnPrimary}
                 disabled={busy}
-                onClick={startBilling}
+                onClick={askPayMode}
               >
-                Set up billing
-              </button>
-            ) : sub.cancelledAt ? (
-              <button
-                type="button"
-                className={styles.btnPrimary}
-                disabled={busy}
-                onClick={resume}
-              >
-                Resume subscription
+                {sub.status === "TRIALING" ? "Pay for this period" : "Set up billing"}
               </button>
             ) : (
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                disabled={busy}
-                onClick={cancel}
-              >
-                Cancel subscription
-              </button>
+              <>
+                {!sub.mandateApproved ? (
+                  <button
+                    type="button"
+                    className={styles.btnPrimary}
+                    disabled={busy}
+                    onClick={() => startBilling("autopay")}
+                  >
+                    Enable Autopay
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  disabled={busy}
+                  onClick={askPayMode}
+                >
+                  Pay next period
+                </button>
+                {/* Cancel only for Autopay — one-time is already paid for the period. */}
+                {sub.mandateApproved || sub.billingMode === "AUTOPAY" ? (
+                  sub.cancelledAt ? (
+                    <button
+                      type="button"
+                      className={styles.btnPrimary}
+                      disabled={busy}
+                      onClick={resume}
+                    >
+                      Resume subscription
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.btnSecondary}
+                      disabled={busy}
+                      onClick={cancel}
+                    >
+                      Cancel subscription
+                    </button>
+                  )
+                ) : null}
+              </>
             )}
           </div>
         ) : null}
 
-        {mandate ? (
+        {pickPayMode ? (
+          <div
+            style={{
+              padding: "0 22px 22px",
+              display: "grid",
+              gap: 12,
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            }}
+          >
+            <p
+              style={{
+                gridColumn: "1 / -1",
+                margin: 0,
+                color: "var(--text-2)",
+                fontSize: "0.95rem",
+              }}
+            >
+              How do you want to pay for this period?
+            </p>
+            <button
+              type="button"
+              className={styles.btnPrimary}
+              disabled={busy}
+              onClick={() => startBilling("one_time")}
+              style={{ width: "100%", minHeight: 72 }}
+            >
+              One-time pay
+              <span
+                style={{
+                  display: "block",
+                  fontWeight: 400,
+                  fontSize: "0.8rem",
+                  opacity: 0.9,
+                  marginTop: 4,
+                }}
+              >
+                Pay this cycle once (UPI / card)
+              </span>
+            </button>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              disabled={busy}
+              onClick={() => startBilling("autopay")}
+              style={{ width: "100%", minHeight: 72 }}
+            >
+              Autopay (UPI mandate)
+              <span
+                style={{
+                  display: "block",
+                  fontWeight: 400,
+                  fontSize: "0.8rem",
+                  opacity: 0.85,
+                  marginTop: 4,
+                }}
+              >
+                Auto-debit every period after you approve
+              </span>
+            </button>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              disabled={busy}
+              onClick={() => setPickPayMode(false)}
+              style={{ gridColumn: "1 / -1", width: "fit-content" }}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : null}
+
+        {mandate?.shareUrl ? (
           <div style={{ padding: "0 22px 22px" }}>
             <p style={{ color: "var(--text-1)" }}>
-              Approve the UPI Autopay mandate to start your subscription.{" "}
+              {mandate.mode === "autopay"
+                ? "Approve the UPI Autopay mandate. "
+                : "Complete payment on the Razorpay page (also opened in a new tab). "}
               {money(mandate.amount)} will be collected now for{" "}
               {mandate.branches} branch{mandate.branches === 1 ? "" : "es"}.
             </p>
-            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-              <div
-                style={{
-                  padding: 6,
-                  background: "#fff",
-                  borderRadius: 8,
-                  border: "1px solid var(--border)",
-                }}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+              <a
+                href={mandate.shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={styles.btnPrimary}
+                style={{ textDecoration: "none" }}
               >
-                <PaymentQr value={mandate.qrData} size={180} />
-              </div>
+                Open payment page
+              </a>
+            </div>
+            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+              {mandate.qrData ? (
+                <div
+                  style={{
+                    padding: 6,
+                    background: "#fff",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <PaymentQr value={mandate.qrData} size={180} />
+                </div>
+              ) : null}
               <div style={{ flex: "1 1 260px" }}>
                 <label className={styles.formLabel}>Payment link</label>
                 <input
@@ -298,7 +532,7 @@ export default function SubscriptionPage() {
                   style={{ marginTop: 8 }}
                   onClick={() => {
                     navigator.clipboard
-                      .writeText(mandate.shareUrl)
+                      .writeText(mandate.shareUrl || "")
                       .then(() => toast.success("Link copied"))
                       .catch(() => toast.error("Copy failed"));
                   }}
@@ -425,6 +659,28 @@ export default function SubscriptionPage() {
                   >
                     Talk to us
                   </button>
+                ) : current && isPaidActive ? (
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    disabled
+                    style={{ width: "100%" }}
+                  >
+                    Current plan
+                    {sub.currentPeriodEnd
+                      ? ` · until ${formatDate(sub.currentPeriodEnd)}`
+                      : ""}
+                  </button>
+                ) : current && needsBillingSetup ? (
+                  <button
+                    type="button"
+                    className={styles.btnPrimary}
+                    disabled={busy || !canEdit}
+                    onClick={askPayMode}
+                    style={{ width: "100%" }}
+                  >
+                    Pay for {plan.name}
+                  </button>
                 ) : (
                   <button
                     type="button"
@@ -482,9 +738,13 @@ export default function SubscriptionPage() {
                     Invoice
                   </th>
                   <th style={{ fontSize: "0.75rem" }}>Period</th>
+                  <th style={{ fontSize: "0.75rem" }}>Payment</th>
                   <th style={{ fontSize: "0.75rem" }}>Status</th>
                   <th style={{ fontSize: "0.75rem", textAlign: "right" }}>
                     Amount
+                  </th>
+                  <th style={{ fontSize: "0.75rem", textAlign: "right" }}>
+                    Invoice
                   </th>
                 </tr>
               </thead>
@@ -507,6 +767,28 @@ export default function SubscriptionPage() {
                       {new Date(inv.periodStart).toLocaleDateString()} –{" "}
                       {new Date(inv.periodEnd).toLocaleDateString()}
                     </td>
+                    <td style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>
+                      {inv.razorpayPaymentId ? (
+                        <>
+                          <div
+                            style={{
+                              fontFamily: "var(--mono)",
+                              color: "var(--text-1)",
+                            }}
+                            title={inv.razorpayOrderId || undefined}
+                          >
+                            {inv.razorpayPaymentId}
+                          </div>
+                          <div>
+                            {[inv.paymentMethod, inv.paymentInstrument, inv.payMode]
+                              .filter(Boolean)
+                              .join(" · ") || "—"}
+                          </div>
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td style={{ fontSize: "0.85rem" }}>
                       {inv.status}
                       {inv.failureReason ? ` · ${inv.failureReason}` : ""}
@@ -515,10 +797,34 @@ export default function SubscriptionPage() {
                       style={{
                         textAlign: "right",
                         fontWeight: 600,
-                        fontSize: "0.85rem",
                       }}
                     >
                       {money(inv.totalAmount)}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      {inv.status === "PAID" ? (
+                        <button
+                          type="button"
+                          className={styles.btnSecondary}
+                          style={{ padding: "4px 10px", fontSize: "0.8rem" }}
+                          onClick={() => {
+                            try {
+                              downloadPaidPlatformInvoice(inv, {
+                                name: branding.gymName || sub.planName || "Gym",
+                              });
+                              toast.success("Invoice downloaded");
+                            } catch {
+                              toast.error("Could not download invoice");
+                            }
+                          }}
+                        >
+                          Download
+                        </button>
+                      ) : (
+                        <span style={{ color: "var(--text-2)", fontSize: "0.8rem" }}>
+                          —
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

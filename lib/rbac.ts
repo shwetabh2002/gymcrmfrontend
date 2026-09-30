@@ -496,6 +496,15 @@ export function canAccessRoute(
     return isStaffRole(role);
   }
 
+  if (href === "/settings/subscription" || href.startsWith("/settings/subscription")) {
+    return (
+      hasPermission(effective, "settings_view") ||
+      hasPermission(effective, "settings_update") ||
+      role === "COMPANY_ADMIN" ||
+      role === "SUPER_ADMIN"
+    );
+  }
+
   if (href === "/settings" || href.startsWith("/settings")) {
     return (
       hasPermission(effective, "settings_view") ||
@@ -635,6 +644,7 @@ export function navItemsForRole(
     { href: "/plans", label: "Plans", icon: "◇" },
     { href: "/invoices", label: "Invoices", icon: "▣" },
     { href: "/payment-settings", label: "Payment settings", icon: "₹" },
+    { href: "/settings/subscription", label: "Plan & billing", icon: "◈" },
     { href: "/settings", label: "Gym settings", icon: "⚙" },
     { href: "/activity-logs", label: "Activity log", icon: "☰" },
     { href: "/profile", label: "Profile", icon: "◉" },

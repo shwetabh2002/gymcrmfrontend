@@ -120,6 +120,7 @@ export const API_CONFIG = {
     PLAN: "/subscription/plan",
     CUSTOM_INQUIRY: "/subscription/custom-inquiry",
     MANDATE: "/subscription/mandate",
+    VERIFY_CHECKOUT: "/subscription/verify-checkout",
     CANCEL: "/subscription/cancel",
     RESUME: "/subscription/resume",
   },
@@ -127,6 +128,8 @@ export const API_CONFIG = {
   PLATFORM: {
     OVERVIEW: "/platform/overview",
     COMPANIES: "/platform/companies",
+    COMPANY_INVOICES: (companyId: string) =>
+      `/platform/companies/${companyId}/invoices`,
     EXTEND_TRIAL: (companyId: string) =>
       `/platform/companies/${companyId}/extend-trial`,
     ACTIVITY: "/platform/activity",

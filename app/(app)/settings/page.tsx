@@ -40,7 +40,17 @@ export default function GymSettingsPage() {
               : "Branding and invoice PDFs for the selected gym."}
           </p>
           <p className={styles.pageDesc} style={{ marginTop: 8 }}>
-            Razorpay, Autopay, WhatsApp and email live under{" "}
+            Your GymFlow plan, trial and payment live under{" "}
+            <Link
+              href="/settings/subscription"
+              style={{
+                color: "var(--red, #c0392b)",
+                textDecoration: "underline",
+              }}
+            >
+              Plan &amp; billing
+            </Link>
+            . Razorpay, Autopay, WhatsApp and email live under{" "}
             <Link
               href="/payment-settings"
               style={{

@@ -16,7 +16,9 @@ const PAGE_TITLES: Record<string, string> = {
   "/payments":      "Memberships & Payments",
   "/invoices":      "Invoices",
   "/payment-settings": "Payment settings",
+  "/settings/subscription": "Plan & billing",
   "/settings":      "Gym settings",
+  "/activity-logs": "Activity log",
   "/profile":       "Profile",
 };
 

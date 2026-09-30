@@ -57,8 +57,10 @@ export default function Sidebar() {
       <nav className={styles.nav}>
         {NAV.map(({ href, label, icon }) => {
           const isActive =
-            pathname === href ||
-            (href !== "/dashboard" && pathname.startsWith(href));
+            href === "/settings"
+              ? pathname === "/settings"
+              : pathname === href ||
+                (href !== "/dashboard" && pathname.startsWith(href));
           return (
             <Link
               key={href}
