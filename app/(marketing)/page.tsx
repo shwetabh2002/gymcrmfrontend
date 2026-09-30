@@ -160,22 +160,12 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* 3 — Emotional statement */}
-      <section className={styles.statement} aria-labelledby="statement-title">
-        <motion.h2
-          id="statement-title"
-          className={styles.statementText}
-          {...inView(0)}
-        >
-          Stop losing members
-          <br />
-          <em>in the noise.</em>
-        </motion.h2>
-      </section>
-
-      {/* 4 — Pillars with weight */}
-      <section className={styles.pillars} aria-labelledby="pillars-title">
-        <motion.div className={styles.pillarsHead} {...inView(0)}>
+            {/* 3 — Light ops band (statement + pillars = one act) */}
+      <section className={styles.ops} aria-labelledby="pillars-title">
+        <motion.p className={styles.opsManifesto} {...inView(0)}>
+          Stop losing members <em>in the noise.</em>
+        </motion.p>
+        <motion.div className={styles.pillarsHead} {...inView(0.06)}>
           <p className={styles.sectionLabel}>Everyday ops</p>
           <h2 id="pillars-title" className={styles.pillarsTitle}>
             Three jobs your team already does — finally in one place.
