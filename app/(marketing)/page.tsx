@@ -11,21 +11,7 @@ import { useRef } from "react";
 import styles from "./page.module.css";
 import { MARKETING_LINKS } from "@/lib/marketing-links";
 import ProductPreview from "./ProductPreview";
-
-const PILLARS = [
-  {
-    title: "Renewals don’t ghost you",
-    body: "Expiry queue shows who is due, who promised, and who vanished — so your desk calls the right person first.",
-  },
-  {
-    title: "Money with a name on it",
-    body: "Cash, UPI, card. Every payment linked to a member and the staffer who took it. Dues stay visible until cleared.",
-  },
-  {
-    title: "Staff that can’t break the books",
-    body: "Trainers sell. Desk collects. Owners see all. Permissions keep curiosity out of your ledger.",
-  },
-] as const;
+import FeatureMoments from "./FeatureMoments";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -160,37 +146,21 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-                  {/* 3 — Ops (same dark language as desk — stacked features) */}
+                        {/* 3 — Feature moments with live-looking UI fragments */}
       <section className={styles.ops} aria-labelledby="ops-title">
         <motion.div className={styles.opsIntro} {...inView(0)}>
           <p className={styles.sectionLabelOnDark}>Everyday ops</p>
           <h2 id="ops-title" className={styles.opsTitle}>
-            Stop losing members
-            <br />
-            <em>in the noise.</em>
+            The jobs that keep the floor honest.
           </h2>
           <p className={styles.opsLead}>
-            Three jobs your team already does — finally in one place.
+            Renewals, money, and staff permissions — the three things that
+            usually live in WhatsApp, Excel, and someone’s memory.
           </p>
         </motion.div>
-
-        <div className={styles.opsList}>
-          {PILLARS.map((p, i) => (
-            <motion.article
-              key={p.title}
-              className={styles.opsItem}
-              {...inView(0.08 * i)}
-            >
-              <span className={styles.opsIndex} aria-hidden>
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div className={styles.opsItemCopy}>
-                <h3 className={styles.opsItemTitle}>{p.title}</h3>
-                <p className={styles.opsItemBody}>{p.body}</p>
-              </div>
-            </motion.article>
-          ))}
-        </div>
+        <motion.div {...inView(0.08)}>
+          <FeatureMoments />
+        </motion.div>
       </section>
 
       {/* 5 — India / reality */}

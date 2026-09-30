@@ -1,0 +1,246 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, 8vw, 88px);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+}
+
+.rowFlip {
+  direction: rtl;
+}
+
+.rowFlip > * {
+  direction: ltr;
+}
+
+.copy {
+  max-width: 28rem;
+}
+
+.n {
+  display: block;
+  margin-bottom: 14px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: #f87171;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 750;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.body {
+  margin: 14px 0 0;
+  color: rgba(248, 250, 252, 0.62);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.visual {
+  min-width: 0;
+}
+
+.panel {
+  background: linear-gradient(180deg, #fff 0%, #f5f3ef 100%);
+  color: #15171b;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 28px 56px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  padding: 16px 16px 14px;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #3f4650;
+}
+
+.amount {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: #101214;
+}
+
+.badgeWarn,
+.badgeOk {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badgeWarn {
+  color: #9a3412;
+  background: #ffedd5;
+  border: 1px solid #fed7aa;
+}
+
+.badgeOk {
+  color: #166534;
+  background: #e8f7ee;
+  border: 1px solid #c9ebd5;
+}
+
+.queueRow,
+.payRow,
+.payRowMuted,
+.roleRow,
+.roleRowDim {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e8e4dc;
+}
+
+.queueRow + .queueRow,
+.payRow + .payRow,
+.payRow + .payRowMuted,
+.roleRow + .roleRow,
+.roleRow + .roleRowDim {
+  margin-top: 8px;
+}
+
+.queueRow strong,
+.payRow strong,
+.payRowMuted strong,
+.roleName {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #15171b;
+}
+
+.queueRow em,
+.payRow em,
+.payRowMuted em,
+.rolePerms {
+  display: block;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 0.72rem;
+  color: #6b7280;
+}
+
+.queueRow > div,
+.payRow > div,
+.payRowMuted > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #14161a;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.pill,
+.pillOk,
+.pillDanger {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.pill {
+  background: #f3f0ea;
+  color: #3f4650;
+}
+
+.pillOk {
+  background: #e8f7ee;
+  color: #166534;
+}
+
+.pillDanger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.money {
+  font-family: var(--display);
+  font-weight: 750;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  color: #166534;
+}
+
+.due {
+  font-family: var(--display);
+  font-weight: 750;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  color: #b91c1c;
+}
+
+.payRowMuted {
+  background: #fff7f7;
+  border-color: #fecaca;
+}
+
+.roleRow,
+.roleRowDim {
+  justify-content: space-between;
+}
+
+.roleRowDim {
+  opacity: 0.78;
+  background: #faf8f5;
+}
+
+.roleRowDim .roleName {
+  color: #3f4650;
+}
+
+@media (max-width: 860px) {
+  .row,
+  .rowFlip {
+    grid-template-columns: 1fr;
+    direction: ltr;
+    gap: 22px;
+  }
+
+  .copy {
+    max-width: none;
+  }
+}
