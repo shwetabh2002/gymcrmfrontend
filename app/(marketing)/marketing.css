@@ -1,36 +1,29 @@
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Sora:wght@400;500;600;700&display=swap");
 
 .mkt {
-  --paper: #f2f3f5;
-  --paper-2: #ffffff;
+  --paper: #f3f1ec;
   --ink: #101214;
-  --ink-2: #3a4048;
-  --mute: #6a727c;
-  --hairline: rgba(16, 18, 20, 0.1);
+  --mute: #5c6570;
   --signal: #dc2626;
   --signal-2: #b91c1c;
-  --deep: #0b0c0e;
-  --hero-ink: #f8fafc;
-  --hero-mute: rgba(248, 250, 252, 0.82);
   --sans: "Sora", system-ui, -apple-system, sans-serif;
   --display: "Bricolage Grotesque", "Sora", system-ui, sans-serif;
 
-  /* legacy aliases used by signup */
-  --mkt-bg: var(--paper);
+  --mkt-bg: #0b0c0e;
   --mkt-ink: var(--ink);
   --mkt-muted: var(--mute);
-  --mkt-line: var(--hairline);
+  --mkt-line: rgba(16, 18, 20, 0.1);
   --mkt-accent: var(--signal);
   --mkt-accent-2: var(--signal-2);
-  --bg: var(--paper);
+  --bg: var(--mkt-bg);
   --accent: var(--signal);
   --accent-2: var(--signal-2);
   --muted: var(--mute);
-  --line: var(--hairline);
+  --line: var(--mkt-line);
 
   min-height: 100dvh;
   margin: 0;
-  background: var(--paper);
+  background: #0b0c0e;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
@@ -56,8 +49,8 @@
 .mkt h3 {
   font-family: var(--display);
   font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.08;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
 }
 
 @media (prefers-reduced-motion: reduce) {

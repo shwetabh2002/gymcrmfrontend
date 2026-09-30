@@ -1,30 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
+import { useRef } from "react";
 import styles from "./page.module.css";
 import { MARKETING_LINKS } from "@/lib/marketing-links";
-
-/**
- * GymFlow marketing home
- * ──────────────────────
- * Audience: gym owners / front-desk leads who need renewals + dues under control.
- * First viewport job: brand recognition + one promise + clear signup/login.
- * Below fold: prove the daily ops story, then ask again.
- */
+import ProductPreview from "./ProductPreview";
 
 const PILLARS = [
   {
-    title: "Catch renewals early",
-    body: "See who expires this week, who said they’d renew, and who went quiet — before the month closes.",
+    title: "Renewals don’t ghost you",
+    body: "Expiry queue shows who is due, who promised, and who vanished — so your desk calls the right person first.",
   },
   {
-    title: "Know every rupee",
-    body: "Cash, UPI, or card. Each payment tied to a member and the staffer who took it, with dues you can chase.",
+    title: "Money with a name on it",
+    body: "Cash, UPI, card. Every payment linked to a member and the staffer who took it. Dues stay visible until cleared.",
   },
   {
-    title: "Staff without chaos",
-    body: "Trainers sell. Desk collects. You see everything. Permissions keep the books clean.",
+    title: "Staff that can’t break the books",
+    body: "Trainers sell. Desk collects. Owners see all. Permissions keep curiosity out of your ledger.",
   },
 ] as const;
 
@@ -32,33 +31,44 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 export default function HomePage() {
   const reduce = useReducedMotion();
+  const heroRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const photoY = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
+  const photoScale = useTransform(scrollYProgress, [0, 1], [1.05, 1.16]);
 
   const enter = (delay = 0) =>
     reduce
       ? undefined
       : {
-          initial: { opacity: 0, y: 22 },
+          initial: { opacity: 0, y: 26 },
           animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.75, delay, ease },
+          transition: { duration: 0.85, delay, ease },
         };
 
   const inView = (delay = 0) =>
     reduce
       ? undefined
       : {
-          initial: { opacity: 0, y: 28 },
+          initial: { opacity: 0, y: 40 },
           whileInView: { opacity: 1, y: 0 },
-          viewport: { once: true, amount: 0.35 },
-          transition: { duration: 0.7, delay, ease },
+          viewport: { once: true, amount: 0.28 },
+          transition: { duration: 0.8, delay, ease },
         };
 
   return (
     <main className={styles.page}>
-      {/* ── Viewport 1: one composition ── */}
-      <section className={styles.hero}>
+      {/* 1 — Immersive brand moment */}
+      <section className={styles.hero} ref={heroRef}>
         <div className={styles.heroStage} aria-hidden>
-          <div className={styles.heroPhoto} />
+          <motion.div
+            className={styles.heroPhoto}
+            style={reduce ? undefined : { y: photoY, scale: photoScale }}
+          />
           <div className={styles.heroScrim} />
+          <div className={styles.heroGlow} />
         </div>
 
         <motion.header className={styles.nav} {...enter(0)}>
@@ -76,18 +86,18 @@ export default function HomePage() {
         </motion.header>
 
         <div className={styles.heroContent}>
-          <motion.p className={styles.heroKicker} {...enter(0.08)}>
-            For gym owners who hate chasing renewals
+          <motion.p className={styles.heroKicker} {...enter(0.1)}>
+            Membership software for serious gyms
           </motion.p>
-          <motion.h1 className={styles.heroBrand} {...enter(0.14)}>
+          <motion.h1 className={styles.heroBrand} {...enter(0.18)}>
             GymFlow
           </motion.h1>
-          <motion.p className={styles.heroPromise} {...enter(0.22)}>
-            Collect renewals before they slip. Track payments, follow-ups, and
-            staff — one gym, one workspace.
+          <motion.p className={styles.heroPromise} {...enter(0.28)}>
+            Renewals collected before they slip. Payments, follow-ups, and staff
+            — one workspace for the whole floor.
           </motion.p>
-          <motion.div className={styles.heroActions} {...enter(0.3)}>
-            <Link href={MARKETING_LINKS.signup} className={styles.btnSolid}>
+          <motion.div className={styles.heroActions} {...enter(0.38)}>
+            <Link href={MARKETING_LINKS.signup} className={styles.btnSolidLg}>
               Create your gym
             </Link>
             <Link href={MARKETING_LINKS.login} className={styles.btnQuiet}>
@@ -96,77 +106,103 @@ export default function HomePage() {
           </motion.div>
         </div>
 
-        <motion.div className={styles.scrollHint} {...enter(0.45)} aria-hidden>
-          <span />
-          Scroll
+        <motion.div className={styles.scrollHint} {...enter(0.55)} aria-hidden>
+          <span className={styles.scrollLine} />
+          See the desk
         </motion.div>
       </section>
 
-      {/* ── Why it exists ── */}
-      <section className={styles.why} aria-labelledby="why-title">
-        <motion.div className={styles.whyInner} {...inView(0)}>
-          <p className={styles.sectionLabel}>Why GymFlow</p>
-          <h2 id="why-title" className={styles.whyTitle}>
-            The front desk should feel calm at close of day.
+      {/* 2 — Product money shot */}
+      <section className={styles.product} aria-labelledby="product-title">
+        <motion.div className={styles.productIntro} {...inView(0)}>
+          <p className={styles.sectionLabel}>The desk</p>
+          <h2 id="product-title" className={styles.productTitle}>
+            This is what close of day should look like.
           </h2>
-          <p className={styles.whyBody}>
-            Spreadsheets miss renewals. Chat threads lose who paid. GymFlow
-            keeps members, money, and follow-ups in one place so your team
-            finishes the shift knowing what’s done.
+          <p className={styles.productLead}>
+            Expiry follow-ups, dues, and who’s next — without opening five
+            chats and a spreadsheet.
           </p>
         </motion.div>
-      </section>
-
-      {/* ── Visual story ── */}
-      <section className={styles.story} aria-labelledby="story-title">
-        <motion.div className={styles.storyCopy} {...inView(0)}>
-          <p className={styles.sectionLabel}>On the floor</p>
-          <h2 id="story-title" className={styles.storyTitle}>
-            Built for how Indian gyms actually run.
-          </h2>
-          <p className={styles.storyBody}>
-            UPI and cash in the same ledger. GST-ready invoices. Multiple
-            branches when you grow. Permissions so trainers only see what they
-            need.
-          </p>
+        <motion.div
+          className={styles.productStage}
+          {...(reduce
+            ? {}
+            : {
+                initial: { opacity: 0, y: 64, rotateX: 8 },
+                whileInView: { opacity: 1, y: 0, rotateX: 0 },
+                viewport: { once: true, amount: 0.25 },
+                transition: { duration: 1, ease },
+              })}
+        >
+          <ProductPreview />
         </motion.div>
-        <motion.figure className={styles.storyFigure} {...inView(0.1)}>
-          <div className={styles.storyPhoto} role="img" aria-label="Gym training floor" />
-        </motion.figure>
       </section>
 
-      {/* ── Three pillars ── */}
+      {/* 3 — Emotional statement */}
+      <section className={styles.statement} aria-labelledby="statement-title">
+        <motion.h2
+          id="statement-title"
+          className={styles.statementText}
+          {...inView(0)}
+        >
+          Stop losing members
+          <br />
+          <em>in the noise.</em>
+        </motion.h2>
+      </section>
+
+      {/* 4 — Pillars with weight */}
       <section className={styles.pillars} aria-labelledby="pillars-title">
         <motion.div className={styles.pillarsHead} {...inView(0)}>
-          <p className={styles.sectionLabel}>What you get</p>
+          <p className={styles.sectionLabel}>Everyday ops</p>
           <h2 id="pillars-title" className={styles.pillarsTitle}>
-            Three things your desk does every day.
+            Three jobs your team already does — finally in one place.
           </h2>
         </motion.div>
-        <ul className={styles.pillarList}>
-          {PILLARS.map((item, i) => (
-            <motion.li key={item.title} className={styles.pillar} {...inView(0.08 * (i + 1))}>
-              <span className={styles.pillarIndex}>
+        <div className={styles.pillarGrid}>
+          {PILLARS.map((p, i) => (
+            <motion.article
+              key={p.title}
+              className={styles.pillar}
+              {...inView(0.1 * i)}
+            >
+              <span className={styles.pillarN}>
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <h3 className={styles.pillarTitle}>{item.title}</h3>
-              <p className={styles.pillarBody}>{item.body}</p>
-            </motion.li>
+              <h3 className={styles.pillarTitle}>{p.title}</h3>
+              <p className={styles.pillarBody}>{p.body}</p>
+            </motion.article>
           ))}
-        </ul>
+        </div>
       </section>
 
-      {/* ── Final ask ── */}
+      {/* 5 — India / reality */}
+      <section className={styles.reality} aria-labelledby="reality-title">
+        <div className={styles.realityMedia} aria-hidden>
+          <div className={styles.realityPhoto} />
+          <div className={styles.realityScrim} />
+        </div>
+        <motion.div className={styles.realityCopy} {...inView(0)}>
+          <p className={styles.sectionLabelOnDark}>Built for India</p>
+          <h2 id="reality-title" className={styles.realityTitle}>
+            UPI, GST, multi-branch —
+            <span> without bolting on five tools.</span>
+          </h2>
+        </motion.div>
+      </section>
+
+      {/* 6 — Close */}
       <section className={styles.finale} aria-labelledby="finale-title">
         <motion.div className={styles.finaleInner} {...inView(0)}>
           <h2 id="finale-title" className={styles.finaleTitle}>
-            Open your gym workspace today.
+            Your gym online before the evening rush.
           </h2>
           <p className={styles.finaleBody}>
-            Free to start. Add staff when the floor is ready.
+            Start free. Invite staff when the floor is ready.
           </p>
           <div className={styles.finaleActions}>
-            <Link href={MARKETING_LINKS.signup} className={styles.btnSolid}>
+            <Link href={MARKETING_LINKS.signup} className={styles.btnSolidLg}>
               Create your gym
             </Link>
             <Link href={MARKETING_LINKS.login} className={styles.btnOnDark}>
