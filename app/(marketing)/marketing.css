@@ -1,16 +1,21 @@
-/* Scoped marketing shell — does not override CRM :root tokens. */
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap");
 
+/* Scoped marketing shell — does not override CRM :root tokens. */
 .mkt {
-  --mkt-bg: #0c0d0f;
-  --mkt-bg-2: #14161a;
-  --mkt-ink: #f3f1eb;
-  --mkt-muted: #9a968c;
-  --mkt-line: rgba(243, 241, 235, 0.12);
-  --mkt-accent: #e23d2b;
-  --mkt-accent-2: #ff6b4a;
-  --sans: "Instrument Sans", system-ui, -apple-system, sans-serif;
-  --display: var(--sans);
+  --mkt-bg: #e9ecef;
+  --mkt-bg-deep: #121417;
+  --mkt-surface: #f7f8f9;
+  --mkt-ink: #14161a;
+  --mkt-ink-soft: #3a3f47;
+  --mkt-muted: #6b717a;
+  --mkt-line: rgba(20, 22, 26, 0.12);
+  --mkt-accent: #d92b1f;
+  --mkt-accent-2: #b82118;
+  --mkt-hero-ink: #f5f6f7;
+  --mkt-hero-muted: rgba(245, 246, 247, 0.78);
+  --sans: "Figtree", system-ui, -apple-system, sans-serif;
+  --display: "Syne", "Figtree", system-ui, sans-serif;
+
   --bg: var(--mkt-bg);
   --ink: var(--mkt-ink);
   --muted: var(--mkt-muted);
@@ -18,7 +23,7 @@
   --accent: var(--mkt-accent);
   --accent-2: var(--mkt-accent-2);
 
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   background: var(--mkt-bg);
   color: var(--mkt-ink);
@@ -26,6 +31,8 @@
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
 }
 
 .mkt a {
@@ -43,8 +50,18 @@
 .mkt h1,
 .mkt h2,
 .mkt h3 {
-  font-family: var(--sans);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt *,
+  .mkt *::before,
+  .mkt *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
