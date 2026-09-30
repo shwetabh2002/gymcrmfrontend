@@ -146,10 +146,10 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-                        {/* 3 — Feature moments with live-looking UI fragments */}
+                              {/* 3 — Lit stage: UI moments float forward */}
       <section className={styles.ops} aria-labelledby="ops-title">
         <motion.div className={styles.opsIntro} {...inView(0)}>
-          <p className={styles.sectionLabelOnDark}>Everyday ops</p>
+          <p className={styles.sectionLabel}>Everyday ops</p>
           <h2 id="ops-title" className={styles.opsTitle}>
             The jobs that keep the floor honest.
           </h2>
@@ -158,7 +158,16 @@ export default function HomePage() {
             usually live in WhatsApp, Excel, and someone’s memory.
           </p>
         </motion.div>
-        <motion.div {...inView(0.08)}>
+        <motion.div
+          {...(reduce
+            ? {}
+            : {
+                initial: { opacity: 0, y: 36 },
+                whileInView: { opacity: 1, y: 0 },
+                viewport: { once: true, amount: 0.12 },
+                transition: { duration: 0.85, ease },
+              })}
+        >
           <FeatureMoments />
         </motion.div>
       </section>

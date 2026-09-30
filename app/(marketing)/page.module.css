@@ -351,25 +351,38 @@
   padding-bottom: 12px;
 }
 
-/* ═══════════════ OPS — product moments under the desk ═══════════════ */
+/* ═══════════════ OPS — lit stage so UI moments float forward ═══════════════ */
 
 .ops {
   position: relative;
   background:
-    radial-gradient(ellipse 55% 35% at 100% 20%, rgba(220, 38, 38, 0.09), transparent 55%),
-    linear-gradient(180deg, #0b0c0e 0%, #070809 100%);
-  color: #f8fafc;
+    radial-gradient(ellipse 90% 55% at 50% -10%, rgba(220, 38, 38, 0.1), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 60%, rgba(148, 163, 184, 0.35), transparent 55%),
+    linear-gradient(180deg, #c8ced8 0%, #e4e8ee 38%, #eef1f5 100%);
+  color: #101214;
   padding:
-    clamp(48px, 8vw, 88px)
+    clamp(56px, 9vw, 104px)
     max(24px, env(safe-area-inset-right))
     clamp(72px, 11vw, 128px)
     max(24px, env(safe-area-inset-left));
   overflow: hidden;
 }
 
+.ops::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 64px;
+  background: linear-gradient(180deg, rgba(11, 12, 14, 0.22), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .opsIntro {
+  position: relative;
+  z-index: 1;
   width: min(100%, 640px);
-  margin: 0 auto clamp(40px, 7vw, 64px);
+  margin: 0 auto clamp(44px, 7vw, 72px);
   text-align: center;
 }
 
@@ -380,7 +393,7 @@
   font-size: clamp(1.85rem, 4.5vw, 3rem);
   line-height: 1.05;
   letter-spacing: -0.045em;
-  color: #fff;
+  color: #101214;
   text-wrap: balance;
 }
 
@@ -389,7 +402,7 @@
   max-width: 34rem;
   font-size: clamp(1rem, 1.7vw, 1.1rem);
   line-height: 1.55;
-  color: rgba(248, 250, 252, 0.62);
+  color: #4a5360;
   text-wrap: pretty;
 }
 
