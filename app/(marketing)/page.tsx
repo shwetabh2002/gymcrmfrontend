@@ -160,29 +160,34 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-            {/* 3 — Light ops band (statement + pillars = one act) */}
-      <section className={styles.ops} aria-labelledby="pillars-title">
-        <motion.p className={styles.opsManifesto} {...inView(0)}>
-          Stop losing members <em>in the noise.</em>
-        </motion.p>
-        <motion.div className={styles.pillarsHead} {...inView(0.06)}>
-          <p className={styles.sectionLabel}>Everyday ops</p>
-          <h2 id="pillars-title" className={styles.pillarsTitle}>
-            Three jobs your team already does — finally in one place.
+                  {/* 3 — Ops (same dark language as desk — stacked features) */}
+      <section className={styles.ops} aria-labelledby="ops-title">
+        <motion.div className={styles.opsIntro} {...inView(0)}>
+          <p className={styles.sectionLabelOnDark}>Everyday ops</p>
+          <h2 id="ops-title" className={styles.opsTitle}>
+            Stop losing members
+            <br />
+            <em>in the noise.</em>
           </h2>
+          <p className={styles.opsLead}>
+            Three jobs your team already does — finally in one place.
+          </p>
         </motion.div>
-        <div className={styles.pillarGrid}>
+
+        <div className={styles.opsList}>
           {PILLARS.map((p, i) => (
             <motion.article
               key={p.title}
-              className={styles.pillar}
-              {...inView(0.1 * i)}
+              className={styles.opsItem}
+              {...inView(0.08 * i)}
             >
-              <span className={styles.pillarN}>
+              <span className={styles.opsIndex} aria-hidden>
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <h3 className={styles.pillarTitle}>{p.title}</h3>
-              <p className={styles.pillarBody}>{p.body}</p>
+              <div className={styles.opsItemCopy}>
+                <h3 className={styles.opsItemTitle}>{p.title}</h3>
+                <p className={styles.opsItemBody}>{p.body}</p>
+              </div>
             </motion.article>
           ))}
         </div>
