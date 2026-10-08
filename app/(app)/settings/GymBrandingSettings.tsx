@@ -22,7 +22,7 @@ import {
   type InvoiceLayout,
   type InvoiceStampAlign,
 } from "@/config/invoice";
-import { COUNTRIES, DEFAULT_COUNTRY_CODE } from "@/config/countries";
+import { DEFAULT_COUNTRY_CODE, getCountry } from "@/config/countries";
 import {
   computeTaxBreakdown,
   INVOICE_TAX_MODE_LABELS,
@@ -66,6 +66,7 @@ export default function GymBrandingSettings() {
   const [showAddress, setShowAddress] = useState(true);
   const [showContact, setShowContact] = useState(true);
   const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
+  const [countryLocked, setCountryLocked] = useState(true);
   const [taxPercentage, setTaxPercentage] = useState(18);
   const [taxMode, setTaxMode] = useState<InvoiceTaxMode>("excluded");
 
@@ -99,6 +100,7 @@ export default function GymBrandingSettings() {
     setShowAddress(settings.invoiceShowAddress !== false);
     setShowContact(settings.invoiceShowContact !== false);
     setCountryCode(settings.countryCode || DEFAULT_COUNTRY_CODE);
+    setCountryLocked(settings.countryLocked !== false);
     // 0 in DB = unset for new gyms; default sample/config to 18% so breakdown is visible
     setTaxPercentage(
       typeof settings.invoiceTaxPercentage === "number" &&
@@ -151,7 +153,6 @@ export default function GymBrandingSettings() {
         invoiceTaxBreakup: taxBreakup,
         invoiceShowAmountInWords: showAmountInWords,
         invoiceTerms: invoiceTerms.trim(),
-        countryCode,
       });
       toast.success("Saved for this gym — invoices & app will use these settings");
     } catch (err: any) {
@@ -263,23 +264,67 @@ export default function GymBrandingSettings() {
             disabled={!canEdit}
           />
         </div>
-        <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Country</label>
-          <select
-            className={styles.formInput}
-            value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
-            disabled={!canEdit}
-          >
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name} ({c.currency})
-              </option>
-            ))}
-          </select>
-          <span style={{ fontSize: "0.72rem", color: "#888", marginTop: 4 }}>
-            Sets currency & date format for invoices (e.g. ₹ / $ / AED)
-          </span>
+        <div className={styles.formGroupFull}>
+          <label className={styles.formLabel}>Country & currency</label>
+          {(() => {
+            const c = getCountry(countryCode);
+            return (
+              <div
+                style={{
+                  border: "1px solid var(--border, #e5e7eb)",
+                  borderRadius: 10,
+                  padding: "14px 16px",
+                  background: "var(--surface-2, #fafafa)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px 20px",
+                    alignItems: "baseline",
+                  }}
+                >
+                  <strong style={{ fontSize: "1rem" }}>
+                    {settings?.countryName || c.name}
+                  </strong>
+                  <span style={{ color: "#5c6570", fontSize: "0.92rem" }}>
+                    {settings?.currency || c.currency} ·{" "}
+                    {settings?.currencySymbol || c.currencySymbol}
+                  </span>
+                  {countryLocked && (
+                    <span
+                      style={{
+                        fontSize: "0.68rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: "#b91c1c",
+                        background: "#fee2e2",
+                        padding: "3px 8px",
+                        borderRadius: 999,
+                      }}
+                    >
+                      Locked
+                    </span>
+                  )}
+                </div>
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    fontSize: "0.82rem",
+                    lineHeight: 1.5,
+                    color: "#5c6570",
+                  }}
+                >
+                  Set once when the gym was created. All amounts in this CRM
+                  (plans, payments, dues, invoices) use this currency. To change
+                  country or currency, contact platform support — gym staff
+                  cannot change it here.
+                </p>
+              </div>
+            );
+          })()}
         </div>
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Brand Color</label>

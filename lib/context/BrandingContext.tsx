@@ -17,7 +17,12 @@ import {
   type InvoiceStampAlign,
   isInvoiceStampAlign,
 } from "@/config/invoice";
-import { DEFAULT_COUNTRY_CODE, getCountry, type CountryConfig } from "@/config/countries";
+import {
+  DEFAULT_COUNTRY_CODE,
+  formatMoney as formatMoneyByCountry,
+  getCountry,
+  type CountryConfig,
+} from "@/config/countries";
 
 type Branding = {
   gymName: string;
@@ -33,6 +38,8 @@ type Branding = {
   websiteUrl: string | null;
   memberIdPrefix: string;
   country: CountryConfig;
+  /** Format amounts in this gym's locked currency */
+  formatMoney: (amount: number) => string;
   invoice: InvoiceDisplayOptions;
   settings: GymSettings | undefined;
   isLoading: boolean;
@@ -55,6 +62,8 @@ const BrandingContext = createContext<Branding>({
   websiteUrl: null,
   memberIdPrefix: "GYM",
   country: defaultCountry,
+  formatMoney: (amount: number) =>
+    formatMoneyByCountry(amount, DEFAULT_COUNTRY_CODE),
   invoice: { ...DEFAULT_INVOICE_DISPLAY },
   settings: undefined,
   isLoading: false,
@@ -135,6 +144,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       settings?.gymName?.trim() ||
       user?.companyName?.trim() ||
       "Gym Admin";
+    const country = getCountry(settings?.countryCode);
     return {
       gymName,
       logoUrl: settings?.logoUrl ?? null,
@@ -148,7 +158,9 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       invoiceFooter: settings?.invoiceFooter ?? null,
       websiteUrl: settings?.websiteUrl ?? null,
       memberIdPrefix: settings?.memberIdPrefix || "GYM",
-      country: getCountry(settings?.countryCode),
+      country,
+      formatMoney: (amount: number) =>
+        formatMoneyByCountry(amount, country.code),
       invoice: resolveInvoiceOptions(settings),
       settings,
       isLoading,
@@ -177,4 +189,10 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
 
 export function useBranding() {
   return useContext(BrandingContext);
+}
+
+/** Shorthand: format money in the active gym's currency */
+export function useGymMoney() {
+  const { formatMoney, country } = useBranding();
+  return { formatMoney, country };
 }

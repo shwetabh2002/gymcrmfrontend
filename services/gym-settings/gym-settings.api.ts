@@ -59,6 +59,8 @@ export interface GymSettings {
   currency?: string;
   currencySymbol?: string;
   locale?: string;
+  /** true = gym cannot change country/currency (contact support) */
+  countryLocked?: boolean;
   upload?: UploadLimits;
   updatedAt?: string;
   createdAt?: string;

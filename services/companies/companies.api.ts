@@ -13,6 +13,8 @@ export interface CompanyRow {
   countryCode?: string;
   countryName?: string;
   currency?: string;
+  currencySymbol?: string;
+  countryLocked?: boolean;
   memberIdPrefix?: string;
   ownerUserId?: string | null;
   createdAt?: string;
@@ -45,5 +47,12 @@ export const companiesApi = {
     requestService.post<AdminLoginResponse, Record<string, never>>(
       API_CONFIG.COMPANIES.CLEAR_ACTIVE,
       {},
+    ),
+
+  /** SUPER_ADMIN — change locked country/currency after support request */
+  updateCountry: (id: string, countryCode: string) =>
+    requestService.patch<CompanyRow, { countryCode: string }>(
+      API_CONFIG.COMPANIES.COUNTRY(id),
+      { countryCode },
     ),
 };

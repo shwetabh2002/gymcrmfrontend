@@ -14,6 +14,7 @@ export const API_CONFIG = {
     ONBOARD: "/companies/onboard",
     SELECT: (id: string) => `/companies/${id}/select`,
     CLEAR_ACTIVE: "/companies/active/clear",
+    COUNTRY: (id: string) => `/companies/${id}/country`,
   },
 
   LOCATIONS: {

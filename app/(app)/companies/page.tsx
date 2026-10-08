@@ -33,6 +33,7 @@ export default function CompaniesPage() {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [selecting, setSelecting] = useState<string | null>(null);
+  const [changingCountry, setChangingCountry] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -69,6 +70,21 @@ export default function CompaniesPage() {
       setError(err?.response?.data?.message || err.message || "Onboard failed");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const changeCountry = async (id: string, countryCode: string) => {
+    setChangingCountry(id);
+    setError("");
+    try {
+      await companiesApi.updateCountry(id, countryCode);
+      await load();
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message || err.message || "Country update failed",
+      );
+    } finally {
+      setChangingCountry(null);
     }
   };
 
@@ -153,16 +169,36 @@ export default function CompaniesPage() {
                       {c.countryName ? ` · ${c.countryName}` : ""}
                       {c.currency ? ` · ${c.currency}` : ""}
                       {c.city ? ` · ${c.city}` : ""}
+                      {c.countryLocked !== false ? " · locked" : ""}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className={styles.primaryBtn}
-                    disabled={selecting === c.id}
-                    onClick={() => select(c.id)}
-                  >
-                    {selecting === c.id ? "Opening…" : "Open gym"}
-                  </button>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <select
+                      aria-label={`Country for ${c.name}`}
+                      value={c.countryCode || DEFAULT_COUNTRY_CODE}
+                      disabled={changingCountry === c.id}
+                      onChange={(e) => changeCountry(c.id, e.target.value)}
+                      style={{
+                        minHeight: 36,
+                        fontSize: "0.8rem",
+                        maxWidth: 160,
+                      }}
+                    >
+                      {COUNTRIES.map((country) => (
+                        <option key={country.code} value={country.code}>
+                          {country.code} · {country.currency}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className={styles.primaryBtn}
+                      disabled={selecting === c.id}
+                      onClick={() => select(c.id)}
+                    >
+                      {selecting === c.id ? "Opening…" : "Open gym"}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -199,7 +235,7 @@ export default function CompaniesPage() {
               </label>
             </div>
             <label>
-              Country
+              Country & currency (locked after create)
               <select
                 value={form.countryCode || DEFAULT_COUNTRY_CODE}
                 onChange={(e) =>
@@ -208,7 +244,7 @@ export default function CompaniesPage() {
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.name} ({c.currency})
+                    {c.name} — {c.currency}
                   </option>
                 ))}
               </select>

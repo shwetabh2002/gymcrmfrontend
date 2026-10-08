@@ -275,7 +275,7 @@ export default function SignupPage() {
               </label>
             </div>
             <label>
-              Country
+              Country & currency
               <select
                 value={form.countryCode}
                 onChange={onChange("countryCode")}
@@ -284,10 +284,22 @@ export default function SignupPage() {
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.name} ({c.currency})
+                    {c.name} — {c.currency}
                   </option>
                 ))}
               </select>
+              <span
+                style={{
+                  display: "block",
+                  marginTop: 6,
+                  fontSize: "0.78rem",
+                  color: "rgba(16,18,20,0.55)",
+                  lineHeight: 1.45,
+                }}
+              >
+                Choose carefully. After signup this is locked — all amounts in
+                your CRM use this currency. To change later, contact support.
+              </span>
             </label>
             <label>
               Member ID prefix

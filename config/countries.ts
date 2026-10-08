@@ -1,6 +1,6 @@
 /**
  * Supported launch countries — keep in sync with backend `src/config/countries.config.ts`.
- * Add a country here (+ backend) when launching a new market.
+ * Currency is derived from country; gyms pick country once (locked after signup).
  */
 export type CountryConfig = {
   code: string;
@@ -20,46 +20,46 @@ export const COUNTRIES: CountryConfig[] = [
     locale: "en-IN",
     phoneDialCode: "+91",
   },
-  // {
-  //   code: "AE",
-  //   name: "United Arab Emirates",
-  //   currency: "AED",
-  //   currencySymbol: "AED",
-  //   locale: "en-AE",
-  //   phoneDialCode: "+971",
-  // },
-  // {
-  //   code: "US",
-  //   name: "United States",
-  //   currency: "USD",
-  //   currencySymbol: "$",
-  //   locale: "en-US",
-  //   phoneDialCode: "+1",
-  // },
-  // {
-  //   code: "GB",
-  //   name: "United Kingdom",
-  //   currency: "GBP",
-  //   currencySymbol: "£",
-  //   locale: "en-GB",
-  //   phoneDialCode: "+44",
-  // },
-  // {
-  //   code: "SG",
-  //   name: "Singapore",
-  //   currency: "SGD",
-  //   currencySymbol: "S$",
-  //   locale: "en-SG",
-  //   phoneDialCode: "+65",
-  // },
-  // {
-  //   code: "AU",
-  //   name: "Australia",
-  //   currency: "AUD",
-  //   currencySymbol: "A$",
-  //   locale: "en-AU",
-  //   phoneDialCode: "+61",
-  // },
+  {
+    code: "AE",
+    name: "United Arab Emirates",
+    currency: "AED",
+    currencySymbol: "AED",
+    locale: "en-AE",
+    phoneDialCode: "+971",
+  },
+  {
+    code: "US",
+    name: "United States",
+    currency: "USD",
+    currencySymbol: "$",
+    locale: "en-US",
+    phoneDialCode: "+1",
+  },
+  {
+    code: "GB",
+    name: "United Kingdom",
+    currency: "GBP",
+    currencySymbol: "£",
+    locale: "en-GB",
+    phoneDialCode: "+44",
+  },
+  {
+    code: "SG",
+    name: "Singapore",
+    currency: "SGD",
+    currencySymbol: "S$",
+    locale: "en-SG",
+    phoneDialCode: "+65",
+  },
+  {
+    code: "AU",
+    name: "Australia",
+    currency: "AUD",
+    currencySymbol: "A$",
+    locale: "en-AU",
+    phoneDialCode: "+61",
+  },
 ];
 
 export const DEFAULT_COUNTRY_CODE = "IN";
