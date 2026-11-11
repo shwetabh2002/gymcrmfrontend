@@ -57,9 +57,7 @@ export const API_CONFIG = {
     PROOF: (id: string) => `/payments/${id}/proof`,
     PROVIDER: "/payment-provider",
     PROVIDER_CONNECT: "/payment-provider/razorpay/connect",
-    PROVIDER_API_KEYS: "/payment-provider/razorpay/api-keys",
     PROVIDER_DISCONNECT: "/payment-provider/razorpay/disconnect",
-    PROVIDER_WEBHOOK_SECRET: "/payment-provider/razorpay/webhook-secret",
     AUTOPAY_RUN: "/autopay/run",
     AUTOPAY_MANDATE: (subscriptionId: string) =>
       `/autopay/mandate/${subscriptionId}`,

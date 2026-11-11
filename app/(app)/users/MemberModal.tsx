@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
   useCreateMember,
   useUpdateMember,
@@ -14,7 +15,11 @@ import {
   PaymentMode,
 } from "@/services/members/members.api";
 import { useUploadPaymentProof } from "@/services/payments/payments.hooks";
-import { checkoutApi, CheckoutSession } from "@/services/payments/provider.api";
+import {
+  checkoutApi,
+  CheckoutSession,
+  paymentProviderApi,
+} from "@/services/payments/provider.api";
 import { usePlans, useCreatePlan } from "@/services/plans/plans.hook";
 import { useEmployees } from "@/services/employees/employees.hooks";
 import { useGymSettings } from "@/services/gym-settings/gym-settings.hooks";
@@ -33,6 +38,7 @@ import PaymentQr from "@/components/PaymentQr";
 import {
   COLLECTION_MODE_OPTIONS,
   CollectionMode,
+  isRazorpayCheckoutMode,
   ledgerModeFor,
 } from "@/config/collection-modes";
 
@@ -153,9 +159,22 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     status: "ACTIVE",
   });
   const { data: settings } = useGymSettings();
+  const razorpayEntitled =
+    settings?.razorpayEntitled === true ||
+    settings?.featureRazorpayUnlocked === true ||
+    settings?.autopayEntitled === true ||
+    settings?.featureAutopayUnlocked === true;
+  const { data: rzpStatus } = useQuery({
+    queryKey: ["payment-provider", user?.companyId ?? null],
+    queryFn: paymentProviderApi.getStatus,
+    enabled: open && !!user?.companyId && razorpayEntitled,
+  });
+  const razorpayConnected = rzpStatus?.connected === true;
   const companyAutopayOn =
-    settings?.featureAutopayUnlocked === true &&
-    settings?.autopayEnabled === true;
+    (settings?.autopayEntitled === true ||
+      settings?.featureAutopayUnlocked === true) &&
+    settings?.autopayEnabled === true &&
+    razorpayConnected;
   const uploadLimits = resolveUploadLimits(settings?.upload);
   const { taxPercentage, taxMode } = resolveInvoiceTax(settings);
 
@@ -295,7 +314,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       return null;
     });
     setLinkCopied(false);
-  }, [existing, open, user?.locationId, locations, settings?.autopayEnabled, settings?.featureAutopayUnlocked]);
+  }, [existing, open, user?.locationId, locations, settings?.autopayEnabled, settings?.featureAutopayUnlocked, settings?.autopayEntitled]);
 
   const onPhotoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -345,7 +364,15 @@ export default function MemberModal({ open, onClose, existing }: Props) {
     setForm((prev) => {
       const amount: number | "" =
         typeof plan?.price === "number" ? plan.price : prev.amount;
-      const received = prev.received === "" ? 0 : Number(prev.received);
+      const autoFillFull =
+        isRazorpayCheckoutMode(prev.paymentMode) &&
+        amount !== "" &&
+        (prev.received === "" || Number(prev.received) <= 0);
+      const received = autoFillFull
+        ? Number(amount)
+        : prev.received === ""
+          ? 0
+          : Number(prev.received);
       const pending =
         amount === ""
           ? prev.pending
@@ -356,6 +383,7 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         startingDate: start,
         expiryDate: computeExpiry(start, plan),
         amount,
+        ...(autoFillFull ? { received, dueReminderDate: "" } : {}),
         pending,
       };
     });
@@ -426,6 +454,28 @@ export default function MemberModal({ open, onClose, existing }: Props) {
       return;
     }
 
+    if (name === "paymentMode") {
+      const nextMode = value as CollectionMode | "";
+      setForm((prev) => {
+        // For Razorpay QR/Link modes, default Received to full plan amount if empty/0
+        if (
+          isRazorpayCheckoutMode(nextMode) &&
+          prev.amount !== "" &&
+          (prev.received === "" || Number(prev.received) <= 0)
+        ) {
+          return {
+            ...prev,
+            paymentMode: nextMode,
+            received: Number(prev.amount),
+            pending: 0,
+            dueReminderDate: "",
+          };
+        }
+        return { ...prev, paymentMode: nextMode };
+      });
+      return;
+    }
+
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -492,16 +542,18 @@ export default function MemberModal({ open, onClose, existing }: Props) {
         return;
       }
 
-      // Autopay → mandate registration (link + QR + poll). Cash/Online are
-      // manual-fill and fall through to the normal member create below.
-      if (form.paymentMode === "AUTOPAY") {
+      // Razorpay Checkout modes:
+      // - RAZORPAY_SINGLE → one-time Razorpay QR/link (enableAutopay: false, NO mandate)
+      // - AUTOPAY         → recurring mandate QR/link (enableAutopay: true)
+      if (isRazorpayCheckoutMode(form.paymentMode)) {
+        const wantsAutopay = form.paymentMode === "AUTOPAY";
         const received =
           form.received === ""
             ? Number(form.amount) || 0
             : Number(form.received);
         if (!(received > 0)) {
           setError(
-            "Received amount must be greater than 0 for online checkout.",
+            "Received amount must be greater than 0 for Razorpay QR / Link checkout.",
           );
           return;
         }
@@ -525,15 +577,13 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                 : form.trainerId || undefined,
             salesPersonId: form.salesPersonId || undefined,
             email: form.email.trim() || undefined,
-            enableAutopay: true,
+            enableAutopay: wantsAutopay,
             sendWhatsApp: false,
             sendEmail: form.sendEmail && !!form.email.trim(),
-            idempotencyKey: `${form.phone.trim()}-${form.planId}-${Date.now()}`,
+            idempotencyKey: `${form.phone.trim()}-${form.planId}-${wantsAutopay ? "autopay" : "single"}-${Date.now()}`,
           });
           setCheckout(session);
           setCheckoutStep(true);
-          // Auto-send is done by backend to member phone.
-          // Only open wa.me if auto-send failed (rare).
           if (
             session.whatsappUrl &&
             !session.whatsappSent &&
@@ -643,21 +693,12 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                       Status: <strong>{checkout.status}</strong>
                       {checkout.enableAutopay
                         ? " · UPI Autopay mandate"
-                        : " · One-time"}
+                        : " · One-time payment (no Autopay)"}
                     </p>
                     <p className={styles.hint} style={{ marginBottom: 12 }}>
                       {checkout.enableAutopay
-                        ? "Member ko QR scan karwao — UPI app mein pay + Autopay mandate approve. WhatsApp send coming soon."
-                        : checkout.whatsappSent
-                          ? `Payment link AUTO-SENT to WhatsApp ${
-                              checkout.whatsappToPhone
-                                ? checkout.whatsappToPhone.startsWith("91") &&
-                                  checkout.whatsappToPhone.length === 12
-                                  ? `+91 ${checkout.whatsappToPhone.slice(2)}`
-                                  : `+${checkout.whatsappToPhone}`
-                                : "member number"
-                            }. Member pay kare — status yahan update hoga.`
-                          : "Show the QR or share the link below. WhatsApp send is coming soon."}
+                        ? "Member ko QR scan karwao — UPI app mein 1st payment + Autopay mandate approve hoga."
+                        : "Member ko QR scan karwao (ya link share karo) — sirf 1 baar ki payment hogi, koi Autopay mandate nahi lagega."}
                     </p>
                     {checkout.qrData ? (
                       <div style={{ textAlign: "center", margin: "16px 0" }}>
@@ -1135,20 +1176,38 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                               onChange={handleChange}
                             >
                               <option value="">— Select —</option>
-                              {COLLECTION_MODE_OPTIONS.map((opt) => (
-                                <option
-                                  key={opt.value}
-                                  value={opt.value}
-                                  disabled={
-                                    opt.value === "AUTOPAY" && !companyAutopayOn
-                                  }
-                                >
-                                  {opt.value === "AUTOPAY" && !companyAutopayOn
-                                    ? `${opt.label} — turn on in Payment settings`
-                                    : opt.label}
-                                </option>
-                              ))}
+                              {COLLECTION_MODE_OPTIONS.map((opt) => {
+                                const isSingleRzp =
+                                  opt.value === "RAZORPAY_SINGLE";
+                                const isAutopay = opt.value === "AUTOPAY";
+                                const disabled =
+                                  (isSingleRzp && !razorpayConnected) ||
+                                  (isAutopay && !companyAutopayOn);
+                                let suffix = "";
+                                if (isSingleRzp && !razorpayConnected) {
+                                  suffix = " — connect Razorpay in Payment settings";
+                                } else if (isAutopay && !razorpayConnected) {
+                                  suffix = " — connect Razorpay first";
+                                } else if (isAutopay && !companyAutopayOn) {
+                                  suffix = " — turn on in Payment settings";
+                                }
+                                return (
+                                  <option
+                                    key={opt.value}
+                                    value={opt.value}
+                                    disabled={disabled}
+                                  >
+                                    {opt.label}
+                                    {suffix}
+                                  </option>
+                                );
+                              })}
                             </select>
+                            <span className={styles.hint}>
+                              Staff chooses per member — even when Autopay is
+                              ON, you can collect Cash, Manual Online, or
+                              One-Time Razorpay without setting up a mandate.
+                            </span>
                           </div>
                         </div>
 
@@ -1204,22 +1263,15 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                           </div>
                           <span className={styles.hint}>
                             {form.paymentMode === "AUTOPAY"
-                              ? "Save ke baad QR dikhega — member scan karke UPI Autopay approve kare. WhatsApp later."
-                              : "Welcome / receipt email optional."}
+                              ? "Save ke baad QR dikhega — member scan karke 1st payment + UPI Autopay mandate approve karega."
+                              : form.paymentMode === "RAZORPAY_SINGLE"
+                                ? "Save ke baad One-Time QR / Link dikhega — sirf 1 baar ki payment hogi, koi Autopay mandate nahi lagega."
+                                : "Welcome / receipt email optional."}
                             {!form.email
                               ? " Email ke liye member ka email bharo."
                               : ""}
                           </span>
                         </div>
-
-                        {form.paymentMode === "AUTOPAY" && !companyAutopayOn ? (
-                          <div className={styles.field}>
-                            <span className={styles.hint}>
-                              Autopay is off for this gym — turn it on in
-                              Payment settings → UPI Autopay.
-                            </span>
-                          </div>
-                        ) : null}
 
                         <div className={styles.row3}>
                           <div className={styles.field}>
@@ -1321,43 +1373,45 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                           </div>
                         ) : null}
 
-                        <div className={styles.row}>
-                          <div className={styles.field}>
-                            <label className={styles.label}>
-                              Payment screenshot{" "}
-                              <span style={{ opacity: 0.55 }}>(optional)</span>
-                            </label>
-                            {proofPreview ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={proofPreview}
-                                alt="Payment proof"
-                                style={{
-                                  width: 72,
-                                  height: 72,
-                                  objectFit: "cover",
-                                  borderRadius: 6,
-                                  marginBottom: 8,
-                                  display: "block",
-                                  border: "1px solid var(--border)",
-                                }}
+                        {!isRazorpayCheckoutMode(form.paymentMode) ? (
+                          <div className={styles.row}>
+                            <div className={styles.field}>
+                              <label className={styles.label}>
+                                Payment screenshot{" "}
+                                <span style={{ opacity: 0.55 }}>(optional)</span>
+                              </label>
+                              {proofPreview ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={proofPreview}
+                                  alt="Payment proof"
+                                  style={{
+                                    width: 72,
+                                    height: 72,
+                                    objectFit: "cover",
+                                    borderRadius: 6,
+                                    marginBottom: 8,
+                                    display: "block",
+                                    border: "1px solid var(--border)",
+                                  }}
+                                />
+                              ) : null}
+                              <input
+                                type="file"
+                                accept={UPLOAD_ACCEPT}
+                                onChange={onProofPick}
+                                disabled={isPending}
                               />
-                            ) : null}
-                            <input
-                              type="file"
-                              accept={UPLOAD_ACCEPT}
-                              onChange={onProofPick}
-                              disabled={isPending}
-                            />
-                            <span
-                              style={{ fontSize: 10, color: "var(--text-3)" }}
-                            >
-                              UPI / transfer receipt — max{" "}
-                              {uploadLimits.maxFileMb}MB. Used when Received
-                              &gt; 0.
-                            </span>
+                              <span
+                                style={{ fontSize: 10, color: "var(--text-3)" }}
+                              >
+                                UPI / transfer receipt — max{" "}
+                                {uploadLimits.maxFileMb}MB. Used when Received
+                                &gt; 0.
+                              </span>
+                            </div>
                           </div>
-                        </div>
+                        ) : null}
 
                         <div className={styles.row}>
                           <div className={styles.field}>
@@ -1473,14 +1527,16 @@ export default function MemberModal({ open, onClose, existing }: Props) {
                     {isPending
                       ? isEdit
                         ? "Saving…"
-                        : form.paymentMode === "ONLINE"
-                          ? "Starting checkout…"
+                        : isRazorpayCheckoutMode(form.paymentMode)
+                          ? "Generating QR / Link…"
                           : "Creating…"
                       : isEdit
                         ? "Save Changes"
-                        : form.paymentMode === "ONLINE"
-                          ? "Generate QR / Link"
-                          : "Add Member"}
+                        : form.paymentMode === "AUTOPAY"
+                          ? "Generate Autopay QR / Link"
+                          : form.paymentMode === "RAZORPAY_SINGLE"
+                            ? "Generate One-Time QR / Link"
+                            : "Add Member"}
                   </button>
                 </div>
               </>

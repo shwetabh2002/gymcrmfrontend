@@ -24,6 +24,8 @@ export const useUpdateGymSettings = () => {
       gymSettingsApi.update(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["gym-settings", user?.companyId] });
+      qc.invalidateQueries({ queryKey: ["subscription"] });
+      qc.invalidateQueries({ queryKey: ["payment-provider"] });
       qc.invalidateQueries({ queryKey: ["activity-logs"] });
       qc.invalidateQueries({ queryKey: ["platform", "activity"] });
       // GST / branding change should refresh money displays and docs.

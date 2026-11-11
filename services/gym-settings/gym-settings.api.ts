@@ -47,6 +47,9 @@ export interface GymSettings {
   /** Platform unlock (SUPER_ADMIN). Locked = Coming soon for this gym. */
   featureAutopayUnlocked?: boolean;
   featureRazorpayUnlocked?: boolean;
+  /** True when unlocked by SUPER_ADMIN OR included in the gym's platform plan. */
+  autopayEntitled?: boolean;
+  razorpayEntitled?: boolean;
   featureWhatsappUnlocked?: boolean;
   featureEmailTemplatesUnlocked?: boolean;
   featureActivityLogsUnlocked?: boolean;

@@ -11,12 +11,6 @@ export type ProviderStatus = {
   partnerOAuthAvailable: boolean;
   mockAvailable: boolean;
   environment?: string;
-  /** URL the gym pastes into its own Razorpay dashboard. */
-  webhookUrl?: string;
-  webhookEvents?: string[];
-  webhookSecretSet?: boolean;
-  /** True for OAuth gyms — the partner-level webhook covers them. */
-  webhookOwnedByPlatform?: boolean;
   /** Real UPI Autopay mandates need live credentials. */
   mandateCapable?: boolean;
 };
@@ -99,27 +93,10 @@ export const paymentProviderApi = {
       API_CONFIG.PAYMENTS.PROVIDER_CONNECT,
     ),
 
-  connectApiKeys: (payload: {
-    keyId: string;
-    keySecret: string;
-    accountName?: string;
-  }) =>
-    requestService.post<ProviderStatus, typeof payload>(
-      API_CONFIG.PAYMENTS.PROVIDER_API_KEYS,
-      payload,
-    ),
-
   disconnect: () =>
     requestService.post<{ ok: boolean }, Record<string, never>>(
       API_CONFIG.PAYMENTS.PROVIDER_DISCONNECT,
       {},
-    ),
-
-  /** Signing secret from the gym's own Razorpay dashboard ("" clears it). */
-  setWebhookSecret: (secret: string) =>
-    requestService.post<ProviderStatus, { secret: string }>(
-      API_CONFIG.PAYMENTS.PROVIDER_WEBHOOK_SECRET,
-      { secret },
     ),
 };
 

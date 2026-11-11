@@ -45,11 +45,22 @@ export default function PaymentSettingsPage() {
         </div>
       </motion.div>
 
-      <PaymentFeatureUnlocks />
-      <AutopaySettings />
-      <RazorpaySettings />
-      <WhatsAppSettings />
-      <EmailTemplateSettings />
+      {!user?.companyId ? (
+        <section className={styles.card}>
+          <p style={{ padding: "18px 22px", margin: 0, color: "var(--text-2)" }}>
+            Select a gym from the top company switcher to manage its payment
+            settings and unlocks.
+          </p>
+        </section>
+      ) : (
+        <>
+          <PaymentFeatureUnlocks />
+          <AutopaySettings />
+          <RazorpaySettings />
+          <WhatsAppSettings />
+          <EmailTemplateSettings />
+        </>
+      )}
     </div>
   );
 }

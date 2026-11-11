@@ -1,20 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/context/AuthContext";
 import { canEditGymSettings } from "@/lib/rbac";
 import {
   useGymSettings,
   useUpdateGymSettings,
 } from "@/services/gym-settings/gym-settings.hooks";
-import {
-  paymentProviderApi,
-  ProviderStatus,
-} from "@/services/payments/provider.api";
+import { paymentProviderApi } from "@/services/payments/provider.api";
 import profile from "../profile/Profile.module.css";
 import styles from "./AutopaySettings.module.css";
 import ComingSoonCard from "./ComingSoonCard";
-import { useQuery } from "@tanstack/react-query";
 import { subscriptionApi } from "@/services/subscription/subscription.api";
 
 type Step = {
@@ -28,19 +25,31 @@ type Step = {
 
 export default function AutopaySettings() {
   const { user } = useAuth();
+  const qc = useQueryClient();
+  const companyId = user?.companyId ?? null;
   const canEdit = canEditGymSettings(user?.role, user?.permissions);
-  const { data: settings, isLoading } = useGymSettings(!!user?.companyId);
+  const { data: settings, isLoading } = useGymSettings(!!companyId);
   const { data: sub } = useQuery({
-    queryKey: ["subscription"],
+    queryKey: ["subscription", companyId],
     queryFn: subscriptionApi.mine,
-    enabled: !!user?.companyId,
+    enabled: !!companyId,
   });
+
+  const unlocked =
+    settings?.autopayEntitled === true ||
+    settings?.featureAutopayUnlocked === true ||
+    (sub?.features ?? []).includes("AUTOPAY");
+
+  const { data: rzp, isLoading: depsLoading } = useQuery({
+    queryKey: ["payment-provider", companyId],
+    queryFn: paymentProviderApi.getStatus,
+    enabled: !!companyId && unlocked,
+  });
+
   const update = useUpdateGymSettings();
   const [enabled, setEnabled] = useState(false);
   const [error, setError] = useState("");
   const [savedMsg, setSavedMsg] = useState("");
-  const [rzp, setRzp] = useState<ProviderStatus | null>(null);
-  const [depsLoading, setDepsLoading] = useState(true);
   const [mandateMultiplier, setMandateMultiplier] = useState(2);
   const [mandateMonths, setMandateMonths] = useState(60);
 
@@ -51,19 +60,10 @@ export default function AutopaySettings() {
     setMandateMonths(settings.autopayMandateValidityMonths ?? 60);
   }, [settings]);
 
-  const loadDeps = async () => {
-    setDepsLoading(true);
-    try {
-      const p = await paymentProviderApi.getStatus().catch(() => null);
-      setRzp(p);
-    } finally {
-      setDepsLoading(false);
-    }
+  const refreshProvider = () => {
+    if (!companyId) return;
+    qc.invalidateQueries({ queryKey: ["payment-provider", companyId] });
   };
-
-  useEffect(() => {
-    loadDeps();
-  }, []);
 
   const save = async (next: boolean) => {
     if (!canEdit) return;
@@ -78,7 +78,7 @@ export default function AutopaySettings() {
           : "Autopay turned OFF — cash / UPI / one-time online work as usual.",
       );
       setTimeout(() => setSavedMsg(""), 4000);
-      if (next) await loadDeps();
+      if (next) refreshProvider();
     } catch (e: any) {
       setEnabled(!next);
       setError(e?.response?.data?.message || "Failed to update");
@@ -115,15 +115,15 @@ export default function AutopaySettings() {
       id: "rzp",
       title: "Connect Razorpay",
       detail:
-        "Scroll to Payments — Razorpay on this page. Connect OAuth or API keys.",
+        "Scroll to Payments — Razorpay on this page and click Connect with Razorpay.",
       done: !!rzp?.connected,
       kind: "live",
     },
     {
       id: "member",
-      title: "Add member on Autopay",
+      title: "Choose per member at the front desk",
       detail:
-        "Members → Add → Mode of Payment = UPI Autopay (mandate) → save. Cash and Online stay manual-fill.",
+        "Members → Add → Staff chooses per member: UPI Autopay (recurring mandate), Razorpay One-Time (single QR/link, no mandate), Cash, or Manual Online.",
       done: false,
       kind: "howto",
     },
@@ -147,9 +147,6 @@ export default function AutopaySettings() {
 
   const infraReady = enabled && !!rzp?.connected;
   const busy = !canEdit || update.isPending;
-  const unlocked =
-    settings?.featureAutopayUnlocked === true ||
-    (sub?.features ?? []).includes("AUTOPAY");
 
   if (!isLoading && !unlocked) {
     return (
@@ -262,11 +259,16 @@ export default function AutopaySettings() {
                     onChange={(e) =>
                       setMandateMultiplier(Number(e.target.value))
                     }
-                    onBlur={() =>
+                    onBlur={() => {
+                      const clamped = Math.min(
+                        10,
+                        Math.max(1, Math.round(Number(mandateMultiplier) || 2)),
+                      );
+                      setMandateMultiplier(clamped);
                       saveMandateTerms({
-                        autopayMandateMultiplier: mandateMultiplier,
-                      })
-                    }
+                        autopayMandateMultiplier: clamped,
+                      });
+                    }}
                   />
                 </label>
                 <label>
@@ -279,18 +281,23 @@ export default function AutopaySettings() {
                     value={mandateMonths}
                     disabled={busy}
                     onChange={(e) => setMandateMonths(Number(e.target.value))}
-                    onBlur={() =>
+                    onBlur={() => {
+                      const clamped = Math.min(
+                        120,
+                        Math.max(1, Math.round(Number(mandateMonths) || 60)),
+                      );
+                      setMandateMonths(clamped);
                       saveMandateTerms({
-                        autopayMandateValidityMonths: mandateMonths,
-                      })
-                    }
+                        autopayMandateValidityMonths: clamped,
+                      });
+                    }}
                   />
                 </label>
               </div>
               {rzp?.connected && rzp?.mandateCapable === false ? (
                 <p className={styles.toggleHint} style={{ paddingTop: 10 }}>
-                  Razorpay is connected but not mandate-ready — use OAuth or
-                  live API keys for real UPI Autopay.
+                  Razorpay connection needs re-authorization — reconnect below
+                  for live UPI Autopay.
                 </p>
               ) : null}
             </div>
@@ -314,7 +321,7 @@ export default function AutopaySettings() {
                     ? "Checking Razorpay…"
                     : infraReady
                       ? "Ready — add members with UPI Autopay and show the QR."
-                      : "Pending — connect Razorpay first."}
+                      : "Pending — connect Razorpay below first."}
               </p>
             </div>
 
@@ -364,14 +371,13 @@ export default function AutopaySettings() {
               <div className={styles.footer}>
                 <p className={styles.live}>
                   Live: Razorpay{" "}
-                  {rzp?.connected ? "connected" : "not connected"}
-                  {rzp?.authMode ? ` (${rzp.authMode})` : ""} · Member flow: QR /
-                  link (WhatsApp coming soon)
+                  {rzp?.connected ? "connected" : "not connected"} · Member
+                  flow: QR / link (WhatsApp coming soon)
                 </p>
                 <button
                   type="button"
                   className={profile.btnSecondary}
-                  onClick={() => loadDeps()}
+                  onClick={refreshProvider}
                 >
                   Refresh status
                 </button>
